@@ -16,7 +16,6 @@ bool HttpRequest::init()
 	if (eh_ == NULL) {
 		return false;
 	}
-	//cout << "http handle = " << eh_;
 	curl_easy_setopt(eh_, CURLOPT_HEADER, 0L);
 	curl_easy_setopt(eh_, CURLOPT_VERBOSE, 0L);
 	return true;
@@ -30,20 +29,29 @@ void HttpRequest::close()
 	curl_easy_cleanup(eh_);
 }
 
-void HttpRequest::setGet()
+void HttpRequest::setGet(bool enable)
 {
 	if (eh_ == NULL)
 		return;
 
-	curl_easy_setopt(eh_, CURLOPT_HTTPGET, 1L);
+	long e = enable ? 1L : 0L;
+	curl_easy_setopt(eh_, CURLOPT_HTTPGET, e);
 }
 
-void HttpRequest::setPost(const char* content)
+void HttpRequest::setPost(bool enable)
 {
 	if (eh_ == NULL)
 		return;
 
-	curl_easy_setopt(eh_, CURLOPT_POST, 1L);
+	long e = enable ? 1L : 0L;
+	curl_easy_setopt(eh_, CURLOPT_POST, e);
+}
+
+void HttpRequest::setPostContent(const char* content)
+{
+	if (eh_ == NULL)
+		return;
+
 	curl_easy_setopt(eh_, CURLOPT_POSTFIELDS, content);
 }
 

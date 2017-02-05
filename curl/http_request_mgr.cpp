@@ -31,13 +31,16 @@ bool HttpRequestMgr::init(int max_nreq)
 		max_nreq = DEFAULT_MAX_REQUEST_COUNT;
 	}
 
+	// HttpRequest对象池
 	if (!pool_.init(max_nreq))
 		return false;
 
+	// 等待处理列表
+	HttpRequestList::getInstance()->init(max_nreq);
+
+	// 同时处理的最大连接数用默认
 	if (!processor_.init())
 		return false;
-
-	HttpRequestList::getInstance()->init(max_nreq);
 
 	return true;
 }
@@ -105,31 +108,29 @@ void HttpRequestMgr::thread_func(void* param)
 			bool full = mgr->processor_.checkMaxProcess();
 			if (full) {
 				//std::cout << "processor is full" << std::endl;
-				sleep(1);
+				usleep(100);
 				break;
 			}
 
 			bool has = HttpRequestList::getInstance()->pop(req);
 			if (!has) {
 				//std::cout << "list is empty" << std::endl;
-				sleep(5);
+				usleep(100);
 				break;
 			}
 
-			//std::cout << "pop one req: " << req << std::endl;
 			if (!mgr->processor_.addReq(req)) {
 				break;
 			}
 		}
 
-		int n = mgr->processor_.waitResponse(100);
+		int n = mgr->processor_.waitResponse(5);
 		if (n < 0)
 			mgr->running_ = false;
 
-		ndo += n;
-		std::cout << "processed " << ndo << std::endl;
-
 		if (n > 0) {
+			ndo += n;
+			std::cout << "processed " << ndo << std::endl;
 			gettimeofday(&tv, NULL);
 			uint32_t e = (uint32_t)(tv.tv_sec*1000+tv.tv_usec/1000);
 			std::cout << "cost total: " << e - s << " ms" << std::endl;
@@ -148,7 +149,7 @@ size_t HttpRequestMgr::write_callback(char* ptr, size_t size, size_t nmemb, void
 	req->getPrivate(&url);
 
 	if (http_status_code == 200) {
-		std::cout << "200 OK for " << url << std::endl; 
+		//std::cout << "200 OK for " << url << std::endl; 
 	} else {
 		//std::cout << "GET of " <<  url << " returned http status code " << http_status_code << std::endl;
 	}

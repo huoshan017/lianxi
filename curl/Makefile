@@ -1,17 +1,24 @@
 CC   = g++ -g  
 COMPILE.C  = $(CC) -c   
 VPATH   = ./  
-CXXFLAGS  =  -lcurl -lboost_system -std=c++11  
+CXXFLAGS  =  -lcurl -std=c++11  
 MAKEEXE   = $(CC) $(LDFLAGS)  
+OBJDIR = ./obj
   
-OBJ   = http_request.o http_request_pool.o http_request_list.o http_request_processor.o http_request_mgr.o main.o 
-EXE   = main 
-    
-all:   $(EXE)  
-	  
-$(EXE):   ${OBJ}  
-	    $(MAKEEXE) $(CXXFLAGS) $^ -o $@  
-%.o:   %.cpp  
-	    $(COMPILE.C) $(CXXFLAGS) $< -o $@  
-clean:  
-	    rm -f *.o $(EXE)  
+OBJ = $(OBJDIR)/http_request.o \
+	  $(OBJDIR)/http_request_pool.o \
+	  $(OBJDIR)/http_request_list.o \
+	  $(OBJDIR)/http_request_processor.o \
+	  $(OBJDIR)/http_request_mgr.o main.o 
+EXE = main 
+  
+all: init  $(EXE)  
+init:
+	mkdir -p $(OBJDIR)
+
+$(EXE): ${OBJ}  
+	$(MAKEEXE) $(CXXFLAGS) $^ -o $@  
+$(OBJDIR)/%.o: %.cpp  
+	$(COMPILE.C) $(CXXFLAGS) $< -o $@  
+clean:
+	rm -f $(OBJDIR)/*.o $(EXE)  

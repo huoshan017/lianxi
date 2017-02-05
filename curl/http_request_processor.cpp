@@ -3,10 +3,8 @@
 #include "http_request.h"
 #include <iostream>
 
-static const int DEFAULT_MAX_REQUEST_COUNT = 1000;
-
 HttpRequestProcessor::HttpRequestProcessor() :
-	handle_(NULL), max_nprocess_(0), cur_nprocess_(0)
+	handle_(NULL), max_nprocess_(0), cur_nprocess_(0), total_nmsg_(0), total_nmsg_failed_(0)
 {
 }
 
@@ -22,9 +20,10 @@ bool HttpRequestProcessor::init(int max_nprocess)
 		return false;
 
 	if (max_nprocess <= 0)
-		max_nprocess_ = DEFAULT_MAX_REQUEST_COUNT;
+		max_nprocess_ = DEFAULT_MAX_PROCESS_COUNT;
+	else
+		max_nprocess_ = max_nprocess;
 
-	//std::cout << "http mgr handle = " << handle_ << ", max process = " << max_nprocess_ << std::endl;
 	return true;
 }
 
@@ -64,7 +63,7 @@ bool HttpRequestProcessor::removeReq(CURL* req)
 	if (req == NULL)
 		return false;
 
-	auto it = reqs_map_.find(req);
+	std::map<CURL*, HttpRequest*>::iterator it = reqs_map_.find(req);
 	if (it == reqs_map_.end()) {
 		return false;
 	}
@@ -77,7 +76,6 @@ bool HttpRequestProcessor::removeReq(CURL* req)
 	if (cur_nprocess_ > 0)
 		cur_nprocess_ -= 1;
 
-	//std::cout << "remove req " << req << " ," << req << std::endl;
 	return true;
 }
 
@@ -98,7 +96,7 @@ int HttpRequestProcessor::waitResponse(int max_wait_msecs)
 
 	while (still_running) {
 		if (!still_running) {
-			//std::cout << "no still running" << std::endl;
+			std::cout << "no still running" << std::endl;
 			return 0;
 		}
 
@@ -111,26 +109,30 @@ int HttpRequestProcessor::waitResponse(int max_wait_msecs)
 		}
 
 		if (!numfds) {
-			//std::cout << "curl_multi_wait() numfds=" << numfds << std::endl;
+			std::cout << "curl_multi_wait() numfds=" << numfds << std::endl;
 			return 0;
 		}
 		curl_multi_perform(handle_, &still_running);
 	}
 
-	int nmsg = 0;
+	int nmsg_done = 0;
 	while ((msg = curl_multi_info_read(handle_, &msgs_left))) {
+		total_nmsg_ += 1;
 		if (msg->msg == CURLMSG_DONE) {
 			code = msg->data.result;
 			if (code != CURLE_OK) {
-				std::cout << "CURL error code: " << code << ", nmsg: " << nmsg << std::endl;
-				continue;
+				total_nmsg_failed_ += 1;
+				std::cout << "CURL error code: " << code << ", total_nmsg_no: " << total_nmsg_ << ", total_failed: " << total_nmsg_failed_ << std::endl;
+			} else {
+				nmsg_done += 1;
 			}
-			
 		} else {
+			total_nmsg_failed_ += 1;
 			std::cout << "error: after curl_multi_info_read(), CURLMsg = " << msg->msg << ", " << std::endl;
 		}
+
 		eh = msg->easy_handle;
-		auto it = reqs_map_.find(eh);
+		std::map<CURL*, HttpRequest*>::iterator it = reqs_map_.find(eh);
 		req = it->second;
 		if (!removeReq(eh)) {
 			std::cout << "error: remove handle " << eh << " failed" << std::endl;
@@ -140,10 +142,7 @@ int HttpRequestProcessor::waitResponse(int max_wait_msecs)
 		} else {
 			HttpRequestMgr::getInstance()->freeReq(req);
 		}
-		
-		nmsg += 1;
-		//std::cout << std::endl;;
 	}
 
-	return nmsg;
+	return nmsg_done;
 }

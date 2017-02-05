@@ -15,8 +15,9 @@ public:
 	
 	CURL* getHandle() const { return eh_; }
 
-	void setGet();
-	void setPost(const char* content);
+	void setGet(bool enable);
+	void setPost(bool enable);
+	void setPostContent(const char* content);
 	void setUrl(const char* url);
 	void setPrivate(void* pointer);
 	void setRespWriteFunc(resp_func func, void* userdata);
