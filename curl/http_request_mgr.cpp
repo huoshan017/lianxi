@@ -3,6 +3,7 @@
 #include <thread>
 #include <unistd.h>
 #include <iostream>
+#include <memory.h>
 
 const static int DEFAULT_MAX_REQUEST_COUNT = 5000;
 
@@ -42,6 +43,9 @@ bool HttpRequestMgr::init(int max_nreq)
 	if (!processor_.init())
 		return false;
 
+	// 回调结果分配
+	results_.init(max_nreq);
+
 	return true;
 }
 
@@ -49,6 +53,7 @@ void HttpRequestMgr::close()
 {
 	pool_.clear();
 	processor_.close();
+	results_.clear();
 	running_ = false;
 }
 
@@ -128,6 +133,8 @@ void HttpRequestMgr::thread_func(void* param)
 		if (n < 0)
 			mgr->running_ = false;
 
+		mgr->results_.doLoop();
+
 		if (n > 0) {
 			ndo += n;
 			std::cout << "processed " << ndo << std::endl;
@@ -151,10 +158,22 @@ size_t HttpRequestMgr::write_callback(char* ptr, size_t size, size_t nmemb, void
 	if (http_status_code == 200) {
 		//std::cout << "200 OK for " << url << std::endl; 
 	} else {
-		//std::cout << "GET of " <<  url << " returned http status code " << http_status_code << std::endl;
+		std::cout << "GET of " <<  url << " returned http status code " << http_status_code << std::endl;
 	}
 
 	size_t s = size*nmemb;
 	//std::cout << "do write_callback: " << ptr << ", " << s << std::endl;
+	
+	HttpRequestMgr::getInstance()->results_.insertResult(ptr, s);
 	return s;
+}
+
+bool HttpRequestMgr::getResult(char*& p, int& len)
+{
+	return results_.popResult(p, len);
+}
+
+bool HttpRequestMgr::freeResult(char* ptr, int len)
+{
+	return results_.freeResult(ptr, len);
 }

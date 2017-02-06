@@ -109,7 +109,7 @@ int HttpRequestProcessor::waitResponse(int max_wait_msecs)
 		}
 
 		if (!numfds) {
-			std::cout << "curl_multi_wait() numfds=" << numfds << std::endl;
+			//std::cout << "curl_multi_wait() numfds=" << numfds << std::endl;
 			return 0;
 		}
 		curl_multi_perform(handle_, &still_running);
@@ -143,6 +143,5 @@ int HttpRequestProcessor::waitResponse(int max_wait_msecs)
 			HttpRequestMgr::getInstance()->freeReq(req);
 		}
 	}
-
 	return nmsg_done;
 }
