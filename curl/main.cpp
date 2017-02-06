@@ -8,7 +8,7 @@
 using namespace std;
 
 //static const char* s_url = "http://192.168.3.33:1024/api/serverlist?platform_id=xingluo";
-static const char* s_url = "192.168.3.250:80";
+static const char* s_url = "192.168.0.200:80";
 
 int main(int argc, char* argv[])
 {

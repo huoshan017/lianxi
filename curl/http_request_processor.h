@@ -4,7 +4,7 @@
 #include "curl/curl.h"
 #include <map>
 
-static const int DEFAULT_MAX_PROCESS_COUNT = 500;
+static const int DEFAULT_MAX_PROCESS_COUNT = 5000;
 
 class HttpRequest;
 
