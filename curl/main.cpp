@@ -8,22 +8,8 @@
 using namespace std;
 
 //static const char* s_url = "http://116.228.6.174/0/login?appid=24&token=adsf";
-static const char* s_url = "192.168.3.250:80";
+static const char* s_url = "192.168.0.200:80";
 
-
-static void do_result(HttpRequestMgr* mgr)
-{
-	char* p = NULL;
-	int len = 0;
-	bool b = false;
-	while (true) {
-		b = mgr->getResult(p, len);
-		if (b) {
-			mgr->freeResult(p, len);
-		}
-		usleep(10000);
-	}
-}
 
 int main(int argc, char* argv[])
 {
@@ -47,8 +33,10 @@ int main(int argc, char* argv[])
 	}
 
 	std::thread work_thread(HttpRequestMgr::thread_func, mgr);
-	std::thread result_thread(do_result, mgr);
 
+	char* p = NULL;
+	int len = 0;
+	bool b = false;
 	int i = 0;
 	for (; i<num; i++) {
 		// 请求多于HttpRequestPool中的HttpRequest数量
@@ -71,10 +59,14 @@ int main(int argc, char* argv[])
 			cout << "add req failed" << endl;
 			return -1;
 		}
+
+		b = mgr->getResult(p, len);
+		if (b) {
+			mgr->freeResult(p, len);
+		}
 	}
 
 	work_thread.join();
-	result_thread.join();
 
 	mgr->close();
 

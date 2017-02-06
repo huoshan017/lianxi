@@ -2,8 +2,9 @@
 
 #include "http_request.h"
 #include "http_request_processor.h"
-#include "http_request_pool.h"
 #include "http_request_results.h"
+#include "thread_safe_obj_pool.hpp"
+#include "thread_safe_obj_list.hpp"
 #include <atomic>
 #include <boost/lockfree/queue.hpp>
 #include <boost/pool/pool_alloc.hpp>
@@ -42,7 +43,9 @@ private:
 	
 	static HttpRequestMgr* instance_;
 	HttpRequestProcessor processor_;
-	HttpRequestPool pool_;
+	//HttpRequestPool pool_;
+	ThreadSafeObjPool<HttpRequest> pool_;
+	ThreadSafeObjList<HttpRequest> list_;
 	std::atomic<bool> running_;
 	HttpRequestResults results_;
 };

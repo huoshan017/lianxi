@@ -6,8 +6,6 @@ MAKEEXE   = $(CC) $(LDFLAGS)
 OBJDIR = ./obj
   
 OBJ = $(OBJDIR)/http_request.o \
-	  $(OBJDIR)/http_request_pool.o \
-	  $(OBJDIR)/http_request_list.o \
 	  $(OBJDIR)/http_request_processor.o \
 	  $(OBJDIR)/http_request_mgr.o \
 	  $(OBJDIR)/http_request_results.o \

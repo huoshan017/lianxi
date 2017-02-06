@@ -2,6 +2,8 @@
 
 #include <boost/lockfree/queue.hpp>
 #include <boost/pool/pool_alloc.hpp>
+#include "thread_safe_obj_pool.hpp"
+#include "thread_safe_obj_list.hpp"
 
 class HttpRequestResults
 {

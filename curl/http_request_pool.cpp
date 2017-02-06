@@ -15,14 +15,11 @@ bool HttpRequestPool::init(int max_size)
 		return false;
 
 	// 初始化时改变
-	total_vec_.resize(max_size);
 	free_queue_.reserve(max_size);
 	HttpRequest* req = NULL;
 	for (int i=0; i<max_size; i++) {
 		req = req_pool_.malloc();
 		free_queue_.push(req);
-		//total_vec_[i] = std::make_pair(req, false);
-		//ptr2idx_map_.insert(std::make_pair(req, i));
 	}
 
 	max_size_ = max_size;
@@ -32,10 +29,11 @@ bool HttpRequestPool::init(int max_size)
 void HttpRequestPool::clear()
 {
 	HttpRequest* req = NULL;
-	std::vector<std::pair<HttpRequest*, bool> >::iterator it = total_vec_.begin();
-	for (; it!=total_vec_.end(); ++it) {
-		req = it->first;
-		if (!req) continue;
+	while (true) {
+		if (free_queue_.empty())
+			break;
+		if (!free_queue_.pop(req))
+			break;
 		req_pool_.destroy(req);
 	}
 }
@@ -47,25 +45,11 @@ HttpRequest* HttpRequestPool::malloc()
 	if (!free_queue_.pop(req))
 		return NULL;
 
-	/*std::unordered_map<HttpRequest*, int>::iterator it = ptr2idx_map_.find(req);
-	if (it != ptr2idx_map_.end()) {
-		int idx = it->second;
-		if (idx>=0 && idx<max_size_) {
-			total_vec_[idx].second = true;
-		}
-	}*/
 	return req;
 }
 
 bool HttpRequestPool::free(HttpRequest* req)
 {
-	/*std::unordered_map<HttpRequest*, int>::iterator it = ptr2idx_map_.find(req);
-	if (it != ptr2idx_map_.end()) {
-		int idx = it->second;
-		if (idx>=0 && idx<max_size_) {
-			total_vec_[idx].second = false;
-		}
-	}*/
 	return free_queue_.push(req);
 }
 

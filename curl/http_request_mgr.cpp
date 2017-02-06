@@ -37,7 +37,7 @@ bool HttpRequestMgr::init(int max_nreq)
 		return false;
 
 	// 等待处理列表
-	HttpRequestList::getInstance()->init(max_nreq);
+	list_.init(max_nreq);
 
 	// 同时处理的最大连接数用默认
 	if (!processor_.init())
@@ -78,13 +78,23 @@ bool HttpRequestMgr::addReq(HttpRequest* req)
 {
 	if (!req) return false;
 	req->setRespWriteFunc(write_callback, (void*)req);
-	return HttpRequestList::getInstance()->push(req);
+	return list_.push(req);
 }
 
 void HttpRequestMgr::freeReq(HttpRequest* req)
 {
 	req->close();
 	pool_.free(req);
+}
+
+bool HttpRequestMgr::getResult(char*& p, int& len)
+{
+	return results_.popResult(p, len);
+}
+
+bool HttpRequestMgr::freeResult(char* ptr, int len)
+{
+	return results_.freeResult(ptr, len);
 }
 
 int HttpRequestMgr::run()
@@ -117,7 +127,7 @@ void HttpRequestMgr::thread_func(void* param)
 				break;
 			}
 
-			bool has = HttpRequestList::getInstance()->pop(req);
+			bool has = mgr->list_.pop(req); 
 			if (!has) {
 				//std::cout << "list is empty" << std::endl;
 				usleep(100);
@@ -166,14 +176,4 @@ size_t HttpRequestMgr::write_callback(char* ptr, size_t size, size_t nmemb, void
 	
 	HttpRequestMgr::getInstance()->results_.insertResult(ptr, s);
 	return s;
-}
-
-bool HttpRequestMgr::getResult(char*& p, int& len)
-{
-	return results_.popResult(p, len);
-}
-
-bool HttpRequestMgr::freeResult(char* ptr, int len)
-{
-	return results_.freeResult(ptr, len);
 }
