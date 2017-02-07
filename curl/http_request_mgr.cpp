@@ -76,7 +76,7 @@ HttpRequest* HttpRequestMgr::newReq()
 bool HttpRequestMgr::addReq(HttpRequest* req)
 {
 	if (!req) return false;
-	req->setRespWriteFunc(write_callback, (void*)req);
+	//req->setRespWriteFunc(write_callback, (void*)req);
 	return list_.push(req);
 }
 
@@ -94,6 +94,75 @@ bool HttpRequestMgr::getResult(HttpResult*& result)
 bool HttpRequestMgr::freeResult(HttpResult* result)
 {
 	return results_.freeResult(result);
+}
+
+int HttpRequestMgr::one_loop()
+{
+	HttpRequest* req = NULL;
+
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	uint32_t s = (uint32_t)(tv.tv_sec * 1000 + tv.tv_usec/1000);
+	
+	static time_t t = time(NULL);
+	static time_t tt = time(NULL);
+	static int ndo = 0;
+	
+	while (true) {
+		bool full = processor_.checkMaxProcess();
+		if (full) {
+			time_t b = time(NULL);
+			if (b - t >= 1 ) {
+				t = b;
+				std::cout << "processor is full" << std::endl;
+			}
+			usleep(100);
+			break;
+		}
+
+		bool has = list_.pop(req); 
+		if (!has) {
+			time_t c = time(NULL);
+			if (c - tt >= 1) {
+				tt = c;
+				std::cout << "list is empty" << std::endl;
+			}
+			usleep(100);
+			break;
+		}
+
+		if (!processor_.addReq(req)) {
+			break;
+		}
+	}
+
+	int n = processor_.waitResponse(5);
+	if (n < 0) {
+		std::cout << "wait failed" << std::endl;
+		return -1;
+	}
+
+	results_.doLoop();
+
+	if (n > 0) {
+		ndo += n;
+		std::cout << "processed " << ndo << std::endl;
+		gettimeofday(&tv, NULL);
+		uint32_t e = (uint32_t)(tv.tv_sec*1000+tv.tv_usec/1000);
+		std::cout << "cost total: " << e - s << " ms" << std::endl;
+	}
+	return 0;
+}
+
+void HttpRequestMgr::run()
+{
+	running_ = true;
+	
+	while (running_) {
+		if (one_loop() < 0) {
+			running_ = false;
+		}
+	}
 }
 
 int HttpRequestMgr::thread_run()
@@ -116,49 +185,7 @@ void HttpRequestMgr::thread_func(void* param)
 	if (!mgr)
 		return;
 
-	mgr->running_ = true;
-	HttpRequest* req = NULL;
-
-	struct timeval tv;
-	gettimeofday(&tv, NULL);
-	uint32_t s = (uint32_t)(tv.tv_sec * 1000 + tv.tv_usec/1000);
-	
-	int ndo = 0;
-	while (mgr->running_) {
-		while (true) {
-			bool full = mgr->processor_.checkMaxProcess();
-			if (full) {
-				//std::cout << "processor is full" << std::endl;
-				usleep(100);
-				break;
-			}
-
-			bool has = mgr->list_.pop(req); 
-			if (!has) {
-				//std::cout << "list is empty" << std::endl;
-				usleep(100);
-				break;
-			}
-
-			if (!mgr->processor_.addReq(req)) {
-				break;
-			}
-		}
-
-		int n = mgr->processor_.waitResponse(5);
-		if (n < 0)
-			mgr->running_ = false;
-
-		mgr->results_.doLoop();
-
-		if (n > 0) {
-			ndo += n;
-			std::cout << "processed " << ndo << std::endl;
-			gettimeofday(&tv, NULL);
-			uint32_t e = (uint32_t)(tv.tv_sec*1000+tv.tv_usec/1000);
-			std::cout << "cost total: " << e - s << " ms" << std::endl;
-		}
-	}
+	mgr->run();
 }
 
 size_t HttpRequestMgr::write_callback(char* ptr, size_t size, size_t nmemb, void* userdata)

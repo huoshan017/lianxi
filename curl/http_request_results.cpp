@@ -24,8 +24,6 @@ void HttpRequestResults::deallocResults()
 	while (true) {
 		if (!results_.pop(res))
 			break;
-
-		//results_alloc_.deallocate((char*)res->str, res->len);
 	}
 }
 
@@ -35,8 +33,6 @@ void HttpRequestResults::deallocToFreeResults()
 	while (true) {
 		if (!to_free_results_.pop(res))
 			break;
-
-		//results_alloc_.deallocate((char*)res->str, res->len);
 	}
 }
 
@@ -50,8 +46,6 @@ void HttpRequestResults::clear()
 bool HttpRequestResults::insertResult(char* str, int len, HttpRequest* req)
 {
 	if (str == NULL) return false;
-	//char* p = results_alloc_.allocate(len);
-	//memcpy(p, str, len);
 	HttpResult* r = results_pool_.malloc();
 	if (r == NULL) {
 		std::cout << "results_pool_ malloc failed" << std::endl;
@@ -84,8 +78,7 @@ void HttpRequestResults::doLoop()
 		if (!to_free_results_.pop(res))
 			break;
 
-		//results_alloc_.deallocate((char*)res->str, res->len);
+		//HttpRequestMgr::getInstance()->freeReq(res->req);
 		results_pool_.free(res);
-		HttpRequestMgr::getInstance()->freeReq(res->req);
 	}
 }

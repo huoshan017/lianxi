@@ -28,7 +28,8 @@ public:
 	// 释放回调结果
 	bool freeResult(HttpResult* result);
 
-	// 主线程调用
+	int one_loop();
+	void run();
 	int thread_run();
 	void thread_join();
 

@@ -18,6 +18,7 @@ bool HttpRequest::init()
 	}
 	curl_easy_setopt(eh_, CURLOPT_HEADER, 0L);
 	curl_easy_setopt(eh_, CURLOPT_VERBOSE, 0L);
+	curl_easy_setopt(eh_, CURLOPT_NOSIGNAL, (long)1);
 	return true;
 }
 
