@@ -3,11 +3,11 @@
 #include "http_request.h"
 #include "http_request_processor.h"
 #include "http_request_results.h"
-#include "thread_safe_obj_pool.hpp"
-#include "thread_safe_obj_list.hpp"
+#include "http_request_common.h"
 #include <atomic>
 #include <boost/lockfree/queue.hpp>
 #include <boost/pool/pool_alloc.hpp>
+#include <thread>
 
 class HttpRequestMgr
 {
@@ -24,12 +24,13 @@ public:
 	void freeReq(HttpRequest*);
 
 	// 获取回调结果
-	bool getResult(char*&, int&);
+	bool getResult(HttpResult*& result);
 	// 释放回调结果
-	bool freeResult(char*, int);
+	bool freeResult(HttpResult* result);
 
 	// 主线程调用
-	int run();
+	int thread_run();
+	void thread_join();
 
 	// 线程函数
 	static void thread_func(void*);
@@ -43,9 +44,9 @@ private:
 	
 	static HttpRequestMgr* instance_;
 	HttpRequestProcessor processor_;
-	//HttpRequestPool pool_;
 	ThreadSafeObjPool<HttpRequest> pool_;
 	ThreadSafeObjList<HttpRequest> list_;
 	std::atomic<bool> running_;
 	HttpRequestResults results_;
+	std::thread* work_thread_;
 };

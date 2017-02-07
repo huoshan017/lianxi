@@ -1,7 +1,9 @@
 #include "http_request_results.h"
+#include "http_request_mgr.h"
 #include <string.h>
+#include <iostream>
 
-HttpRequestResults::HttpRequestResults() : results_(0), to_free_results_(0)
+HttpRequestResults::HttpRequestResults() 
 {
 }
 
@@ -11,31 +13,30 @@ HttpRequestResults::~HttpRequestResults()
 
 void HttpRequestResults::init(int size)
 {
-	results_.reserve(size);
-	to_free_results_.reserve(size);
+	results_pool_.init(size);
+	results_.init(size);
+	to_free_results_.init(size);
 }
 
 void HttpRequestResults::deallocResults()
 {
-	Result res;
+	HttpResult* res = NULL;
 	while (true) {
-		if (results_.empty())
-			break;
 		if (!results_.pop(res))
 			break;
-		results_alloc_.deallocate((char*)res.str, res.len);
+
+		//results_alloc_.deallocate((char*)res->str, res->len);
 	}
 }
 
 void HttpRequestResults::deallocToFreeResults()
 {
-	Result res;
+	HttpResult* res = NULL;
 	while (true) {
-		if (to_free_results_.empty())
-			break;
 		if (!to_free_results_.pop(res))
 			break;
-		results_alloc_.deallocate((char*)res.str, res.len);
+
+		//results_alloc_.deallocate((char*)res->str, res->len);
 	}
 }
 
@@ -43,39 +44,48 @@ void HttpRequestResults::clear()
 {
 	deallocResults();
 	deallocToFreeResults();
+	results_pool_.clear();
 }
 
-bool HttpRequestResults::insertResult(const char* str, int len)
+bool HttpRequestResults::insertResult(char* str, int len, HttpRequest* req)
 {
 	if (str == NULL) return false;
-	char* p = results_alloc_.allocate(len+1);
-	memcpy(p, str, len);
-	Result res;
-	res.str = p;
-	res.len = len;
-	return results_.push(res);
+	//char* p = results_alloc_.allocate(len);
+	//memcpy(p, str, len);
+	HttpResult* r = results_pool_.malloc();
+	if (r == NULL) {
+		std::cout << "results_pool_ malloc failed" << std::endl;
+		return false;
+	}
+
+	r->str = str;
+	r->len = len;
+	r->req = req;
+	return results_.push(r);
 }
 
-bool HttpRequestResults::popResult(char*& p, int& len)
+bool HttpRequestResults::popResult(HttpResult*& res)
 {
-	Result res;
 	if (!results_.pop(res))
 		return false;
 	
-	p = (char*)res.str;
-	len = res.len;
 	return true;
 }
 
-bool HttpRequestResults::freeResult(char* str, int len)
+bool HttpRequestResults::freeResult(HttpResult* res)
 {
-	Result res;
-	res.str = str;
-	res.len = len;
 	return to_free_results_.push(res);
 }
 
 void HttpRequestResults::doLoop()
 {
-	deallocToFreeResults();
+	HttpResult* res = NULL;
+	while (true) {
+		if (!to_free_results_.pop(res))
+			break;
+
+		//results_alloc_.deallocate((char*)res->str, res->len);
+		results_pool_.free(res);
+		HttpRequestMgr::getInstance()->freeReq(res->req);
+	}
 }

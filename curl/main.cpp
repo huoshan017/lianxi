@@ -7,8 +7,8 @@
 
 using namespace std;
 
-//static const char* s_url = "http://116.228.6.174/0/login?appid=24&token=adsf";
-static const char* s_url = "192.168.0.200:80";
+static const char* s_url = "http://116.228.6.174/0/login?appid=24&token=adsf";
+//static const char* s_url = "192.168.3.250:80";
 
 
 int main(int argc, char* argv[])
@@ -32,42 +32,42 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-	std::thread work_thread(HttpRequestMgr::thread_func, mgr);
+	mgr->thread_run();
 
-	char* p = NULL;
-	int len = 0;
+	HttpResult* res = NULL;
 	bool b = false;
 	int i = 0;
-	for (; i<num; i++) {
+	for (; i<num;) {
 		// 请求多于HttpRequestPool中的HttpRequest数量
-		while (!mgr->hasFreeReq()) {
-			usleep(100);
-		}
-		HttpRequest* req = mgr->newReq();
-		if (!req) {
-			cout << "newReq failed" << endl;
-			return -1;
+		if (mgr->hasFreeReq()) {
+			HttpRequest* req = mgr->newReq();
+			if (!req) {
+				cout << "newReq failed" << endl;
+				return -1;
+			}
+
+			//req->setPost(true);
+			//req->setPostContent("&a=111&b=222&c=3");
+			req->setGet(true);
+			req->setUrl(s_url);
+			//req->setPrivate((void*)s_url);
+
+			if (!mgr->addReq(req)) {
+				cout << "add req failed" << endl;
+				return -1;
+			}
+
+			i += 1;
 		}
 
-		//req->setPost(true);
-		//req->setPostContent("&a=111&b=222&c=3");
-		req->setGet(true);
-		req->setUrl(s_url);
-		req->setPrivate((void*)s_url);
-
-		if (!mgr->addReq(req)) {
-			cout << "add req failed" << endl;
-			return -1;
-		}
-
-		b = mgr->getResult(p, len);
+		b = mgr->getResult(res);
 		if (b) {
-			mgr->freeResult(p, len);
+			mgr->freeResult(res);
 		}
+		usleep(100);
 	}
 
-	work_thread.join();
-
+	mgr->thread_join();
 	mgr->close();
 
 	return 0;

@@ -1,5 +1,4 @@
 #include "http_request_mgr.h"
-#include "http_request_list.h"
 #include <thread>
 #include <unistd.h>
 #include <iostream>
@@ -9,7 +8,7 @@ const static int DEFAULT_MAX_REQUEST_COUNT = 5000;
 
 HttpRequestMgr* HttpRequestMgr::instance_ = NULL;
 
-HttpRequestMgr::HttpRequestMgr() : running_(false)
+HttpRequestMgr::HttpRequestMgr() : running_(false), work_thread_(NULL)
 {
 }
 
@@ -87,21 +86,28 @@ void HttpRequestMgr::freeReq(HttpRequest* req)
 	pool_.free(req);
 }
 
-bool HttpRequestMgr::getResult(char*& p, int& len)
+bool HttpRequestMgr::getResult(HttpResult*& result)
 {
-	return results_.popResult(p, len);
+	return results_.popResult(result);
 }
 
-bool HttpRequestMgr::freeResult(char* ptr, int len)
+bool HttpRequestMgr::freeResult(HttpResult* result)
 {
-	return results_.freeResult(ptr, len);
+	return results_.freeResult(result);
 }
 
-int HttpRequestMgr::run()
+int HttpRequestMgr::thread_run()
 {
-	std::thread work_thread(thread_func, this);
-	work_thread.join();
+	if (work_thread_ == NULL) {
+		work_thread_ = new std::thread(thread_func, this);
+	}
 	return 0;
+}
+
+void HttpRequestMgr::thread_join()
+{
+	work_thread_->join();
+	work_thread_ = NULL;
 }
 
 void HttpRequestMgr::thread_func(void* param)
@@ -158,12 +164,11 @@ void HttpRequestMgr::thread_func(void* param)
 size_t HttpRequestMgr::write_callback(char* ptr, size_t size, size_t nmemb, void* userdata)
 {
 	HttpRequest* req = (HttpRequest*)userdata;
-	// get HTTP status code
 	long http_status_code = 0;
 	char* url = NULL;	
 
 	req->getResponseCode(&http_status_code);
-	req->getPrivate(&url);
+	//req->getPrivate(&url);
 
 	if (http_status_code == 200) {
 		//std::cout << "200 OK for " << url << std::endl; 
@@ -172,8 +177,9 @@ size_t HttpRequestMgr::write_callback(char* ptr, size_t size, size_t nmemb, void
 	}
 
 	size_t s = size*nmemb;
-	//std::cout << "do write_callback: " << ptr << ", " << s << std::endl;
 	
-	HttpRequestMgr::getInstance()->results_.insertResult(ptr, s);
+	if (!HttpRequestMgr::getInstance()->results_.insertResult(ptr, s, req)) {
+		std::cout << "insert result ptr(" << ptr << "), s(" << s << "), req(" << req << ") failed" << std::endl;
+	}
 	return s;
 }

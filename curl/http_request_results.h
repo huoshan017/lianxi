@@ -2,8 +2,16 @@
 
 #include <boost/lockfree/queue.hpp>
 #include <boost/pool/pool_alloc.hpp>
-#include "thread_safe_obj_pool.hpp"
-#include "thread_safe_obj_list.hpp"
+#include "http_request_common.h"
+
+class HttpRequest;
+
+struct HttpResult {
+	const char* str;
+	int len;
+	HttpRequest* req;
+	HttpResult() : str(NULL), len(0), req(NULL) {}
+};
 
 class HttpRequestResults
 {
@@ -14,11 +22,11 @@ public:
 	void init(int size);
 	void clear();
 	// 只能在同一个线程里调用
-	bool insertResult(const char*, int);
+	bool insertResult(char*, int, HttpRequest*);
 	// 获取一个结果
-	bool popResult(char*&, int&);
+	bool popResult(HttpResult*&);
 	// 在另一个线程里使用，并非真正回收，而是放入一个队列
-	bool freeResult(char*, int);
+	bool freeResult(HttpResult*);
 	// 循环调用释放回收的内存，与分配内存的是同一个线程
 	void doLoop();
 
@@ -27,11 +35,9 @@ private:
 	void deallocToFreeResults();
 
 private:
-	struct Result {
-		const char* str;
-		int len;
-	};
-	boost::lockfree::queue<Result> results_;
-	boost::lockfree::queue<Result> to_free_results_;
+	
+	ThreadSafeObjPool<HttpResult> results_pool_;
+	ThreadSafeObjList<HttpResult> results_;
+	ThreadSafeObjList<HttpResult> to_free_results_;
 	boost::pool_allocator<char> results_alloc_;
 };

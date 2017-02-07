@@ -90,13 +90,13 @@ int HttpRequestProcessor::waitResponse(int max_wait_msecs)
 	int still_running = 1;
 	int msgs_left = 0;
 	CURLMcode mcode;
-	HttpRequest* req = NULL;
+	//HttpRequest* req = NULL;
 
 	curl_multi_perform(handle_, &still_running);
 
 	while (still_running) {
 		if (!still_running) {
-			//std::cout << "no still running" << std::endl;
+			std::cout << "no still running" << std::endl;
 			return 0;
 		}
 
@@ -132,16 +132,16 @@ int HttpRequestProcessor::waitResponse(int max_wait_msecs)
 		}
 
 		eh = msg->easy_handle;
-		std::map<CURL*, HttpRequest*>::iterator it = reqs_map_.find(eh);
-		req = it->second;
+		//std::map<CURL*, HttpRequest*>::iterator it = reqs_map_.find(eh);
+		//req = it->second;
 		if (!removeReq(eh)) {
-			//std::cout << "error: remove handle " << eh << " failed" << std::endl;
+			std::cout << "error: remove handle " << eh << " failed" << std::endl;
 		}
-		if (it == reqs_map_.end()) {
-			//std::cout << "error: find handle " << eh << " from reqs_map_ failed" << std::endl;
+		/*if (it == reqs_map_.end()) {
+			std::cout << "error: find handle " << eh << " from reqs_map_ failed" << std::endl;
 		} else {
 			HttpRequestMgr::getInstance()->freeReq(req);
-		}
+		}*/
 	}
 	return nmsg_done;
 }
