@@ -2,7 +2,7 @@
 
 #include <boost/lockfree/queue.hpp>
 #include <boost/pool/pool_alloc.hpp>
-#include "http_request_common.h"
+#include "http_request_common.hpp"
 
 class HttpRequest;
 

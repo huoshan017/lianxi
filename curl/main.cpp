@@ -1,14 +1,18 @@
 #include "http_request_mgr.h"
 #include <thread>
+#ifndef WIN32
 #include <unistd.h>
+#else
+#include <windows.h>
+#endif
 #include <iostream>
 #include <stdlib.h>
 #include <stdint.h>
 
 using namespace std;
 
-//static const char* s_url = "http://116.228.6.174/0/login?appid=24&token=adsf";
-static const char* s_url = "192.168.0.200:80";
+static const char* s_url = "http://116.228.6.174/0/login?appid=24&token=adsf";
+//static const char* s_url = "192.168.3.250:80";
 
 #define USE_THREAD 0
 
@@ -34,11 +38,10 @@ int main(int argc, char* argv[])
 	}
 
 #if USE_THREAD
-	mgr->thread_run();
+	mgr->use_thread(true);
+	mgr->run();
 #endif
 
-	HttpResult* res = NULL;
-	bool b = false;
 	int i = 0;
 	while (true) {
 		// 请求多于HttpRequestPool中的HttpRequest数量
@@ -49,11 +52,12 @@ int main(int argc, char* argv[])
 				return -1;
 			}
 
+			req->setUrl(s_url);
+			req->setGet(true);
 			//req->setPost(true);
 			//req->setPostContent("&a=111&b=222&c=3");
-			req->setGet(true);
-			req->setUrl(s_url);
-			req->setRespWriteFunc(HttpRequestMgr::write_callback, req);
+			
+			//req->setRespWriteFunc(HttpRequestMgr::write_callback, req);
 			//req->setPrivate((void*)s_url);
 
 			if (!mgr->addReq(req)) {
@@ -63,21 +67,18 @@ int main(int argc, char* argv[])
 
 			i += 1;
 		}
-
-		if (mgr->one_loop() < 0)
+#if !USE_THREAD
+		if (mgr->run() < 0)
 			break;
+#endif
 
-		b = mgr->getResult(res);
-		if (b) {
-			//mgr->freeReq(res->req);
-			mgr->freeResult(res);
-		}
+#ifndef WIN32
 		usleep(100);
+#else
+		::Sleep(1);
+#endif
 	}
 
-#if USE_THREAD
-	mgr->thread_join();
-#endif
 	mgr->close();
 
 	return 0;

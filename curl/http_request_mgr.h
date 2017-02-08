@@ -2,8 +2,8 @@
 
 #include "http_request.h"
 #include "http_request_processor.h"
-#include "http_request_results.h"
-#include "http_request_common.h"
+//#include "http_request_results.h"
+#include "http_request_common.hpp"
 #include <atomic>
 #include <boost/lockfree/queue.hpp>
 #include <boost/pool/pool_alloc.hpp>
@@ -24,19 +24,21 @@ public:
 	void freeReq(HttpRequest*);
 
 	// 获取回调结果
-	bool getResult(HttpResult*& result);
+	//bool getResult(HttpResult*& result);
 	// 释放回调结果
-	bool freeResult(HttpResult* result);
+	//bool freeResult(HttpResult* result);
 
+	void use_thread(bool use = true) { use_thread_ = use; }
+	int run();
+
+	static size_t write_callback(char* ptr, size_t size, size_t nmemb, void* userdata);
+
+private:
 	int one_loop();
-	void run();
-	int thread_run();
-	void thread_join();
-
 	// 线程函数
 	static void thread_func(void*);
-	// 回调处理在线程中
-	static size_t write_callback(char* ptr, size_t size, size_t nmemb, void* userdata);
+	int thread_run();
+	void thread_join();
 
 private:
 	HttpRequestMgr();
@@ -48,6 +50,7 @@ private:
 	ThreadSafeObjPool<HttpRequest> pool_;
 	ThreadSafeObjList<HttpRequest> list_;
 	std::atomic<bool> running_;
-	HttpRequestResults results_;
+	//HttpRequestResults results_;
 	std::thread* work_thread_;
+	bool use_thread_;
 };

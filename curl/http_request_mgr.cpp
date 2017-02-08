@@ -1,6 +1,10 @@
 #include "http_request_mgr.h"
 #include <thread>
+#ifndef WIN32
 #include <unistd.h>
+#else
+#include <windows.h>
+#endif
 #include <iostream>
 #include <memory.h>
 
@@ -8,7 +12,7 @@ const static int DEFAULT_MAX_REQUEST_COUNT = 5000;
 
 HttpRequestMgr* HttpRequestMgr::instance_ = NULL;
 
-HttpRequestMgr::HttpRequestMgr() : running_(false), work_thread_(NULL)
+HttpRequestMgr::HttpRequestMgr() : running_(false), work_thread_(NULL), use_thread_(false)
 {
 }
 
@@ -31,19 +35,16 @@ bool HttpRequestMgr::init(int max_nreq)
 		max_nreq = DEFAULT_MAX_REQUEST_COUNT;
 	}
 
-	// HttpRequest对象池
-	if (!pool_.init(max_nreq))
+	// 同时处理的最大连接数用默认
+	if (!processor_.init())
 		return false;
 
 	// 等待处理列表
 	list_.init(max_nreq);
 
-	// 同时处理的最大连接数用默认
-	if (!processor_.init())
+	// HttpRequest对象池
+	if (!pool_.init(max_nreq))
 		return false;
-
-	// 回调结果分配
-	results_.init(max_nreq);
 
 	return true;
 }
@@ -52,8 +53,12 @@ void HttpRequestMgr::close()
 {
 	pool_.clear();
 	processor_.close();
-	results_.clear();
+	//results_.clear();
 	running_ = false;
+	if (use_thread_) {
+		thread_join();
+	}
+	use_thread_ = false;
 }
 
 bool HttpRequestMgr::hasFreeReq()
@@ -86,6 +91,7 @@ void HttpRequestMgr::freeReq(HttpRequest* req)
 	pool_.free(req);
 }
 
+#if 0
 bool HttpRequestMgr::getResult(HttpResult*& result)
 {
 	return results_.popResult(result);
@@ -95,39 +101,50 @@ bool HttpRequestMgr::freeResult(HttpResult* result)
 {
 	return results_.freeResult(result);
 }
+#endif
 
 int HttpRequestMgr::one_loop()
 {
 	HttpRequest* req = NULL;
 
+#ifndef WIN32
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
-	uint32_t s = (uint32_t)(tv.tv_sec * 1000 + tv.tv_usec/1000);
+	static uint32_t s = (uint32_t)(tv.tv_sec * 1000 + tv.tv_usec/1000);
 	
 	static time_t t = time(NULL);
 	static time_t tt = time(NULL);
+#endif
 	static int ndo = 0;
 	
 	while (true) {
 		bool full = processor_.checkMaxProcess();
 		if (full) {
 			time_t b = time(NULL);
-			if (b - t >= 1 ) {
+#ifndef  WIN32
+			if (b - t >= 1) {
 				t = b;
-				std::cout << "processor is full" << std::endl;
+				//std::cout << "processor is full" << std::endl;
 			}
 			usleep(100);
+#else
+			::Sleep(1);
+#endif
 			break;
 		}
 
 		bool has = list_.pop(req); 
 		if (!has) {
 			time_t c = time(NULL);
+#ifndef WIN32
 			if (c - tt >= 1) {
 				tt = c;
-				std::cout << "list is empty" << std::endl;
+				//std::cout << "list is empty" << std::endl;
 			}
 			usleep(100);
+#else
+			::Sleep(1);
+#endif
 			break;
 		}
 
@@ -142,25 +159,40 @@ int HttpRequestMgr::one_loop()
 		return -1;
 	}
 
-	results_.doLoop();
+	//results_.doLoop();
 
 	if (n > 0) {
 		ndo += n;
+#ifndef WIN32
 		std::cout << "processed " << ndo << std::endl;
 		gettimeofday(&tv, NULL);
 		uint32_t e = (uint32_t)(tv.tv_sec*1000+tv.tv_usec/1000);
 		std::cout << "cost total: " << e - s << " ms" << std::endl;
+#endif
 	}
 	return 0;
 }
 
-void HttpRequestMgr::run()
+int HttpRequestMgr::run()
 {
-	running_ = true;
+	if (use_thread_) {
+		return thread_run();
+	} else {
+		return one_loop();
+	}
+}
+
+void HttpRequestMgr::thread_func(void* param)
+{
+	HttpRequestMgr* mgr = (HttpRequestMgr*)param;
+	if (!mgr)
+		return;
+
+	mgr->running_ = true;
 	
-	while (running_) {
-		if (one_loop() < 0) {
-			running_ = false;
+	while (mgr->running_) {
+		if (mgr->one_loop() < 0) {
+			mgr->running_ = false;
 		}
 	}
 }
@@ -176,16 +208,8 @@ int HttpRequestMgr::thread_run()
 void HttpRequestMgr::thread_join()
 {
 	work_thread_->join();
+	delete work_thread_;
 	work_thread_ = NULL;
-}
-
-void HttpRequestMgr::thread_func(void* param)
-{
-	HttpRequestMgr* mgr = (HttpRequestMgr*)param;
-	if (!mgr)
-		return;
-
-	mgr->run();
 }
 
 size_t HttpRequestMgr::write_callback(char* ptr, size_t size, size_t nmemb, void* userdata)
@@ -205,8 +229,8 @@ size_t HttpRequestMgr::write_callback(char* ptr, size_t size, size_t nmemb, void
 
 	size_t s = size*nmemb;
 	
-	if (!HttpRequestMgr::getInstance()->results_.insertResult(ptr, s, req)) {
+	/*if (!HttpRequestMgr::getInstance()->results_.insertResult(ptr, s, req)) {
 		std::cout << "insert result ptr(" << ptr << "), s(" << s << "), req(" << req << ") failed" << std::endl;
-	}
+	}*/
 	return s;
 }

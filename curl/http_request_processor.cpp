@@ -3,9 +3,13 @@
 #include "http_request.h"
 #include <iostream>
 
-HttpRequestProcessor::HttpRequestProcessor() :
-	handle_(NULL), max_nprocess_(0), cur_nprocess_(0), total_nmsg_(0), total_nmsg_failed_(0)
+HttpRequestProcessor::HttpRequestProcessor()
 {
+	handle_ = NULL;
+	max_nprocess_ = 0;
+	curr_nprocess_ = 0;
+	total_nmsg_ = 0;
+	total_nmsg_failed_ = 0;
 }
 
 HttpRequestProcessor::~HttpRequestProcessor()
@@ -36,6 +40,14 @@ void HttpRequestProcessor::close()
 	curl_global_cleanup();
 }
 
+bool HttpRequestProcessor::checkMaxProcess() const
+{ 
+	return (max_nprocess_ <= curr_nprocess_); 
+}
+
+bool HttpRequestProcessor::isEmpty() const
+{ return curr_nprocess_ <= 0; }
+
 bool HttpRequestProcessor::addReq(HttpRequest* req)
 {
 	if (handle_ == NULL)
@@ -53,7 +65,7 @@ bool HttpRequestProcessor::addReq(HttpRequest* req)
 		return false;
 
 	reqs_map_.insert(std::make_pair(req->getHandle(), req));
-	cur_nprocess_ += 1;
+	curr_nprocess_ += 1;
 
 	return true;
 }
@@ -73,8 +85,8 @@ bool HttpRequestProcessor::removeReq(CURL* req)
 		return false;
 
 	reqs_map_.erase(req);
-	if (cur_nprocess_ > 0)
-		cur_nprocess_ -= 1;
+	if (curr_nprocess_ > 0)
+		curr_nprocess_ -= 1;
 
 	return true;
 }

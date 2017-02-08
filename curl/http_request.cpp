@@ -19,6 +19,9 @@ bool HttpRequest::init()
 	curl_easy_setopt(eh_, CURLOPT_HEADER, 0L);
 	curl_easy_setopt(eh_, CURLOPT_VERBOSE, 0L);
 	curl_easy_setopt(eh_, CURLOPT_NOSIGNAL, (long)1);
+	setRespWriteFunc(HttpRequest::default_resp_write_func, NULL);
+	setRespReadFunc(HttpRequest::default_resp_read_func, NULL);
+
 	return true;
 }
 
@@ -92,4 +95,18 @@ void HttpRequest::getPrivate(char** pri)
 void HttpRequest::getResponseCode(long* code)
 {
 	curl_easy_getinfo(eh_, CURLINFO_RESPONSE_CODE, code);
+}
+
+size_t HttpRequest::default_resp_write_func(char* ptr, size_t size, size_t nmemb, void* userdata)
+{
+	(void)ptr;
+	(void)userdata;
+	return size*nmemb;
+}
+
+size_t HttpRequest::default_resp_read_func(char* ptr, size_t size, size_t nmemb, void* userdata)
+{
+	(void)ptr;
+	(void)userdata;
+	return size*nmemb;
 }
