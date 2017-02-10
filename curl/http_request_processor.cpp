@@ -108,7 +108,7 @@ int HttpRequestProcessor::waitResponse(int max_wait_msecs)
 
 	while (still_running) {
 		if (!still_running) {
-			std::cout << "no still running" << std::endl;
+			//std::cout << "no still running" << std::endl;
 			return 0;
 		}
 
@@ -130,29 +130,30 @@ int HttpRequestProcessor::waitResponse(int max_wait_msecs)
 	int nmsg_done = 0;
 	while ((msg = curl_multi_info_read(handle_, &msgs_left))) {
 		total_nmsg_ += 1;
-		if (msg->msg == CURLMSG_DONE) {
-			code = msg->data.result;
-			if (code != CURLE_OK) {
-				total_nmsg_failed_ += 1;
-				std::cout << "CURL error code: " << code << ", total_nmsg_no: " << total_nmsg_ << ", total_failed: " << total_nmsg_failed_ << std::endl;
-			} else {
-				nmsg_done += 1;
-			}
-		} else {
-			total_nmsg_failed_ += 1;
-			std::cout << "error: after curl_multi_info_read(), CURLMsg = " << msg->msg << ", " << std::endl;
-		}
-
 		eh = msg->easy_handle;
 		std::map<CURL*, HttpRequest*>::iterator it = reqs_map_.find(eh);
 		req = it->second;
-		if (!removeReq(eh)) {
-			std::cout << "error: remove handle " << eh << " failed" << std::endl;
-		}
-		if (it == reqs_map_.end()) {
-			std::cout << "error: find handle " << eh << " from reqs_map_ failed" << std::endl;
-		} else {
+		if (it != reqs_map_.end()) {
+			if (msg->msg == CURLMSG_DONE) {
+				code = msg->data.result;
+				if (code != CURLE_OK) {
+					req->call_error_func(code);
+					total_nmsg_failed_ += 1;
+					//std::cout << total_nmsg_no: " << total_nmsg_ << ", total_failed: " << total_nmsg_failed_ << std::endl;
+				} else {
+					nmsg_done += 1;
+				}
+			} else {
+				req->call_error_func(-1);
+				total_nmsg_failed_ += 1;
+				std::cout << "error: after curl_multi_info_read(), CURLMsg = " << msg->msg << ", " << std::endl;
+			}
+			if (!removeReq(eh)) {
+				std::cout << "error: remove handle " << eh << " failed" << std::endl;
+			}
 			HttpRequestMgr::getInstance()->freeReq(req);
+		} else {
+			std::cout << "error: find handle " << eh << " from reqs_map_ failed" << std::endl;
 		}
 	}
 	return nmsg_done;

@@ -35,14 +35,11 @@ bool HttpRequestMgr::init(int max_nreq)
 		max_nreq = DEFAULT_MAX_REQUEST_COUNT;
 	}
 
-	// 同时处理的最大连接数用默认
 	if (!processor_.init())
 		return false;
 
-	// 等待处理列表
 	list_.init(max_nreq);
 
-	// HttpRequest对象池
 	if (!pool_.init(max_nreq))
 		return false;
 

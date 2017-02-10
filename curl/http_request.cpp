@@ -75,16 +75,22 @@ void HttpRequest::setPrivate(void* pointer)
 	curl_easy_setopt(eh_, CURLOPT_PRIVATE, pointer);
 }
 
-void HttpRequest::setRespWriteFunc(resp_func func, void* userdata)
+void HttpRequest::setRespWriteFunc(http_resp_func func, void* userdata)
 {
 	curl_easy_setopt(eh_, CURLOPT_WRITEFUNCTION, func);
 	curl_easy_setopt(eh_, CURLOPT_WRITEDATA, userdata);
 }
 
-void HttpRequest::setRespReadFunc(resp_func func, void* userdata)
+void HttpRequest::setRespReadFunc(http_resp_func func, void* userdata)
 {
 	curl_easy_setopt(eh_, CURLOPT_READFUNCTION, func);
 	curl_easy_setopt(eh_, CURLOPT_READDATA, userdata);
+}
+
+void HttpRequest::setErrorFunc(http_error_func func, void* param)
+{
+	efunc_  = func;
+	efunc_param_ = param;
 }
 
 void HttpRequest::getPrivate(char** pri)
@@ -109,4 +115,13 @@ size_t HttpRequest::default_resp_read_func(char* ptr, size_t size, size_t nmemb,
 	(void)ptr;
 	(void)userdata;
 	return size*nmemb;
+}
+
+int HttpRequest::call_error_func(int error)
+{
+	int res = 0;
+	if (efunc_) {
+		res = efunc_(error, efunc_param_);
+	}
+	return res;
 }

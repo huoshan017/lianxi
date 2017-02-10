@@ -11,10 +11,16 @@
 
 using namespace std;
 
-static const char* s_url = "http://116.228.6.174/0/login?appid=24&token=adsf";
-//static const char* s_url = "192.168.3.250:80";
+//static const char* s_url = "http://116.228.6.174/0/login?appid=24&token=adsf";
+static const char* s_url = "192.168.3.250:80";
 
 #define USE_THREAD 0
+
+int error_proc(int error, void* param)
+{
+	cout << "error: " << error << ", param: " << param << endl;
+	return 0;
+}
 
 int main(int argc, char* argv[])
 {
@@ -54,6 +60,7 @@ int main(int argc, char* argv[])
 
 			req->setUrl(s_url);
 			req->setGet(true);
+			req->setErrorFunc(error_proc, (void*)req);
 			//req->setPost(true);
 			//req->setPostContent("&a=111&b=222&c=3");
 			

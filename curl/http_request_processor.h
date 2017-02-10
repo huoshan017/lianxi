@@ -31,10 +31,10 @@ public:
 
 private:
 	CURLM* handle_;
-	int curr_nprocess_; // 当前处理数量
-	int max_nprocess_; // 最大处理数量
+	int curr_nprocess_;
+	int max_nprocess_;
 
-	int total_nmsg_;	// 已处理消息数
-	int total_nmsg_failed_; // 失败的消息数
+	int total_nmsg_;	
+	int total_nmsg_failed_;
 	std::map<CURL*, HttpRequest*> reqs_map_;
 };
