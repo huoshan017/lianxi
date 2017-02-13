@@ -19,6 +19,7 @@ public:
 		for (int i = 0; i<max_size; i++) {
 			p = obj_pool_.malloc();
 			free_queue_.push(p);
+			p->storeInMap();
 		}
 
 		max_size_ = max_size;
@@ -33,6 +34,7 @@ public:
 			if (!free_queue_.pop(p))
 				break;
 			obj_pool_.destroy(p);
+			p->removeFromMap();
 		}
 	}
 

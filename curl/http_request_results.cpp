@@ -13,7 +13,7 @@ HttpRequestResults::~HttpRequestResults()
 
 void HttpRequestResults::init(int size)
 {
-	results_pool_.init(size);
+	//results_pool_.init(size);
 	results_.init(size);
 	to_free_results_.init(size);
 }
@@ -40,13 +40,13 @@ void HttpRequestResults::clear()
 {
 	deallocResults();
 	deallocToFreeResults();
-	results_pool_.clear();
+	//results_pool_.clear();
 }
 
 bool HttpRequestResults::insertResult(char* str, int len, HttpRequest* req)
 {
 	if (str == NULL) return false;
-	HttpResult* r = results_pool_.malloc();
+	HttpResult* r = NULL; //results_pool_.malloc();
 	if (r == NULL) {
 		std::cout << "results_pool_ malloc failed" << std::endl;
 		return false;
@@ -79,6 +79,6 @@ void HttpRequestResults::doLoop()
 			break;
 
 		//HttpRequestMgr::getInstance()->freeReq(res->req);
-		results_pool_.free(res);
+		//results_pool_.free(res);
 	}
 }

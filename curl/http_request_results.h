@@ -36,7 +36,7 @@ private:
 
 private:
 	
-	ThreadSafeObjPool<HttpResult> results_pool_;
+	//ThreadSafeObjPool<HttpResult> results_pool_;
 	ThreadSafeObjList<HttpResult> results_;
 	ThreadSafeObjList<HttpResult> to_free_results_;
 	boost::pool_allocator<char> results_alloc_;

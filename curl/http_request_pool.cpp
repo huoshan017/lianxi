@@ -20,6 +20,7 @@ bool HttpRequestPool::init(int max_size)
 	for (int i=0; i<max_size; i++) {
 		req = req_pool_.malloc();
 		free_queue_.push(req);
+		req->storeInMap();
 	}
 
 	max_size_ = max_size;
@@ -35,6 +36,7 @@ void HttpRequestPool::clear()
 		if (!free_queue_.pop(req))
 			break;
 		req_pool_.destroy(req);
+		req->removeFromMap();
 	}
 }
 

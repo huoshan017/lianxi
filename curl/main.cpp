@@ -12,14 +12,20 @@
 using namespace std;
 
 //static const char* s_url = "http://116.228.6.174/0/login?appid=24&token=adsf";
-static const char* s_url = "192.168.3.250:80";
+static const char* s_url = "192.168.0.200:80";
 
-#define USE_THREAD 0
+#define USE_THREAD 1
 
 int error_proc(int error, void* param)
 {
 	cout << "error: " << error << ", param: " << param << endl;
 	return 0;
+}
+
+void callback_func(char* ptr, size_t size, void* param)
+{
+	(void)ptr;
+	//cout << "size: " << size << ", param: " << param << endl;
 }
 
 int main(int argc, char* argv[])
@@ -64,7 +70,7 @@ int main(int argc, char* argv[])
 			//req->setPost(true);
 			//req->setPostContent("&a=111&b=222&c=3");
 			
-			//req->setRespWriteFunc(HttpRequestMgr::write_callback, req);
+			req->setRespWriteFunc(callback_func, req);
 			//req->setPrivate((void*)s_url);
 
 			if (!mgr->addReq(req)) {

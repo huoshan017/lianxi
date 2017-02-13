@@ -78,7 +78,6 @@ HttpRequest* HttpRequestMgr::newReq()
 bool HttpRequestMgr::addReq(HttpRequest* req)
 {
 	if (!req) return false;
-	//req->setRespWriteFunc(write_callback, (void*)req);
 	return list_.push(req);
 }
 

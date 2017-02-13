@@ -121,7 +121,7 @@ int HttpRequestProcessor::waitResponse(int max_wait_msecs)
 		}
 
 		if (!numfds) {
-			//std::cout << "curl_multi_wait() numfds=" << numfds << std::endl;
+			//std::cout << "curl_multi_wait() numfds=" << numfds << ", still_running=" << still_running << std::endl;
 			return 0;
 		}
 		curl_multi_perform(handle_, &still_running);
@@ -139,7 +139,7 @@ int HttpRequestProcessor::waitResponse(int max_wait_msecs)
 				if (code != CURLE_OK) {
 					req->call_error_func(code);
 					total_nmsg_failed_ += 1;
-					//std::cout << total_nmsg_no: " << total_nmsg_ << ", total_failed: " << total_nmsg_failed_ << std::endl;
+					std::cout << "total_failed: " << total_nmsg_failed_ << std::endl;
 				} else {
 					nmsg_done += 1;
 				}
