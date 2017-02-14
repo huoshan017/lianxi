@@ -12,7 +12,7 @@
 using namespace std;
 
 //static const char* s_url = "http://116.228.6.174/0/login?appid=24&token=adsf";
-static const char* s_url = "192.168.0.200:80";
+static const char* s_url = "192.168.3.250:80";
 
 #define USE_THREAD 1
 

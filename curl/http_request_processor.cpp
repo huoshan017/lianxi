@@ -139,7 +139,7 @@ int HttpRequestProcessor::waitResponse(int max_wait_msecs)
 				if (code != CURLE_OK) {
 					req->call_error_func(code);
 					total_nmsg_failed_ += 1;
-					std::cout << "total_failed: " << total_nmsg_failed_ << std::endl;
+					//std::cout << "total_failed: " << total_nmsg_failed_ << std::endl;
 				} else {
 					nmsg_done += 1;
 				}

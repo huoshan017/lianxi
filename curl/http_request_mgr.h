@@ -17,6 +17,7 @@ public:
 
 	bool init(int max_request = 0);
 	void close();
+	void output_debug(bool enable = false) { output_debug_ = enable; }
 
 	bool hasFreeReq();
 	HttpRequest* newReq();
@@ -50,7 +51,7 @@ private:
 	ThreadSafeObjPool<HttpRequest> pool_;
 	ThreadSafeObjList<HttpRequest> list_;
 	std::atomic<bool> running_;
-	//HttpRequestResults results_;
 	std::thread* work_thread_;
 	bool use_thread_;
+	bool output_debug_;
 };

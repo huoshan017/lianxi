@@ -7,22 +7,27 @@ template <typename T>
 class ThreadSafeObjPool
 {
 public:
-	ThreadSafeObjPool() : max_size_(0), free_queue_(0) {}
+	ThreadSafeObjPool() : max_size_(0), free_queue_(0), use_pool_(false) {}
 	~ThreadSafeObjPool() { clear(); }
 
-	bool init(int max_size) {
+	bool init(int max_size, bool use_pool = true) {
 		if (max_size <= 0)
 			return false;
 
 		free_queue_.reserve(max_size);
 		T* p = NULL;
 		for (int i = 0; i<max_size; i++) {
-			p = obj_pool_.malloc();
+			if (use_pool) {
+				p = obj_pool_.malloc();
+			} else {
+				p = new T;
+			}
 			free_queue_.push(p);
 			p->storeInMap();
 		}
 
 		max_size_ = max_size;
+		use_pool_ = use_pool;
 		return true;
 	}
 
@@ -33,7 +38,11 @@ public:
 				break;
 			if (!free_queue_.pop(p))
 				break;
-			obj_pool_.destroy(p);
+			if (use_pool_) {
+				obj_pool_.destroy(p);
+			} else {
+				delete p;
+			}
 			p->removeFromMap();
 		}
 	}
@@ -58,6 +67,7 @@ private:
 	int max_size_;
 	boost::lockfree::queue<T*> free_queue_;
 	boost::object_pool<T> obj_pool_;
+	bool use_pool_;
 };
 
 template <typename T>

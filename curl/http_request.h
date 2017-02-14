@@ -17,6 +17,7 @@ public:
 
 	bool init();
 	void close();
+	void outputDebug(bool enable = false) { output_debug_ = enable; }
 	
 	CURL* getHandle() const { return eh_; }
 
@@ -52,6 +53,7 @@ private:
 	CURL* 				eh_;
 	http_error_func 	efunc_;
 	void* 				efunc_param_;
+	bool				output_debug_;
 	static std::unordered_map<HttpRequest*, resp_cb_data> 	eh2func_map_;
 	friend class HttpRequestMgr;
 	friend class HttpRequestProcessor;

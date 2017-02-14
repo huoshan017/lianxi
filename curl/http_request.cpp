@@ -4,7 +4,7 @@ using namespace std;
 
 std::unordered_map<HttpRequest*, HttpRequest::resp_cb_data> HttpRequest::eh2func_map_;
 
-HttpRequest::HttpRequest() : eh_(NULL), efunc_(NULL), efunc_param_(NULL)
+HttpRequest::HttpRequest() : eh_(NULL), efunc_(NULL), efunc_param_(NULL), output_debug_(false)
 {
 }
 
@@ -86,7 +86,8 @@ void HttpRequest::set_resp_func(http_resp_func func, void* userdata)
 {
 	std::unordered_map<HttpRequest*, resp_cb_data>::iterator it = eh2func_map_.find(this);
 	if (it == eh2func_map_.end()) {
-		std::cout << "error: HttpRequest::set_resp_func not found pointer" << std::endl;	
+		if (output_debug_)
+			std::cout << "error: HttpRequest::set_resp_func not found pointer" << std::endl;	
 		return;
 	}
 	it->second.func = func;
@@ -121,9 +122,10 @@ void HttpRequest::getResponseCode(long* code)
 
 void HttpRequest::storeInMap()
 {
-	resp_cb_data d{NULL, NULL};
+	resp_cb_data d;
+	d.func = NULL;
+	d.param = NULL;
 	eh2func_map_.insert(std::make_pair(this, d));
-	std::cout << "storeInMap " << this << std::endl;
 }
 
 void HttpRequest::removeFromMap()
@@ -148,7 +150,8 @@ size_t HttpRequest::default_resp_func(char* ptr, size_t size, size_t nmemb, void
 	HttpRequest* req = (HttpRequest*)userdata;
 	std::unordered_map<HttpRequest*, resp_cb_data>::iterator it = eh2func_map_.find(req);
 	if (it == eh2func_map_.end()) {
-		std::cout << "HttpRequest::default_resp_func handle(" << req << ") cant map to callback function" << std::endl;
+		if (req->output_debug_)
+			std::cout << "HttpRequest::default_resp_func handle(" << req << ") cant map to callback function" << std::endl;
 	} else {
 		long code = 0;
 		curl_easy_getinfo(req->getHandle(), CURLINFO_RESPONSE_CODE, &code);
