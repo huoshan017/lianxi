@@ -1,5 +1,6 @@
 #include "http_request_mgr.h"
 #include <thread>
+#include <chrono>
 #ifndef WIN32
 #include <unistd.h>
 #else
@@ -148,47 +149,37 @@ int HttpRequestMgr::post(const char* url, const char* post_content, http_resp_fu
 int HttpRequestMgr::one_loop()
 {
 	HttpRequest* req = NULL;
-
-#ifndef WIN32
-	struct timeval tv;
-	gettimeofday(&tv, NULL);
-	static uint32_t s = (uint32_t)(tv.tv_sec * 1000 + tv.tv_usec/1000);
-	static time_t t = time(NULL);
-	static time_t tt = time(NULL);
-#endif
-
+	
+	static auto ts = std::chrono::system_clock::now();
+	static auto tss = ts;
 	static int ndo = 0;
 	
 	while (true) {
 		bool full = processor_.checkMaxProcess();
 		if (full) {
-			time_t b = time(NULL);
-#ifndef  WIN32
-			if (b - t >= 1) {
-				t = b;
-				if (output_debug_)
-					std::cout << "processor is full" << std::endl;
+			if (output_debug_) {
+				auto bs = std::chrono::system_clock::now();
+				auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(bs - ts);
+				if (duration.count() >= 1000) {
+					ts = bs;
+					//std::cout << "processor is full" << std::endl;
+				}
 			}
-			usleep(100);
-#else
-			::Sleep(1);
-#endif
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			break;
 		}
 
 		bool has = list_.pop(req); 
 		if (!has) {
-			time_t c = time(NULL);
-#ifndef WIN32
-			if (c - tt >= 1) {
-				tt = c;
-				if (output_debug_)
-					std::cout << "list is empty" << std::endl;
+			if (output_debug_) {
+				auto bss = std::chrono::system_clock::now();
+				auto duration2 = std::chrono::duration_cast<std::chrono::milliseconds>(bss - tss);
+				if (duration2.count() >= 1000) {
+					tss = bss;
+					//std::cout << "list is empty" << std::endl;
+				}
 			}
-			usleep(100);
-#else
-			::Sleep(1);
-#endif
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			break;
 		}
 
@@ -207,12 +198,10 @@ int HttpRequestMgr::one_loop()
 
 	if (n > 0) {
 		ndo += n;
-#ifndef WIN32
 		std::cout << "processed " << ndo << std::endl;
-		gettimeofday(&tv, NULL);
-		uint32_t e = (uint32_t)(tv.tv_sec*1000+tv.tv_usec/1000);
-		std::cout << "cost total: " << e - s << " ms" << std::endl;
-#endif
+		auto es = std::chrono::system_clock::now();
+		auto d = std::chrono::duration_cast<std::chrono::milliseconds>(es-ts);
+		std::cout << "cost total: " << d.count() << " ms" << std::endl;
 	}
 	return 0;
 }

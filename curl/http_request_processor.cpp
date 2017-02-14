@@ -106,18 +106,16 @@ int HttpRequestProcessor::waitResponse(int max_wait_msecs)
 	CURL* eh = NULL;
 	CURLMsg* msg = NULL;
 	CURLcode code;
-	int still_running = 1;
+	int old_still_running = 1;
+	int new_still_running = 2;
 	int msgs_left = 0;
 	CURLMcode mcode;
 	HttpRequest* req = NULL;
 
-	curl_multi_perform(handle_, &still_running);
+	curl_multi_perform(handle_, &old_still_running);
+	new_still_running = old_still_running;
 
-	while (still_running) {
-		if (!still_running) {
-			//std::cout << "no still running" << std::endl;
-			return 0;
-		}
+	while (new_still_running < old_still_running) {
 
 		/* wait for activity, timeout or "nothing" */
 		int numfds = 0;
@@ -129,12 +127,12 @@ int HttpRequestProcessor::waitResponse(int max_wait_msecs)
 		}
 
 		if (output_debug_)
-			std::cout << "curl_multi_wait() numfds=" << numfds << ", still_running=" << still_running << std::endl;
+			std::cout << "curl_multi_wait() numfds=" << numfds << ", still_running=" << new_still_running << std::endl;
 		
 		if (!numfds)
 			return 0;
 		
-		curl_multi_perform(handle_, &still_running);
+		curl_multi_perform(handle_, &new_still_running);
 	}
 
 	int nmsg_done = 0;

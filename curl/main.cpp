@@ -8,6 +8,8 @@
 #include <iostream>
 #include <stdlib.h>
 #include <stdint.h>
+#include <atomic>
+#include <chrono>
 
 using namespace std;
 
@@ -18,16 +20,23 @@ static const char* s_post_content = "{\"app_channel\":\"\",\"channel_id\":0,\"da
 #define USE_THREAD 1
 #define USE_OLD 1
 
+static std::atomic<int> g_total;
+static std::atomic<int> g_failed;
+static std::atomic<int> g_success;
+
 int error_proc(int error, void* param)
 {
-	cout << "error: " << error << ", param: " << param << endl;
+	g_failed += 1;
+	g_total += 1;
+	cout << "g_total: " << g_total << ", g_failed: " << g_failed << ", error: " << error << ", param: " << param << endl;
 	return 0;
 }
 
 void callback_func(char* ptr, size_t size, void* param)
 {
-	(void)ptr;
-	cout << "ptr: " << ptr << ", size: " << size << ", param: " << param << endl;
+	g_success += 1;
+	g_total += 1;
+	cout << "g_total: " << g_total << ", g_success: " << g_success << ", ptr: " << ptr << ", size: " << size << ", param: " << param << endl;
 }
 
 int main(int argc, char* argv[])
@@ -45,6 +54,9 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
+	g_total = 0;
+	g_success = 0;
+	g_failed = 0;
 	HttpRequestMgr* mgr = HttpRequestMgr::getInstance();
 	if (!mgr->init(num>5000?5000:num)) {
 		cout << "HttpRequestMgr init failed" << endl;
@@ -87,11 +99,7 @@ int main(int argc, char* argv[])
 			if (res < 0) {
 				return -1;
 			} else if (res == 0) {
-#ifndef WIN32
-				usleep(100);
-#else
-				::Sleep(1);
-#endif
+				std::this_thread::sleep_for(std::chrono::milliseconds(1));
 				cout << "not enough free req" << endl;
 			} else {
 				i += 1;
@@ -102,12 +110,7 @@ int main(int argc, char* argv[])
 		if (mgr->run() < 0)
 			break;
 #endif
-
-#ifndef WIN32
-		usleep(100);
-#else
-		::Sleep(1);
-#endif
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
 
 	mgr->close();
