@@ -8,6 +8,7 @@ HttpRequestProcessor::HttpRequestProcessor()
 	handle_ = NULL;
 	max_nprocess_ = 0;
 	curr_nprocess_ = 0;
+	output_debug_ = false;
 	total_nmsg_ = 0;
 	total_nmsg_failed_ = 0;
 }
@@ -66,6 +67,9 @@ bool HttpRequestProcessor::addReq(HttpRequest* req)
 
 	reqs_map_.insert(std::make_pair(req->getHandle(), req));
 	curr_nprocess_ += 1;
+	if (output_debug_) {
+		std::cout << "after add current process " << curr_nprocess_ << std::endl;
+	}
 
 	return true;
 }
@@ -87,6 +91,9 @@ bool HttpRequestProcessor::removeReq(CURL* req)
 	reqs_map_.erase(req);
 	if (curr_nprocess_ > 0)
 		curr_nprocess_ -= 1;
+	if (output_debug_) {
+		std::cout << "after remove current process " << curr_nprocess_ << std::endl;
+	}
 
 	return true;
 }
@@ -116,14 +123,17 @@ int HttpRequestProcessor::waitResponse(int max_wait_msecs)
 		int numfds = 0;
 		mcode = curl_multi_wait(handle_, NULL, 0, max_wait_msecs, &numfds);
 		if (mcode != CURLM_OK) {
-			std::cout << "error: curl_multi_wait() return " << mcode << std::endl;
+			if (output_debug_)
+				std::cout << "error: curl_multi_wait() return " << mcode << std::endl;
 			return -1;
 		}
 
-		if (!numfds) {
-			//std::cout << "curl_multi_wait() numfds=" << numfds << ", still_running=" << still_running << std::endl;
+		if (output_debug_)
+			std::cout << "curl_multi_wait() numfds=" << numfds << ", still_running=" << still_running << std::endl;
+		
+		if (!numfds)
 			return 0;
-		}
+		
 		curl_multi_perform(handle_, &still_running);
 	}
 
@@ -139,21 +149,25 @@ int HttpRequestProcessor::waitResponse(int max_wait_msecs)
 				if (code != CURLE_OK) {
 					req->call_error_func(code);
 					total_nmsg_failed_ += 1;
-					//std::cout << "total_failed: " << total_nmsg_failed_ << std::endl;
+					if (output_debug_)
+						std::cout << "total_failed: " << total_nmsg_failed_ << std::endl;
 				} else {
 					nmsg_done += 1;
 				}
 			} else {
 				req->call_error_func(-1);
 				total_nmsg_failed_ += 1;
-				std::cout << "error: after curl_multi_info_read(), CURLMsg = " << msg->msg << ", " << std::endl;
+				if (output_debug_)
+					std::cout << "error: after curl_multi_info_read(), CURLMsg = " << msg->msg << ", " << std::endl;
 			}
 			if (!removeReq(eh)) {
-				std::cout << "error: remove handle " << eh << " failed" << std::endl;
+				if (output_debug_)
+					std::cout << "error: remove handle " << eh << " failed" << std::endl;
 			}
 			HttpRequestMgr::getInstance()->freeReq(req);
 		} else {
-			std::cout << "error: find handle " << eh << " from reqs_map_ failed" << std::endl;
+			if (output_debug_)
+				std::cout << "error: find handle " << eh << " from reqs_map_ failed" << std::endl;
 		}
 	}
 	return nmsg_done;

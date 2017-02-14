@@ -20,6 +20,7 @@ public:
 	
 	bool init(int max_request = DEFAULT_MAX_PROCESS_COUNT);
 	void close();
+	void setOutputDebug(bool enable = false) { output_debug_ = enable; }
 
 	bool checkMaxProcess() const;
 	bool isEmpty() const;
@@ -33,7 +34,7 @@ private:
 	CURLM* handle_;
 	int curr_nprocess_;
 	int max_nprocess_;
-
+	bool output_debug_;
 	int total_nmsg_;	
 	int total_nmsg_failed_;
 	std::map<CURL*, HttpRequest*> reqs_map_;

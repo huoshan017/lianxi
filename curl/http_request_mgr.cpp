@@ -35,7 +35,7 @@ bool HttpRequestMgr::init(int max_nreq)
 		max_nreq = DEFAULT_MAX_REQUEST_COUNT;
 	}
 
-	if (!processor_.init())
+	if (!processor_.init(DEFAULT_MAX_PROCESS_COUNT))
 		return false;
 
 	list_.init(max_nreq);
@@ -55,6 +55,12 @@ void HttpRequestMgr::close()
 		thread_join();
 	}
 	use_thread_ = false;
+}
+
+void HttpRequestMgr::setOutputDebug(bool enable)
+{
+	processor_.setOutputDebug(enable);
+	output_debug_ = enable;
 }
 
 bool HttpRequestMgr::hasFreeReq()
@@ -86,17 +92,58 @@ void HttpRequestMgr::freeReq(HttpRequest* req)
 	pool_.free(req);
 }
 
-#if 0
-bool HttpRequestMgr::getResult(HttpResult*& result)
+// GET request
+int HttpRequestMgr::get(const char* url, http_resp_func cb_func, void* func_param, http_error_func err_func, void* err_param)
 {
-	return results_.popResult(result);
+	HttpRequest* req = newReq();
+	if (!req) {
+		if (output_debug_)
+			std::cout << "newReq failed" << std::endl;
+		return 0;
+	}
+
+	req->setUrl(url);
+	req->setGet(true);
+
+	req->setRespWriteFunc(cb_func, func_param);
+	req->setErrorFunc(err_func, err_param);
+
+	if (!addReq(req)) {
+		freeReq(req);
+		if (output_debug_)
+			std::cout << "add req failed" << std::endl;
+		return -1;
+	}
+
+	return 1;
 }
 
-bool HttpRequestMgr::freeResult(HttpResult* result)
+// POST request
+int HttpRequestMgr::post(const char* url, const char* post_content, http_resp_func cb_func, void* func_param, http_error_func err_func, void* err_param)
 {
-	return results_.freeResult(result);
+	HttpRequest* req = newReq();
+	if (!req) {
+		if (output_debug_)
+			std::cout << "newReq failed" << std::endl;
+		return 0;
+	}
+
+	req->setUrl(url);
+	req->setPost(true);
+	req->setPostContent(post_content);
+
+	req->setRespWriteFunc(cb_func, func_param);
+	req->setErrorFunc(err_func, err_param);
+
+	if (!addReq(req)) {
+		freeReq(req);
+		if (output_debug_)
+			std::cout << "add req failed" << std::endl;
+		return -1;
+	}
+
+	return 0;
 }
-#endif
 
 int HttpRequestMgr::one_loop()
 {

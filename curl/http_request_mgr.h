@@ -2,7 +2,6 @@
 
 #include "http_request.h"
 #include "http_request_processor.h"
-//#include "http_request_results.h"
 #include "http_request_common.hpp"
 #include <atomic>
 #include <boost/lockfree/queue.hpp>
@@ -17,17 +16,17 @@ public:
 
 	bool init(int max_request = 0);
 	void close();
-	void output_debug(bool enable = false) { output_debug_ = enable; }
+	void setOutputDebug(bool enable = false);
 
 	bool hasFreeReq();
 	HttpRequest* newReq();
 	bool addReq(HttpRequest*);
 	void freeReq(HttpRequest*);
 
-	// 获取回调结果
-	//bool getResult(HttpResult*& result);
-	// 释放回调结果
-	//bool freeResult(HttpResult* result);
+	// GET request
+	int get(const char* url, http_resp_func cb_func = NULL, void* func_param = NULL, http_error_func err_func = NULL, void* err_param = NULL);
+	// POST request
+	int post(const char* url, const char* post_content, http_resp_func cb_func = NULL, void* func_param = NULL, http_error_func err_func = NULL, void* err_param = NULL);
 
 	void use_thread(bool use = true) { use_thread_ = use; }
 	int run();
