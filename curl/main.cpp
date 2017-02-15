@@ -18,7 +18,7 @@ static const char* s_url = "http://116.228.6.174:81/10/ZuanshiGain";
 static const char* s_post_content = "{\"app_channel\":\"\",\"channel_id\":0,\"day\":1,\"group_id\":0,\"hour\":17,\"ip_online_num\":\"\",\"log_ym\":201606,\"log_ymd\":20160601,\"md5data\":\"3b6ead92ea7b400f493d8a74cb6c969c\",\"minute\":8,\"month\":6,\"online\":2,\"online_time\":1464772100,\"os_name\":\"debian\",\"platform_tag\":\"aofei\",\"server\":3,\"week\":23,\"year\":2016}";
 
 #define USE_THREAD 1
-#define USE_OLD 1
+#define USE_OLD 0
 
 static std::atomic<int> g_total;
 static std::atomic<int> g_failed;

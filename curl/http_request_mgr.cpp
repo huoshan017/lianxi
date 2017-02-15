@@ -143,7 +143,7 @@ int HttpRequestMgr::post(const char* url, const char* post_content, http_resp_fu
 		return -1;
 	}
 
-	return 0;
+	return 1;
 }
 
 int HttpRequestMgr::one_loop()
