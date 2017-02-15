@@ -57,12 +57,12 @@ int main(int argc, char* argv[])
 	g_total = 0;
 	g_success = 0;
 	g_failed = 0;
-	HttpRequestMgr* mgr = HttpRequestMgr::getInstance();
+	HttpRequestMgr* mgr = new HttpRequestMgr;
 	if (!mgr->init(num>5000?5000:num)) {
 		cout << "HttpRequestMgr init failed" << endl;
 		return -1;
 	}
-	mgr->setOutputDebug(true);
+	//mgr->setOutputDebug(true);
 
 #if USE_THREAD
 	mgr->use_thread(true);
@@ -114,6 +114,8 @@ int main(int argc, char* argv[])
 	}
 
 	mgr->close();
+	delete mgr;
+	mgr = NULL;
 
 	return 0;
 }

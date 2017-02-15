@@ -1,9 +1,9 @@
 #include "http_request_processor.h"
-#include "http_request_mgr.h"
 #include "http_request.h"
+#include "http_request_mgr.h"
 #include <iostream>
 
-HttpRequestProcessor::HttpRequestProcessor()
+HttpRequestProcessor::HttpRequestProcessor() : mgr_(NULL)
 {
 	handle_ = NULL;
 	max_nprocess_ = 0;
@@ -115,7 +115,7 @@ int HttpRequestProcessor::waitResponse(int max_wait_msecs)
 	curl_multi_perform(handle_, &old_still_running);
 	new_still_running = old_still_running;
 
-	while (new_still_running < old_still_running) {
+	while (new_still_running >= old_still_running) {
 
 		/* wait for activity, timeout or "nothing" */
 		int numfds = 0;
@@ -162,7 +162,8 @@ int HttpRequestProcessor::waitResponse(int max_wait_msecs)
 				if (output_debug_)
 					std::cout << "error: remove handle " << eh << " failed" << std::endl;
 			}
-			HttpRequestMgr::getInstance()->freeReq(req);
+			if (mgr_)
+				mgr_->freeReq(req);
 		} else {
 			if (output_debug_)
 				std::cout << "error: find handle " << eh << " from reqs_map_ failed" << std::endl;

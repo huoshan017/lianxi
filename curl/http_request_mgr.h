@@ -11,8 +11,8 @@
 class HttpRequestMgr
 {
 public:
+	HttpRequestMgr();
 	~HttpRequestMgr();
-	static HttpRequestMgr* getInstance();
 
 	bool init(int max_request = 0);
 	void close();
@@ -41,11 +41,6 @@ private:
 	void thread_join();
 
 private:
-	HttpRequestMgr();
-	HttpRequestMgr(const HttpRequestMgr&);
-	HttpRequestMgr& operator=(const HttpRequestMgr&);
-	
-	static HttpRequestMgr* instance_;
 	HttpRequestProcessor processor_;
 	ThreadSafeObjPool<HttpRequest> pool_;
 	ThreadSafeObjList<HttpRequest> list_;

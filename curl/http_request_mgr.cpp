@@ -11,8 +11,6 @@
 
 const static int DEFAULT_MAX_REQUEST_COUNT = 5000;
 
-HttpRequestMgr* HttpRequestMgr::instance_ = NULL;
-
 HttpRequestMgr::HttpRequestMgr() : running_(false), work_thread_(NULL), use_thread_(false), output_debug_(false)
 {
 }
@@ -20,14 +18,6 @@ HttpRequestMgr::HttpRequestMgr() : running_(false), work_thread_(NULL), use_thre
 HttpRequestMgr::~HttpRequestMgr()
 {
 	close();
-}
-
-HttpRequestMgr* HttpRequestMgr::getInstance()
-{
-	if (instance_ == NULL) {
-		instance_ = new HttpRequestMgr;
-	}
-	return instance_;
 }
 
 bool HttpRequestMgr::init(int max_nreq)
@@ -38,6 +28,8 @@ bool HttpRequestMgr::init(int max_nreq)
 
 	if (!processor_.init(DEFAULT_MAX_PROCESS_COUNT))
 		return false;
+
+	processor_.setMgr(this);
 
 	list_.init(max_nreq);
 

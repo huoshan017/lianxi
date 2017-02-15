@@ -5,12 +5,12 @@
 #endif
 #include "curl/multi.h"
 #include "curl/curl.h"
-
 #include <map>
 
 static const int DEFAULT_MAX_PROCESS_COUNT = 2000;
 
 class HttpRequest;
+class HttpRequestMgr;
 
 class HttpRequestProcessor
 {
@@ -18,6 +18,7 @@ public:
 	HttpRequestProcessor();
 	~HttpRequestProcessor();
 	
+	void setMgr(HttpRequestMgr* mgr) { mgr_ = mgr; }
 	bool init(int max_request = DEFAULT_MAX_PROCESS_COUNT);
 	void close();
 	void setOutputDebug(bool enable = false) { output_debug_ = enable; }
@@ -31,6 +32,7 @@ public:
 
 
 private:
+	HttpRequestMgr* mgr_;
 	CURLM* handle_;
 	int curr_nprocess_;
 	int max_nprocess_;
