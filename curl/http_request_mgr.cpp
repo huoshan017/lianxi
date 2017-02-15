@@ -86,7 +86,11 @@ void HttpRequestMgr::freeReq(HttpRequest* req)
 }
 
 // GET request
+#if USE_RESPONSE_UNITY
+int HttpRequestMgr::get(const char* url, http_resp_func cb_func, void* func_param)
+#else
 int HttpRequestMgr::get(const char* url, http_resp_func cb_func, void* func_param, http_error_func err_func, void* err_param)
+#endif
 {
 	HttpRequest* req = newReq();
 	if (!req) {
@@ -99,7 +103,9 @@ int HttpRequestMgr::get(const char* url, http_resp_func cb_func, void* func_para
 	req->setGet(true);
 
 	req->setRespWriteFunc(cb_func, func_param);
+#if !USE_RESPONSE_UNITY
 	req->setErrorFunc(err_func, err_param);
+#endif
 
 	if (!addReq(req)) {
 		freeReq(req);
@@ -112,7 +118,11 @@ int HttpRequestMgr::get(const char* url, http_resp_func cb_func, void* func_para
 }
 
 // POST request
+#if USE_RESPONSE_UNITY
+int HttpRequestMgr::post(const char* url, const char* post_content, http_resp_func cb_func, void* func_param)
+#else
 int HttpRequestMgr::post(const char* url, const char* post_content, http_resp_func cb_func, void* func_param, http_error_func err_func, void* err_param)
+#endif
 {
 	HttpRequest* req = newReq();
 	if (!req) {
@@ -126,7 +136,9 @@ int HttpRequestMgr::post(const char* url, const char* post_content, http_resp_fu
 	req->setPostContent(post_content);
 
 	req->setRespWriteFunc(cb_func, func_param);
+#if !USE_RESPONSE_UNITY
 	req->setErrorFunc(err_func, err_param);
+#endif
 
 	if (!addReq(req)) {
 		freeReq(req);

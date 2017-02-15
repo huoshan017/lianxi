@@ -23,11 +23,15 @@ public:
 	bool addReq(HttpRequest*);
 	void freeReq(HttpRequest*);
 
+#if USE_RESPONSE_UNITY
+	int get(const char* url, http_resp_func cb_func = NULL, void* func_param = NULL);
+	int post(const char* url, const char* post_content, http_resp_func cb_func = NULL, void* func_param = NULL);
+#else
 	// GET request
 	int get(const char* url, http_resp_func cb_func = NULL, void* func_param = NULL, http_error_func err_func = NULL, void* err_param = NULL);
 	// POST request
 	int post(const char* url, const char* post_content, http_resp_func cb_func = NULL, void* func_param = NULL, http_error_func err_func = NULL, void* err_param = NULL);
-
+#endif
 	void use_thread(bool use = true) { use_thread_ = use; }
 	int run();
 

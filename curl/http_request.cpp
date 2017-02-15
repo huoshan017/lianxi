@@ -4,7 +4,13 @@ using namespace std;
 
 std::unordered_map<HttpRequest*, HttpRequest::resp_cb_data> HttpRequest::eh2func_map_;
 
-HttpRequest::HttpRequest() : eh_(NULL), efunc_(NULL), efunc_param_(NULL), output_debug_(false)
+HttpRequest::HttpRequest() :
+	eh_(NULL),
+#if !USE_RESPONSE_UNITY
+	efunc_(NULL),
+	efunc_param_(NULL),
+#endif
+	output_debug_(false)
 {
 }
 
@@ -104,11 +110,13 @@ void HttpRequest::setRespReadFunc(http_resp_func func, void* userdata)
 	set_resp_func(func, userdata);
 }
 
+#if !USE_RESPONSE_UNITY
 void HttpRequest::setErrorFunc(http_error_func func, void* param)
 {
 	efunc_  = func;
 	efunc_param_ = param;
 }
+#endif
 
 void HttpRequest::getPrivate(char** pri)
 {
@@ -153,14 +161,31 @@ size_t HttpRequest::default_resp_func(char* ptr, size_t size, size_t nmemb, void
 		if (req->output_debug_)
 			std::cout << "HttpRequest::default_resp_func handle(" << req << ") cant map to callback function" << std::endl;
 	} else {
+		HttpResponse response;
 		long code = 0;
 		curl_easy_getinfo(req->getHandle(), CURLINFO_RESPONSE_CODE, &code);
 		if (code != 200) {
-			if (req->efunc_)	 {
+#if USE_RESPONSE_UNITY
+			response.error_code = code;
+			response.data = NULL;
+			response.len = 0;
+			response.user_data = it->second.param;
+			it->second.func(&response);
+#else
+			if (req->efunc_) {
 				req->efunc_(code, req->efunc_param_);
 			}
+#endif
 		} else {
+#if USE_RESPONSE_UNITY
+			response.error_code = 0;
+			response.data = ptr;
+			response.len = size*nmemb;
+			response.user_data = it->second.param;
+			it->second.func(&response);
+#else
 			it->second.func(ptr, size*nmemb, it->second.param);
+#endif
 		}
 	}
 	return size*nmemb;
@@ -179,8 +204,23 @@ size_t HttpRequest::default_resp_read_func(char* ptr, size_t size, size_t nmemb,
 int HttpRequest::call_error_func(int error)
 {
 	int res = 0;
+#if USE_RESPONSE_UNITY
+	std::unordered_map<HttpRequest*, resp_cb_data>::iterator it = eh2func_map_.find(this);
+	if (it == eh2func_map_.end()) {
+		if (output_debug_)
+			std::cout << "HttpRequest::call_error_func handle(" << this << ") cant map to callback function" << std::endl;
+	} else {
+		HttpResponse response;
+		response.error_code = error;
+		response.data = NULL;
+		response.len = 0;
+		response.user_data = NULL;
+		it->second.func(&response);
+	}
+#else
 	if (efunc_) {
 		res = efunc_(error, efunc_param_);
 	}
+#endif
 	return res;
 }

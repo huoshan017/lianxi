@@ -24,6 +24,7 @@ static std::atomic<int> g_total;
 static std::atomic<int> g_failed;
 static std::atomic<int> g_success;
 
+#if !USE_RESPONSE_UNITY
 int error_proc(int error, void* param)
 {
 	g_failed += 1;
@@ -38,6 +39,18 @@ void callback_func(char* ptr, size_t size, void* param)
 	g_total += 1;
 	cout << "g_total: " << g_total << ", g_success: " << g_success << ", ptr: " << ptr << ", size: " << size << ", param: " << param << endl;
 }
+#else
+void callback_func(HttpResponse* response)
+{
+	if (response->error_code == 0) {
+		g_success += 1;
+	} else {
+		g_failed += 1;
+	}
+	g_total += 1;
+	cout << "total: " << g_total << ", success: " << g_success << ", data: " << response->data << ", len: " << response->len << ", userdata: " << response->user_data << endl;
+}
+#endif
 
 int main(int argc, char* argv[])
 {
@@ -95,7 +108,12 @@ int main(int argc, char* argv[])
 			}
 			i += 1;
 #else
+
+#if USE_RESPONSE_UNITY
+			int res = mgr->post(s_url, s_post_content, callback_func, (void*)0);
+#else
 			int res = mgr->post(s_url, s_post_content, callback_func, (void*)0, error_proc, (void*)0);
+#endif
 			if (res < 0) {
 				return -1;
 			} else if (res == 0) {

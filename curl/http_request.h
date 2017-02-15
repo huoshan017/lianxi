@@ -6,8 +6,20 @@
 #include "curl/curl.h"
 #include <unordered_map>
 
+#define USE_RESPONSE_UNITY 1
+
+#if USE_RESPONSE_UNITY
+struct HttpResponse {
+	int error_code;
+	char* data;
+	size_t len;
+	void* user_data;
+};
+typedef void (*http_resp_func)(HttpResponse*);
+#else
 typedef void (*http_resp_func)(char* ptr, size_t size, void* userdata);
 typedef int (*http_error_func)(int error, void* param);
+#endif
 
 class HttpRequest
 {
@@ -28,7 +40,9 @@ public:
 	void setPrivate(void* pointer);
 	void setRespWriteFunc(http_resp_func func, void* userdata);
 	void setRespReadFunc(http_resp_func func, void* userdata);
+#if !USE_RESPONSE_UNITY
 	void setErrorFunc(http_error_func func, void* param);
+#endif
 	void getPrivate(char** pri);
 	void getResponseCode(long* code);
 	void storeInMap();
@@ -51,8 +65,10 @@ public:
 
 private:
 	CURL* 				eh_;
+#if !USE_RESPONSE_UNITY
 	http_error_func 	efunc_;
 	void* 				efunc_param_;
+#endif
 	bool				output_debug_;
 	static std::unordered_map<HttpRequest*, resp_cb_data> 	eh2func_map_;
 	friend class HttpRequestMgr;
