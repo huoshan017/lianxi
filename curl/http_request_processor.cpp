@@ -8,9 +8,11 @@ HttpRequestProcessor::HttpRequestProcessor() : mgr_(NULL)
 	handle_ = NULL;
 	max_nprocess_ = 0;
 	curr_nprocess_ = 0;
-	output_debug_ = false;
-	total_nmsg_ = 0;
-	total_nmsg_failed_ = 0;
+	do_statistics_ = false;
+	msg_processed_ = 0;
+	msg_failed_ = 0;
+	msg_last_processed_ = 0;
+	msg_last_failed_ = 0;
 }
 
 HttpRequestProcessor::~HttpRequestProcessor()
@@ -67,9 +69,6 @@ bool HttpRequestProcessor::addReq(HttpRequest* req)
 
 	reqs_map_.insert(std::make_pair(req->getHandle(), req));
 	curr_nprocess_ += 1;
-	if (output_debug_) {
-		std::cout << "after add current process " << curr_nprocess_ << std::endl;
-	}
 
 	return true;
 }
@@ -91,9 +90,6 @@ bool HttpRequestProcessor::removeReq(CURL* req)
 	reqs_map_.erase(req);
 	if (curr_nprocess_ > 0)
 		curr_nprocess_ -= 1;
-	if (output_debug_) {
-		std::cout << "after remove current process " << curr_nprocess_ << std::endl;
-	}
 
 	return true;
 }
@@ -114,59 +110,91 @@ int HttpRequestProcessor::waitResponse(int max_wait_msecs)
 
 	curl_multi_perform(handle_, &old_still_running);
 	new_still_running = old_still_running;
-
+	int numfds = 0;
 	while (new_still_running >= old_still_running) {
-
 		/* wait for activity, timeout or "nothing" */
-		int numfds = 0;
 		mcode = curl_multi_wait(handle_, NULL, 0, max_wait_msecs, &numfds);
 		if (mcode != CURLM_OK) {
-			if (output_debug_)
-				std::cout << "error: curl_multi_wait() return " << mcode << std::endl;
+#if 0
+			std::cout << "error: curl_multi_wait() return " << mcode << std::endl;
+#endif
 			return -1;
 		}
-
-		if (output_debug_)
-			std::cout << "curl_multi_wait() numfds=" << numfds << ", still_running=" << new_still_running << std::endl;
+#if 0
+		std::cout << "curl_multi_wait() numfds=" << numfds << ", still_running=" << new_still_running << std::endl;
+#endif
 		
 		if (!numfds)
-			return 0;
+			break;
 		
 		curl_multi_perform(handle_, &new_still_running);
 	}
 
 	int nmsg_done = 0;
-	while ((msg = curl_multi_info_read(handle_, &msgs_left))) {
-		total_nmsg_ += 1;
-		eh = msg->easy_handle;
-		std::map<CURL*, HttpRequest*>::iterator it = reqs_map_.find(eh);
-		req = it->second;
-		if (it != reqs_map_.end()) {
-			if (msg->msg == CURLMSG_DONE) {
-				code = msg->data.result;
-				if (code != CURLE_OK) {
-					req->call_error_func(code);
-					total_nmsg_failed_ += 1;
-					if (output_debug_)
-						std::cout << "total_failed: " << total_nmsg_failed_ << std::endl;
-				} else {
-					nmsg_done += 1;
+	if (numfds > 0) {
+		while ((msg = curl_multi_info_read(handle_, &msgs_left))) {
+			if (do_statistics_) {
+				if (msg_processed_ == 0) {
+					statistic_start_ = std::chrono::system_clock::now();
+					qps_last_ = statistic_start_;
 				}
-			} else {
-				req->call_error_func(-1);
-				total_nmsg_failed_ += 1;
-				if (output_debug_)
-					std::cout << "error: after curl_multi_info_read(), CURLMsg = " << msg->msg << ", " << std::endl;
+				msg_processed_ += 1;
 			}
-			if (!removeReq(eh)) {
-				if (output_debug_)
+
+			eh = msg->easy_handle;
+			std::map<CURL*, HttpRequest*>::iterator it = reqs_map_.find(eh);
+			req = it->second;
+			if (it != reqs_map_.end()) {
+				if (msg->msg == CURLMSG_DONE) {
+					code = msg->data.result;
+					if (code != CURLE_OK) {
+						req->call_error_func(code);
+						if (do_statistics_) {
+							msg_failed_ += 1;
+							msg_last_failed_ += 1;
+							std::cout << "total_failed: " << msg_failed_ << std::endl;
+						}
+					} else {
+						nmsg_done += 1;
+					}
+				} else {
+					req->call_error_func(-1);
+					if (do_statistics_) {
+						msg_failed_ += 1;
+						msg_last_failed_ += 1;
+						std::cout << "error: after curl_multi_info_read(), CURLMsg = " << msg->msg << ", " << std::endl;
+					}
+				}
+				if (!removeReq(eh)) {
+					if (do_statistics_) {
+						msg_failed_ += 1;
+						msg_last_failed_ += 1;
+					}
 					std::cout << "error: remove handle " << eh << " failed" << std::endl;
-			}
-			if (mgr_)
-				mgr_->freeReq(req);
-		} else {
-			if (output_debug_)
+				}
+				if (mgr_)
+					mgr_->freeReq(req);
+			} else {
+				if (do_statistics_) {
+					msg_failed_ += 1;
+					msg_last_failed_ += 1;
+				}
 				std::cout << "error: find handle " << eh << " from reqs_map_ failed" << std::endl;
+			}
+		}
+	}
+
+	if (do_statistics_ && msg_processed_ > 0) {
+		auto now = std::chrono::system_clock::now();
+		auto cost_time = std::chrono::duration_cast<std::chrono::milliseconds>(now-qps_last_).count();
+		auto total_cost_time = std::chrono::duration_cast<std::chrono::milliseconds>(now-statistic_start_).count();
+		if (cost_time >= 1000) {
+			std::cout << "qps: " << (msg_processed_-msg_last_processed_)/(cost_time/1000) << ", qps failed: " << (msg_failed_-msg_last_failed_)/(cost_time/1000) << std::endl;
+			std::cout << "total processed: " << msg_processed_ << ", last processed: " << msg_processed_-msg_last_processed_ << ", total failed: " << msg_failed_ << ", last failed: " << msg_failed_-msg_last_failed_ << std::endl;
+			std::cout << "cost time(ms): " << cost_time << ", total cost time(ms): " << total_cost_time << std::endl;
+			msg_last_processed_ = msg_processed_;
+			msg_last_failed_ = msg_failed_;
+			qps_last_ = now;
 		}
 	}
 	return nmsg_done;

@@ -11,7 +11,7 @@
 
 const static int DEFAULT_MAX_REQUEST_COUNT = 5000;
 
-HttpRequestMgr::HttpRequestMgr() : running_(false), work_thread_(NULL), use_thread_(false), output_debug_(false)
+HttpRequestMgr::HttpRequestMgr() : running_(false), work_thread_(NULL), use_thread_(false), output_debug_(false), enable_statistics_(false)
 {
 }
 
@@ -52,8 +52,13 @@ void HttpRequestMgr::close()
 
 void HttpRequestMgr::setOutputDebug(bool enable)
 {
-	processor_.setOutputDebug(enable);
 	output_debug_ = enable;
+}
+
+void HttpRequestMgr::setStatistics(bool enable)
+{
+	enable_statistics_ = enable;
+	processor_.setStatistics(enable);
 }
 
 bool HttpRequestMgr::hasFreeReq()
@@ -166,7 +171,7 @@ int HttpRequestMgr::one_loop()
 				auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(bs - ts);
 				if (duration.count() >= 1000) {
 					ts = bs;
-					//std::cout << "processor is full" << std::endl;
+					std::cout << "processor is full" << std::endl;
 				}
 			}
 			std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -180,7 +185,7 @@ int HttpRequestMgr::one_loop()
 				auto duration2 = std::chrono::duration_cast<std::chrono::milliseconds>(bss - tss);
 				if (duration2.count() >= 1000) {
 					tss = bss;
-					//std::cout << "list is empty" << std::endl;
+					std::cout << "list is empty" << std::endl;
 				}
 			}
 			std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -199,13 +204,14 @@ int HttpRequestMgr::one_loop()
 		return -1;
 	}
 
-
 	if (n > 0) {
+#if 0
 		ndo += n;
 		std::cout << "processed " << ndo << std::endl;
 		auto es = std::chrono::system_clock::now();
 		auto d = std::chrono::duration_cast<std::chrono::milliseconds>(es-ts);
 		std::cout << "cost total: " << d.count() << " ms" << std::endl;
+#endif
 	}
 	return 0;
 }

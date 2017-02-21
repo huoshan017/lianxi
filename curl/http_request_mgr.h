@@ -17,6 +17,7 @@ public:
 	bool init(int max_request = 0);
 	void close();
 	void setOutputDebug(bool enable = false);
+	void setStatistics(bool enable = false);
 
 	bool hasFreeReq();
 	HttpRequest* newReq();
@@ -52,4 +53,5 @@ private:
 	std::thread* work_thread_;
 	bool use_thread_;
 	bool output_debug_;
+	bool enable_statistics_;
 };
