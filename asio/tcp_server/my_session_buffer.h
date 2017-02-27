@@ -13,12 +13,12 @@ public:
 	void destroy();
 	void clear();
 
+	unsigned int getTotalLen() const;
 	bool isEmpty() const;
 	char* getWriteBuff();
 	unsigned int getWriteLen() const;
 	char* getReadBuff();
 	unsigned int getReadLen() const;
-	// if write len not enough, call moveDataToFront
 	bool checkWriteLen(unsigned int len);
 
 	bool writeLen(unsigned int len);

@@ -1,4 +1,5 @@
 #include "my_tcp_session.h"
+#include "my_session_buffer_pool.h"
 #include <iostream>
 
 MyTcpSession::MyTcpSession(io_service& service) : id_(0), sock_(service), sending_(false)
@@ -7,10 +8,17 @@ MyTcpSession::MyTcpSession(io_service& service) : id_(0), sock_(service), sendin
 
 MyTcpSession::~MyTcpSession()
 {
+	close();
 }
 
 bool MyTcpSession::init(const MySessionConfig& conf, int id, std::shared_ptr<MyDataHandler> handler)
 {
+	unsigned int buffer_size = 0;
+	char* p = BUFFER_POOL->mallocRecvBuffer(buffer_size);
+	if (!p) {
+		std::cout << "MyTcpSession::init malloc recv buffer failed" << std::endl;
+		return false;
+	}
 	if (!recv_buff_.init(conf.recv_buff_min)) return false;
 	if (!send_buff_.init(conf.send_buff_min)) return false;
 	id_ = id;
@@ -29,7 +37,8 @@ void MyTcpSession::reset()
 {
 	recv_buff_.clear();
 	send_buff_.clear();
-	sock_.close();
+	//sock_.shutdown(socket_base::shutdown_both);
+	sending_ = false;
 }
 
 void MyTcpSession::start()
@@ -63,38 +72,18 @@ void MyTcpSession::start()
 
 int MyTcpSession::handle_read()
 {
-	char* data = recv_buff_.getReadBuff();
-	int len = recv_buff_.getReadLen();
-	int res = handler_->processData(data, len, getId());
-	if (res > 0) {
-		recv_buff_.readLen(len);
-	} else if (res == 0) {
-		// not enough length to get, move left data to front
-		int left_write = recv_buff_.getWriteLen();
-		if (left_write == 0) {
-			recv_buff_.moveDataToFront();
-		}
-	}
+	int res = handler_->processData(&recv_buff_, getId());
 	return res;
-}
-
-int MyTcpSession::run()
-{
-	handle_write();
-	return 1;
 }
 
 int MyTcpSession::send(const char* data, unsigned int len)
 {
-	bool res = send_buff_.writeData(data, len);
-	if (!res) {
-		if (handle_write() == 0)
-			return res;
-		res = send_buff_.writeData(data, len);
-	} else {
-		handle_write();
+	int res = handler_->writeData(&send_buff_, data, len);
+	if (res < 0) {
+		std::cout << "MyTcpSession::send write data length(" << len << ") failed" << std::endl;
+		return -1;
 	}
-	return 0;
+	return len;
 }
 
 int MyTcpSession::handle_write()
@@ -105,7 +94,7 @@ int MyTcpSession::handle_write()
 	if (sending_)
 		return 0;
 
-	sock_.async_send(boost::asio::buffer(send_buff_.getReadBuff(), send_buff_.getReadLen()),
+	sock_.async_write_some(boost::asio::buffer(send_buff_.getReadBuff(), send_buff_.getReadLen()),
 			[this](const boost::system::error_code& err, size_t bytes_transferred){
 				if (!err) {
 					send_buff_.readLen(bytes_transferred);
@@ -117,6 +106,11 @@ int MyTcpSession::handle_write()
 			});
 	sending_ = true;
 	return 1;
+}
+
+int MyTcpSession::run()
+{
+	return handle_write();
 }
 
 /**
@@ -210,4 +204,16 @@ MyTcpSession* MyTcpSessionMgr::getSessionById(int id)
 		return NULL;
 	}
 	return it->second;
+}
+
+int MyTcpSessionMgr::run()
+{
+	for (auto s: used_session_map_) {
+		if (s.second) {
+			if (s.second->run() < 0) {
+				std::cout << "MyTcpSessionMgr::run, session: " << s.second->getId() << " run failed" << std::endl; 
+			}
+		}
+	}
+	return 0;
 }

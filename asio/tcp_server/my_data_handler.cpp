@@ -23,26 +23,33 @@ bool MyDataHandler::loadMsgHandle(const MyId2MsgHandler id2handlers[], int size)
 	return true;
 }
 
-int MyDataHandler::processData(const char* data, unsigned int len, int session_id)
+int MyDataHandler::processData(MySessionBuffer* read_buffer, int session_id)
 {
-	if (!data) return -1;
+	if (!read_buffer) return -1;
+	char* buff = read_buffer->getReadBuff();
+	unsigned int len = read_buffer->getReadLen();
 
-	int nhandled = 0;
-	char* p = (char*)data;
+	unsigned int nhandled = 0;
 	while (true) {
 		if (len-nhandled < 2) {
+			read_buffer->readLen(nhandled);
+			read_buffer->moveDataToFront();
 			std::cout << "not enough length to get header" << std::endl;
 			break;
 		}
 
-		unsigned int data_len = ((p[nhandled]<<8)&0xff) + (p[nhandled+1]&0xff);
+		unsigned int data_len = ((buff[nhandled]<<8)&0xff00) + (buff[nhandled+1]&0xff);
+		if (data_len > read_buffer->getTotalLen()) {
+		
+		}
 		if (len-nhandled-2 < data_len) {
+			read_buffer->readLen(nhandled);
 			std::cout << "not enough length to get data" << std::endl;
 			break;
 		}
 
-		int msg_id = ((p[nhandled+2]<<8)&0xff) + (p[nhandled+3]&0xff);
-		int res = processMsg(msg_id, data+nhandled, data_len-2, session_id);
+		int msg_id = ((buff[nhandled+2]<<8)&0xff00) + (buff[nhandled+3]&0xff);
+		int res = processMsg(msg_id, buff+nhandled, data_len-2, session_id);
 		if (res < 0) return res;
 		nhandled += res;
 		if (len - nhandled == 0) {
@@ -50,6 +57,30 @@ int MyDataHandler::processData(const char* data, unsigned int len, int session_i
 		}
 	}
 	return nhandled;
+}
+
+int MyDataHandler::writeData(MySessionBuffer* buffer, const char* data, unsigned int len)
+{
+	if (!buffer || !data || !len)
+		return 0;
+
+	if (!buffer->checkWriteLen(len+2)) {
+		std::cout << "MyDataHandler::writeData checkWriteLen(" << len+2 << ") failed" << std::endl;
+		return -1;
+	}
+	// write head
+	char head[2];
+	head[0] = (len>>8) & 0xff;
+	head[1] = len&0xff;
+	if (!buffer->writeData(head, 2)) {
+		std::cout << "MyDataHandler::writeData write head failed" << std::endl;
+		return -1;
+	}
+	if (!buffer->writeData(data, len)) {
+		std::cout << "MyDataHandler::writeData write data failed" << std::endl;
+		return -1;
+	}
+	return len;
 }
 
 int MyDataHandler::processMsg(int msg_id, const char* data, unsigned int len, int session_id)

@@ -35,7 +35,6 @@ private:
 	std::shared_ptr<MyDataHandler> handler_;
 	MySessionBuffer recv_buff_;
 	MySessionBuffer send_buff_;
-	unsigned int nsent_;
 	bool sending_;
 };
 
@@ -52,6 +51,7 @@ public:
 	int freeSession(MyTcpSession*);
 	int freeSessionById(int id);
 	MyTcpSession* getSessionById(int id);
+	int run();
 
 private:
 	std::unordered_map<int, MyTcpSession*> used_session_map_;

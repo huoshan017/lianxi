@@ -52,6 +52,11 @@ void MySessionBuffer::clear()
 	write_offset_ = read_offset_ = 0;
 }
 
+unsigned int MySessionBuffer::getTotalLen() const
+{
+	return len_;
+}
+
 bool MySessionBuffer::isEmpty() const
 {
 	return (write_offset_ == read_offset_);
@@ -107,6 +112,8 @@ void MySessionBuffer::moveDataToFront()
 {
 	unsigned int left_read = getReadLen();
 	memmove(buff_, buff_+read_offset_, left_read);
+	read_offset_ = 0;
+	write_offset_ = left_read;
 }
 
 bool MySessionBuffer::writeData(const char* data, unsigned int len)

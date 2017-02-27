@@ -6,7 +6,7 @@ OBJS = $(SRCS:.cpp = .o)
 	CCFLAGS = -g -Wall -O0 -std=c++11
 
 my_app : $(OBJS)
-	$(CC) $^ -o $@ $(INCLUDES) $(LIBS) $(CCFLAGS) -lboost_system
+	$(CC) $^ -o $@ $(INCLUDES) $(LIBS) $(CCFLAGS) -lboost_system -lpthread
 
 OBJS : %.cpp
 	$(CC) -c $< $(CCFLAGS)
