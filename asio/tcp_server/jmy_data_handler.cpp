@@ -23,14 +23,14 @@ bool JmyDataHandler::loadMsgHandle(const JmyId2MsgHandler id2handlers[], int siz
 	return true;
 }
 
-int JmyDataHandler::processMsg(int msg_id, const char* data, unsigned int len, int session_id)
+int JmyDataHandler::processMsg(int msg_id, const char* data, unsigned int len, int session_id, std::shared_ptr<JmyTcpSessionMgr> session_mgr)
 {
 	std::unordered_map<int, jmy_msg_handler>::iterator it = msg_handler_map_.find(msg_id);
 	if (it == msg_handler_map_.end()) {
 		std::cout << "not found msg(" << msg_id << ") handler, session_id(" << session_id << ")" << std::endl;
 		return len;
 	}
-	if (it->second(data, len, session_id) < 0)
+	if (it->second(data, len, session_id, session_mgr) < 0)
 		return -1;
 	return len;
 }

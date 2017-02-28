@@ -5,10 +5,13 @@
 #include <boost/asio.hpp>
 #include "jmy_datatype.h"
 #include "jmy_session_buffer.h"
-#include "jmy_singleton.hpp"
-#include "jmy_data_handler.h"
+//#include "jmy_session_buffer_pool.h"
+//#include "jmy_data_handler.h"
 
 using namespace boost::asio;
+
+class JmySessionBufferPool;
+class JmyDataHandler;
 
 class JmyTcpSession : public std::enable_shared_from_this<JmyTcpSession>
 {
@@ -16,7 +19,10 @@ public:
 	JmyTcpSession(io_service& service);
 	~JmyTcpSession();
 
-	bool init(const JmySessionConfig& conf, int id, std::shared_ptr<JmyDataHandler> handler);
+	bool init(int id,
+			std::shared_ptr<JmyTcpSessionMgr> session_mgr,
+			std::shared_ptr<JmySessionBufferPool> pool,
+			std::shared_ptr<JmyDataHandler> handler);
 	void close();
 	void reset();
 	void start();
@@ -26,19 +32,20 @@ public:
 	int getId() const { return id_; }
 
 private:
-	int handle_read();
-	int handle_write();
+	int handle_recv();
+	int handle_send();
 
 private:
 	int id_;
 	ip::tcp::socket sock_;
+	std::shared_ptr<JmyTcpSessionMgr> session_mgr_;
 	std::shared_ptr<JmyDataHandler> handler_;
 	JmyDoubleSessionBuffer recv_buff_;
 	JmyDoubleSessionBuffer send_buff_;
 	bool sending_;
 };
 
-class JmyTcpSessionMgr : public JmySingleton<JmyTcpSessionMgr>
+class JmyTcpSessionMgr : public std::enable_shared_from_this<JmyTcpSessionMgr>
 {
 public:
 	JmyTcpSessionMgr();
@@ -47,7 +54,8 @@ public:
 	bool init(int max_session_size, io_service& service);
 	void clear();
 	
-	JmyTcpSession* getOneSession(const JmySessionConfig& conf, std::shared_ptr<JmyDataHandler> handler);
+	JmyTcpSession* getOneSession(std::shared_ptr<JmySessionBufferPool> pool,
+								std::shared_ptr<JmyDataHandler> handler);
 	int freeSession(JmyTcpSession*);
 	int freeSessionById(int id);
 	JmyTcpSession* getSessionById(int id);
@@ -60,4 +68,3 @@ private:
 	int max_session_size_;
 };
 
-#define SESSION_MGR (JmyTcpSessionMgr::getInstance())

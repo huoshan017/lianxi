@@ -1,5 +1,5 @@
 #include "jmy_tcp_session.h"
-#include "jmy_session_buffer_pool.h"
+#include "jmy_data_handler.h"
 #include <iostream>
 
 JmyTcpSession::JmyTcpSession(io_service& service) : id_(0), sock_(service), sending_(false)
@@ -11,17 +11,15 @@ JmyTcpSession::~JmyTcpSession()
 	close();
 }
 
-bool JmyTcpSession::init(const JmySessionConfig& conf, int id, std::shared_ptr<JmyDataHandler> handler)
+bool JmyTcpSession::init(int id,
+		std::shared_ptr<JmyTcpSessionMgr> session_mgr,
+		std::shared_ptr<JmySessionBufferPool> pool,
+		std::shared_ptr<JmyDataHandler> handler)
 {
-	unsigned int buffer_size = 0;
-	char* p = BUFFER_POOL->mallocRecvBuffer(buffer_size);
-	if (!p) {
-		std::cout << "JmyTcpSession::init malloc recv buffer failed" << std::endl;
-		return false;
-	}
-	if (!recv_buff_.init(p, conf.recv_buff_min, SESSION_BUFFER_TYPE_RECV)) return false;
-	if (!send_buff_.init(p, conf.send_buff_min, SESSION_BUFFER_TYPE_SEND)) return false;
+	if (!recv_buff_.init(pool, SESSION_BUFFER_TYPE_RECV)) return false;
+	if (!send_buff_.init(pool, SESSION_BUFFER_TYPE_SEND)) return false;
 	id_ = id;
+	session_mgr_ = session_mgr;
 	handler_ = handler;
 	return true;
 }
@@ -53,7 +51,7 @@ void JmyTcpSession::start()
 					recv_buff_.writeLen(bytes_transferred);
 				}
 
-				int nread = handle_read();
+				int nread = handle_recv();
 				if (nread < 0) {
 					std::cout << "JmyTcpSession::start handle_read failed" << std::endl;
 					return;
@@ -69,9 +67,9 @@ void JmyTcpSession::start()
 		} );
 }
 
-int JmyTcpSession::handle_read()
+int JmyTcpSession::handle_recv()
 {
-	int res = handler_->processData<JmyDoubleSessionBuffer>(&recv_buff_, getId());
+	int res = handler_->processData<JmyDoubleSessionBuffer>(&recv_buff_, getId(), session_mgr_);
 	return res;
 }
 
@@ -85,7 +83,7 @@ int JmyTcpSession::send(const char* data, unsigned int len)
 	return len;
 }
 
-int JmyTcpSession::handle_write()
+int JmyTcpSession::handle_send()
 {
 	if (send_buff_.getReadLen() == 0)
 		return 0;
@@ -109,7 +107,7 @@ int JmyTcpSession::handle_write()
 
 int JmyTcpSession::run()
 {
-	return handle_write();
+	return handle_send();
 }
 
 /**
@@ -154,7 +152,7 @@ void JmyTcpSessionMgr::clear()
 	free_session_list_.clear();
 }
 
-JmyTcpSession* JmyTcpSessionMgr::getOneSession(const JmySessionConfig& conf, std::shared_ptr<JmyDataHandler> handler)
+JmyTcpSession* JmyTcpSessionMgr::getOneSession(std::shared_ptr<JmySessionBufferPool> pool, std::shared_ptr<JmyDataHandler> handler)
 {
 	if (free_session_list_.size() == 0)
 		return NULL;
@@ -167,7 +165,7 @@ JmyTcpSession* JmyTcpSessionMgr::getOneSession(const JmySessionConfig& conf, std
 	if (curr_id_ > max_session_size_*2)
 		curr_id_ = 1;
 
-	if (!session->init(conf, curr_id_, handler))
+	if (!session->init(curr_id_, shared_from_this(), pool, handler))
 		return NULL;
 
 	free_session_list_.pop_front();

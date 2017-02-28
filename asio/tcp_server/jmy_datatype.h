@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <memory>
 
 struct JmyBufferPoolData {
 	unsigned int size;
@@ -19,7 +20,8 @@ struct JmySessionConfig {
 	unsigned int send_buff_max;
 };
 
-typedef int (*jmy_msg_handler)(const char*, unsigned int, int);
+class JmyTcpSessionMgr;
+typedef int (*jmy_msg_handler)(const char*, unsigned int, int, std::shared_ptr<JmyTcpSessionMgr>);
 
 struct JmyId2MsgHandler {
 	int msg_id;

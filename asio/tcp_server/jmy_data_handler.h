@@ -3,6 +3,8 @@
 #include <unordered_map>
 #include "jmy_datatype.h"
 #include "jmy_session_buffer.h"
+#include "jmy_session_buffer_pool.h"
+#include "jmy_tcp_session.h"
 #include <iostream>
 
 class JmyDataHandler
@@ -11,21 +13,19 @@ public:
 	JmyDataHandler();
 	~JmyDataHandler();
 	bool loadMsgHandle(const JmyId2MsgHandler id2handlers[], int size);
-	int processData(const char* data, unsigned int len, int session_id);
-	int writeData(const char* data, unsigned int len, JmySessionBuffer& buffer);
 	template <class SessionBuffer>
-	int processData(SessionBuffer* recv_buffer, int session_id);
+	int processData(SessionBuffer* recv_buffer, int session_id, std::shared_ptr<JmyTcpSessionMgr> session_mgr);
 	template <class SessionBuffer>
 	int writeData(SessionBuffer* write_buffer, const char* data, unsigned int len);
 
 private:
-	int processMsg(int msg_id, const char* data, unsigned int len, int session_id);
+	int processMsg(int msg_id, const char* data, unsigned int len, int session_id, std::shared_ptr<JmyTcpSessionMgr> session_mgr);
 private:
 	std::unordered_map<int, jmy_msg_handler> msg_handler_map_;
 };
 
 template <class SessionBuffer>
-int JmyDataHandler::processData(SessionBuffer* recv_buffer, int session_id)
+int JmyDataHandler::processData(SessionBuffer* recv_buffer, int session_id, std::shared_ptr<JmyTcpSessionMgr> session_mgr)
 {
 	if (!recv_buffer) return -1;
 	char* buff = recv_buffer->getReadBuff();
@@ -69,7 +69,7 @@ int JmyDataHandler::processData(SessionBuffer* recv_buffer, int session_id)
 		}
 
 		int msg_id = ((buff[nhandled+2]<<8)&0xff00) + (buff[nhandled+3]&0xff);
-		int res = processMsg(msg_id, buff+nhandled, data_len-2, session_id);
+		int res = processMsg(msg_id, buff+nhandled, data_len-2, session_id, session_mgr);
 		if (res < 0) return res;
 		nhandled += res;
 		if (len - nhandled == 0) {

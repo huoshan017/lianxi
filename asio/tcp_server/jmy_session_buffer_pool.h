@@ -64,7 +64,7 @@ private:
 	unsigned int fixed_size_;	
 };
 
-class JmySessionBufferPool : public JmySingleton<JmySessionBufferPool>
+class JmySessionBufferPool
 {
 public:
 	JmySessionBufferPool() : max_session_size_(0) {}
@@ -88,4 +88,3 @@ private:
 	int max_session_size_;
 };
 
-#define BUFFER_POOL (JmySessionBufferPool::getInstance())

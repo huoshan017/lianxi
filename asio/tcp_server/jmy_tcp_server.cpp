@@ -7,12 +7,16 @@ JmyTcpServer::JmyTcpServer() : sock_(service_), curr_session_(NULL), inited_(fal
 {
 	acceptor_ = std::make_shared<ip::tcp::acceptor>(service_);
 	handler_ = std::make_shared<JmyDataHandler>();
+	session_mgr_ = std::make_shared<JmyTcpSessionMgr>();
+	session_buff_pool_ = std::make_shared<JmySessionBufferPool>();
 }
 
 JmyTcpServer::JmyTcpServer(short port) : sock_(service_), curr_session_(NULL), inited_(false)
 {
 	acceptor_ = std::make_shared<ip::tcp::acceptor>(service_, ip::tcp::endpoint(ip::tcp::v4(), port));
 	handler_ = std::make_shared<JmyDataHandler>();
+	session_mgr_ = std::make_shared<JmyTcpSessionMgr>();
+	session_buff_pool_ = std::make_shared<JmySessionBufferPool>();
 }
 
 JmyTcpServer::~JmyTcpServer()
@@ -25,9 +29,9 @@ bool JmyTcpServer::loadConfig(const JmyServerConfig& conf)
 	conf_ = conf;
 	bool res = handler_->loadMsgHandle(conf.handlers, conf.nhandlers);
 	if (!res) return false;
-	res = SESSION_MGR->init(conf.max_conn, service_);
+	res = session_mgr_->init(conf.max_conn, service_);
 	if (res) inited_ = true;
-	res = BUFFER_POOL->init(conf.max_conn,
+	res = session_buff_pool_->init(conf.max_conn,
 							conf.session_conf.send_buff_min,
 							conf.session_conf.recv_buff_min,
 							conf.session_conf.send_buff_max,
@@ -37,6 +41,8 @@ bool JmyTcpServer::loadConfig(const JmyServerConfig& conf)
 
 void JmyTcpServer::close()
 {
+	session_buff_pool_->clear();
+	session_mgr_->clear();
 	acceptor_->close();
 	thread_->join();
 }
@@ -64,7 +70,7 @@ int JmyTcpServer::do_accept()
 {
 	if (!inited_) return -1;
 	if (!curr_session_)
-		curr_session_ = SESSION_MGR->getOneSession(conf_.session_conf, handler_);
+		curr_session_ = session_mgr_->getOneSession(session_buff_pool_, handler_);
 	if (!curr_session_) {
 		std::cout << "JmyTcpServer::do_accept  get free MyTcpSession failed" << std::endl;
 		return -1;
@@ -75,7 +81,7 @@ int JmyTcpServer::do_accept()
 				if (ec.value()==boost::system::errc::operation_canceled || ec.value()==boost::system::errc::operation_in_progress) {
 					std::cout << "JmyTcpServer::do_accept  error code(" << ec.value() << ")" << std::endl;
 				} else {
-					SESSION_MGR->freeSession(curr_session_);
+					session_mgr_->freeSession(curr_session_);
 					std::cout << "JmyTcpServer::do_accept  async_accept error: " << ec << std::endl;
 					return;	
 				}
@@ -98,7 +104,7 @@ int JmyTcpServer::do_loop()
 
 int JmyTcpServer::run()
 {
-	if (SESSION_MGR->run() < 0)
+	if (session_mgr_->run() < 0)
 		return -1;
 	return 0;
 }

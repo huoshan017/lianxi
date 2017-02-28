@@ -1,13 +1,13 @@
 #pragma once
 
+#include <thread>
 #include <boost/asio.hpp>
+#include "jmy_tcp_session.h"
+#include "jmy_session_buffer_pool.h"
 #include "jmy_data_handler.h"
 #include "jmy_datatype.h"
-#include <thread>
 
 using namespace boost::asio;
-
-class JmyTcpSession;
 
 class JmyTcpServer
 {
@@ -32,6 +32,8 @@ private:
 	std::shared_ptr<std::thread> thread_;
 	std::shared_ptr<ip::tcp::acceptor> acceptor_;
 	std::shared_ptr<JmyDataHandler> handler_;
+	std::shared_ptr<JmyTcpSessionMgr> session_mgr_;
+	std::shared_ptr<JmySessionBufferPool> session_buff_pool_;
 	JmyTcpSession* curr_session_;
 	JmyServerConfig conf_;
 	bool inited_;

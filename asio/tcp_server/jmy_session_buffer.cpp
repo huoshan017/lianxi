@@ -162,9 +162,19 @@ JmyDoubleSessionBuffer::~JmyDoubleSessionBuffer()
 	destroy();
 }
 
-bool JmyDoubleSessionBuffer::init(char* buff, unsigned int size, SessionBufferType type)
+bool JmyDoubleSessionBuffer::init(std::shared_ptr<JmySessionBufferPool> pool, SessionBufferType type)
 {
-	if (!buff_.init(buff, size, type))
+	char* p = NULL;
+	unsigned int s = 0;
+	if (type == SESSION_BUFFER_TYPE_RECV)
+		p = pool->mallocRecvBuffer(s);
+	else
+		p = pool->mallocSendBuffer(s);
+	if (!p) {
+		std::cout << "JmyDoubleSessionBuffer::init  failed to init because cant malloc buffer(" << type << ")" << std::endl;
+		return false;
+	}
+	if (!buff_.init(p, s, type))
 		return false;
 	return true;
 }
@@ -259,9 +269,9 @@ bool JmyDoubleSessionBuffer::switchToLarge()
 		char* p = NULL;
 		unsigned int size = 0;
 		if (buff_.getType() == SESSION_BUFFER_TYPE_SEND) 
-			p = BUFFER_POOL->mallocLargeSendBuffer(size);
+			p = buff_pool_->mallocLargeSendBuffer(size);
 		else
-			p = BUFFER_POOL->mallocLargeRecvBuffer(size);
+			p = buff_pool_->mallocLargeRecvBuffer(size);
 		if (!p) {
 			std::cout << "JmyDoubleSessionBuffer::switchToLarge  failed to malloc large buffer" << std::endl;
 			return false;
@@ -290,11 +300,11 @@ bool JmyDoubleSessionBuffer::backToNormal()
 		return false;
 	}
 	if (large_buff_.getType() == SESSION_BUFFER_TYPE_SEND) {
-		if (!BUFFER_POOL->freeLargeSendBuffer(large_buff_.getBuff())) {
+		if (!buff_pool_->freeLargeSendBuffer(large_buff_.getBuff())) {
 			std::cout << "JmyDoubleSessionBuffer::backToNormal  failed to free large send buffer" << std::endl;
 		}
 	} else {
-		if (!BUFFER_POOL->freeLargeRecvBuffer(large_buff_.getBuff())) {
+		if (!buff_pool_->freeLargeRecvBuffer(large_buff_.getBuff())) {
 			std::cout << "JmyDoubleSessionBuffer::backToNormal  failed to free large recv buffer" << std::endl;		
 		}
 	}

@@ -1,5 +1,8 @@
 #pragma once
 
+#include <thread>
+#include "jmy_session_buffer_pool.h"
+
 enum SessionBufferType {
 	SESSION_BUFFER_TYPE_NONE,
 	SESSION_BUFFER_TYPE_RECV,
@@ -50,7 +53,7 @@ class JmyDoubleSessionBuffer
 public:
 	JmyDoubleSessionBuffer();
 	~JmyDoubleSessionBuffer();
-	bool init(char* buff, unsigned int size, SessionBufferType type);
+	bool init(std::shared_ptr<JmySessionBufferPool> pool, SessionBufferType type);
 	void destroy();
 	void clear();
 
@@ -77,17 +80,6 @@ private:
 	bool use_large_;
 	JmySessionBuffer buff_;
 	JmySessionBuffer large_buff_;
+	std::shared_ptr<JmySessionBufferPool> buff_pool_;
 };
 
-class JmySessionBufferSequence
-{
-public:
-	JmySessionBufferSequence();
-	~JmySessionBufferSequence();
-	bool init(char* buff, unsigned int len, SessionBufferType type);
-	void destroy();
-	void clear();
-
-private:
-	unsigned int curr_buff_length_;
-};
