@@ -1,4 +1,4 @@
-#include "my_tcp_server.h"
+#include "jmy_tcp_server.h"
 #include "config_data.h"
 #include <chrono>
 
@@ -9,9 +9,9 @@ int main(int argc, char* argv[])
 	(void)argc;
 	(void)argv;
 #if INIT_PORT
-	MyTcpServer server(10000);
+	JmyTcpServer server(10000);
 #else
-	MyTcpServer server;
+	JmyTcpServer server;
 #endif
 	if (!server.loadConfig(test_config)) {
 		return -1;
