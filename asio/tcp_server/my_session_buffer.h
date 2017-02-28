@@ -25,11 +25,14 @@ public:
 	bool readLen(unsigned int len);
 	void moveDataToFront();
 	bool writeData(const char* data, unsigned int len);
+	bool switchToLargeBuff();
+	bool checkAndSwtichToSmall();
 
 private:
 	bool proxy_;
 	char* buff_;
 	unsigned int len_;
 	unsigned int write_offset_;
-	unsigned read_offset_;
+	unsigned int read_offset_;
+	bool use_large_;
 };
