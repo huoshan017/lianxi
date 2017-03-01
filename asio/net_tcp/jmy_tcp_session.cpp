@@ -80,7 +80,7 @@ int JmyTcpSession::send(int msg_id, const char* data, unsigned int len)
 		std::cout << "JmyTcpSession::send  write data length(" << len << ") failed" << std::endl;
 		return -1;
 	}
-	std::cout << "JmyTcpSession::send  session " << getId() << " write length " << len << " of data to send buffer" << std::endl;
+	std::cout << "JmyTcpSession::send  session " << getId() << " write length " << res << " of data to send buffer: " << data << std::endl;
 	return len;
 }
 
@@ -95,8 +95,9 @@ int JmyTcpSession::handle_send()
 	sock_.async_write_some(boost::asio::buffer(send_buff_.getReadBuff(), send_buff_.getReadLen()),
 			[this](const boost::system::error_code& err, size_t bytes_transferred){
 				if (!err) {
+					const char* d = send_buff_.getReadBuff();
 					send_buff_.readLen(bytes_transferred);
-					std::cout << "JmyTcpSession::handle_send  session << " << getId() << " sent " << bytes_transferred << " bytes data" << std::endl;
+					std::cout << "JmyTcpSession::handle_send  session " << getId() << " sent " << bytes_transferred << " bytes data: " << d << std::endl;
 				} else {
 					std::cout << "JmyTcpSession::handle_send  async_send error: " << err << std::endl;
 					return;

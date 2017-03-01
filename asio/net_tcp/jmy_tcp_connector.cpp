@@ -81,6 +81,7 @@ void JmyTcpConnector::start()
 		return;
 	}
 
+	std::cout << "JmyTcpConnector::start  write_buff: " << (long)recv_buff_.getWriteBuff() << ", write_len: " << recv_buff_.getWriteLen() << std::endl;
 	sock_->async_read_some(boost::asio::buffer(recv_buff_.getWriteBuff(), recv_buff_.getWriteLen()),
 		[this](const boost::system::error_code& err, size_t bytes_transferred) {
 			std::cout << "222222" << std::endl;

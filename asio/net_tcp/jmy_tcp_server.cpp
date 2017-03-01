@@ -90,6 +90,7 @@ int JmyTcpServer::do_accept()
 					return;	
 				}
 			} else {
+				curr_session_->getSock().set_option(ip::tcp::no_delay(true));
 				curr_session_->start();
 				std::cout << "JmyTcpServer::do_accept  new session " << curr_session_->getId() << " start" << std::endl;
 				curr_session_ = NULL;

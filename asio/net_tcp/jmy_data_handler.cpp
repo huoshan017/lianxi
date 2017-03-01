@@ -47,7 +47,7 @@ int JmyDataHandler::processData(JmySessionBuffer& recv_buffer, int session_id, v
 
 		int msg_id = ((buff[nhandled+2]<<8)&0xff00) + (buff[nhandled+3]&0xff);
 		msg_info_.msg_id = msg_id;
-		msg_info_.data = buff+nhandled;
+		msg_info_.data = buff+nhandled+2+2;
 		msg_info_.len = data_len-2;
 		msg_info_.session_id = session_id;
 		msg_info_.param = param;

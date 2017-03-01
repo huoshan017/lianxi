@@ -5,7 +5,7 @@
 #include "../net_tcp/jmy_tcp_connector.h"
 #include "config_data.h"
 
-const char* s_send_data = "1234567890abcdefghijklmnopqrstuvwxyz";
+const char* s_send_data = "!@#$:1234567890abcdefghijklmnopqrstuvwxyz";
 
 using namespace boost::asio;
 int main(int argc, char* argv[])
@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
 		std::cout << "connector init failed" << std::endl;
 		return -1;
 	}
-	connector.async_connect("192.168.3.250", port);
+	connector.async_connect("127.0.0.1", port);
 	JmyConnectorState state = CONNECTOR_STATE_NOT_CONNECT;
 	while (true)  {
 		service.poll();
