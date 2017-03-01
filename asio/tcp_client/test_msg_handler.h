@@ -1,8 +1,8 @@
 #pragma once
 
 #include <memory>
-#include "jmy_tcp_session.h"
 
+class JmyMsgInfo;
 class TestMsgHandler
 {
 public:
