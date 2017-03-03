@@ -1,5 +1,7 @@
 #include "jmy_tcp_session.h"
 #include "jmy_data_handler.h"
+#include <thread>
+#include <chrono>
 #include <iostream>
 
 JmyTcpSession::JmyTcpSession(io_service& service) : id_(0), sock_(service), sending_(false)
@@ -41,20 +43,24 @@ void JmyTcpSession::reset()
 void JmyTcpSession::start()
 {
 	if (id_ == 0) {
-		std::cout << "not init" << std::endl;
+		std::cout << "JmyTcpSession::start  not init" << std::endl;
 		return;
 	}
+
 	sock_.async_read_some(boost::asio::buffer(recv_buff_.getWriteBuff(), recv_buff_.getWriteLen()),
 		[this](const boost::system::error_code& err, size_t bytes_transferred) {
 			if (!err) {
 				if (bytes_transferred > 0) {
 					recv_buff_.writeLen(bytes_transferred);
 				}
-
 				int nread = handle_recv();
 				if (nread < 0) {
-					std::cout << "JmyTcpSession::start handle_read failed" << std::endl;
+					std::cout << "JmyTcpSession::start  handle_recv return " << std::endl;
 					return;
+				}
+				recv_buff_.readLen(nread);
+				if (bytes_transferred == 0) {
+					std::this_thread::sleep_for(std::chrono::milliseconds(10));	
 				}
 				start();
 			} else {
@@ -62,15 +68,17 @@ void JmyTcpSession::start()
 				if (ev == 10053 || ev == 10054) {
 
 				}
-				std::cout << "JmyTcpSession::start  read some data failed, err: " << err << std::endl;
+				sock_.close();
+				session_mgr_->freeSessionById(getId());
+				std::cout << "JmyTcpSession::handle_recv  read some data failed, err: " << err << ", session_id: " << getId() <<  std::endl;
 			}
 		} );
 }
 
 int JmyTcpSession::handle_recv()
 {
-	int res = handler_->processData<JmyDoubleSessionBuffer>(&recv_buff_, getId(), session_mgr_);
-	return res;
+	int nread = handler_->processData(&recv_buff_, getId(), session_mgr_);	
+	return nread;
 }
 
 int JmyTcpSession::send(int msg_id, const char* data, unsigned int len)
@@ -80,7 +88,7 @@ int JmyTcpSession::send(int msg_id, const char* data, unsigned int len)
 		std::cout << "JmyTcpSession::send  write data length(" << len << ") failed" << std::endl;
 		return -1;
 	}
-	std::cout << "JmyTcpSession::send  session " << getId() << " write length " << res << " of data to send buffer: " << data << std::endl;
+	//std::cout << "JmyTcpSession::send  session " << getId() << " write length " << res << " of data to send buffer: " << data << std::endl;
 	return len;
 }
 
@@ -95,10 +103,10 @@ int JmyTcpSession::handle_send()
 	sock_.async_write_some(boost::asio::buffer(send_buff_.getReadBuff(), send_buff_.getReadLen()),
 			[this](const boost::system::error_code& err, size_t bytes_transferred){
 				if (!err) {
-					const char* d = send_buff_.getReadBuff();
 					send_buff_.readLen(bytes_transferred);
-					std::cout << "JmyTcpSession::handle_send  session " << getId() << " sent " << bytes_transferred << " bytes data: " << d << std::endl;
 				} else {
+					sock_.close();
+					session_mgr_->freeSessionById(getId());
 					std::cout << "JmyTcpSession::handle_send  async_send error: " << err << std::endl;
 					return;
 				}
@@ -110,7 +118,8 @@ int JmyTcpSession::handle_send()
 
 int JmyTcpSession::run()
 {
-	return handle_send();
+	int res = handle_send();
+	return res;
 }
 
 /**

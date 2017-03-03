@@ -5,15 +5,13 @@
 #include <boost/asio.hpp>
 #include "jmy_datatype.h"
 #include "jmy_session_buffer.h"
-//#include "jmy_session_buffer_pool.h"
-//#include "jmy_data_handler.h"
 
 using namespace boost::asio;
 
 class JmySessionBufferPool;
 class JmyDataHandler;
 
-class JmyTcpSession : public std::enable_shared_from_this<JmyTcpSession>
+class JmyTcpSession
 {
 public:
 	JmyTcpSession(io_service& service);

@@ -52,5 +52,6 @@ struct JmyConnectorConfig {
 	JmyConnectorBaseConfig base;
 	JmyId2MsgHandler* handlers;
 	int nhandlers;
-	bool is_delay;
+	bool no_delay;
+	bool connected_start;
 };

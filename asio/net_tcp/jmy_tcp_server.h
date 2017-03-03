@@ -26,7 +26,9 @@ public:
 
 private:
 	int do_accept();
+#if USE_THREAD
 	int do_loop();
+#endif
 
 private:
 	io_service service_;
@@ -38,7 +40,7 @@ private:
 	std::shared_ptr<JmyDataHandler> handler_;
 	std::shared_ptr<JmyTcpSessionMgr> session_mgr_;
 	std::shared_ptr<JmySessionBufferPool> session_buff_pool_;
-	JmyTcpSession* curr_session_;
+	JmyTcpSession curr_session_;
 	JmyServerConfig conf_;
 	bool inited_;
 };

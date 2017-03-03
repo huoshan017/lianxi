@@ -11,19 +11,18 @@ using namespace boost::asio;
 enum JmyConnectorState {
 	CONNECTOR_STATE_NOT_CONNECT = 0,
 	CONNECTOR_STATE_CONNECTING = 1,
-	CONNECTOR_STATE_CONNETED = 2,
+	CONNECTOR_STATE_CONNECTED = 2,
 	CONNECTOR_STATE_DISCONNECTING = 3,
 	CONNECTOR_STATE_DISCONNECT = 4,
 };
 
-class JmyTcpConnector : public std::enable_shared_from_this<JmyTcpConnector>
+class JmyTcpConnector //: public std::enable_shared_from_this<JmyTcpConnector>
 {
 public:
-	JmyTcpConnector();
+	JmyTcpConnector(io_service& service);
 	JmyTcpConnector(io_service& service, const ip::tcp::endpoint& ep);
 	~JmyTcpConnector();
 
-	bool init(io_service& service);
 	void close();
 	void destroy();
 	void reset();
@@ -37,13 +36,13 @@ public:
 	int send(int msg_id, const char* data, unsigned int len);
 	int run();
 
-	std::shared_ptr<ip::tcp::socket> getSock() { return sock_; }
+	ip::tcp::socket& getSock() { return sock_; }
 
 private:
 	int handle_send();
 
 private:
-	std::shared_ptr<ip::tcp::socket> sock_;
+	ip::tcp::socket sock_;
 	ip::tcp::endpoint ep_;
 	JmyConnectorState state_;
 	JmySessionBuffer recv_buff_;

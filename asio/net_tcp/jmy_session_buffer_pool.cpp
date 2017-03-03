@@ -16,7 +16,7 @@ bool JmySessionBufferPool::init(int max_session_size,
 
 	if (min_recv_buff_size <= DEFAULT_RECV_BUFFER_SIZE/2) 
 		min_recv_buff_size = DEFAULT_RECV_BUFFER_SIZE/2;
-	if (min_recv_buff_size <= DEFAULT_RECV_BUFFER_SIZE)
+	else if (min_recv_buff_size <= DEFAULT_RECV_BUFFER_SIZE)
 		min_recv_buff_size = DEFAULT_RECV_BUFFER_SIZE;
 	else {
 		std::cout << "JmySessionBufferPool::init  min_recv_buff_size(" << min_recv_buff_size << ") > DEFAULT_RECV_BUFFER_SIZE(" << DEFAULT_RECV_BUFFER_SIZE << ")" << std::endl;

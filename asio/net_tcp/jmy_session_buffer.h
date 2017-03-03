@@ -59,7 +59,7 @@ public:
 
 	unsigned int getNormalLen() const;
 	unsigned int getLargeLen() const;
-	unsigned int getTotalLen() const { return use_large_?buff_.getTotalLen():large_buff_.getTotalLen(); }
+	unsigned int getTotalLen() const { return use_large_?large_buff_.getTotalLen():buff_.getTotalLen(); }
 	bool isLarge() const { return use_large_; }
 	bool isEmpty() const;
 	char* getWriteBuff();
@@ -67,6 +67,7 @@ public:
 	char* getReadBuff();
 	unsigned int getReadLen() const;
 	bool checkWriteLen(unsigned int len);
+	char* getBuff() { return use_large_?large_buff_.getBuff():buff_.getBuff(); }
 
 	bool writeLen(unsigned int len);
 	bool readLen(unsigned int len);

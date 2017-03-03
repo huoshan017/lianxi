@@ -104,8 +104,8 @@ bool JmySessionBuffer::checkWriteLen(unsigned int len)
 	unsigned int left_write = getWriteLen();
 	if (left_write < len) {
 		moveDataToFront();
+		left_write = getWriteLen();
 	}
-	left_write = getWriteLen();
 	return left_write >= len;
 }
 
@@ -175,6 +175,7 @@ bool JmyDoubleSessionBuffer::init(std::shared_ptr<JmySessionBufferPool> pool, Se
 		std::cout << "JmyDoubleSessionBuffer::init  failed to init because cant malloc buffer(" << type << ")" << std::endl;
 		return false;
 	}
+	assert(s > 0);
 	if (!buff_.init(p, s, type))
 		return false;
 	return true;
