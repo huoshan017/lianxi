@@ -2,9 +2,11 @@
 #include <chrono>
 #include <iostream>
 #include <cstring>
-#include "../net_tcp/jmy_tcp_connector.h"
+#include "../libjmy/jmy_tcp_connector.h"
 #include "config_data.h"
 #include "const_data.h"
+
+#define USE_ASYNC_CONNECT 0
 
 using namespace boost::asio;
 int main(int argc, char* argv[])
@@ -23,6 +25,11 @@ int main(int argc, char* argv[])
 		std::cout << "connector load config failed" << std::endl;
 		return -1;
 	}
+
+#if !USE_ASYNC_CONNECT
+	connector.connect("127.0.0.1", port);
+	connector.start();
+#else
 	connector.async_connect("127.0.0.1", port);
 	JmyConnectorState state = CONNECTOR_STATE_NOT_CONNECT;
 	while (true)  {
@@ -38,7 +45,7 @@ int main(int argc, char* argv[])
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
-
+#endif
 	int i = 0;
 	int s = sizeof(s_send_data)/sizeof(s_send_data[0]);
 	int count = 0;

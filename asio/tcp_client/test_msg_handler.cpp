@@ -1,5 +1,5 @@
 #include "test_msg_handler.h"
-#include "../net_tcp/jmy_tcp_connector.h"
+#include "../libjmy/jmy_tcp_connector.h"
 #include <iostream>
 #include "const_data.h"
 

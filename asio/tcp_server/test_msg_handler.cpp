@@ -1,5 +1,5 @@
 #include "test_msg_handler.h"
-#include "../net_tcp/jmy_tcp_session.h"
+#include "../libjmy/jmy_tcp_session.h"
 #include <chrono>
 #include <iostream>
 
@@ -18,7 +18,6 @@ int TestMsgHandler::process_one(JmyMsgInfo* info)
 	}
 	static int count = 0;
 	count += 1;
-	auto n = std::chrono::system_clock::now();
 	std::cout << "TestMsgHandler::process_one  processed count " << count << std::endl;
 	session->send(1, data, len);
 	return len;

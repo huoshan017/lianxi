@@ -1,9 +1,9 @@
 CC = g++
-INCLUDES = -I/××× -I../net_tcp
+INCLUDES = -I/×××
 LIBS = -L/×××
 CCFLAGS = -g -Wall -O0 -std=c++11
 
-COMMON_SRCS = $(wildcard ../net_tcp/*.cpp)
+COMMON_SRCS = $(wildcard ../libjmy/*.cpp)
 COMMON_OBJS = $(COMMON_SRCS:.cpp = .o)
 SRCS = $(wildcard *.cpp)
 OBJS = $(SRCS:.cpp = .o)

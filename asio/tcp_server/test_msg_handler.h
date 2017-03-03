@@ -1,7 +1,7 @@
 #pragma once
 
 #include <memory>
-#include "jmy_tcp_session.h"
+#include "../libjmy/jmy_tcp_session.h"
 
 class TestMsgHandler
 {

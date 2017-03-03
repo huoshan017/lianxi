@@ -1,4 +1,4 @@
-#include "../net_tcp/jmy_datatype.h"
+#include "../libjmy/jmy_datatype.h"
 #include "test_msg_handler.h"
 
 JmyId2MsgHandler s_test_handlers[] = {
