@@ -5,20 +5,24 @@ CXXFLAGS  =  -lcurl -std=c++11
 MAKEEXE   = $(CC) $(LDFLAGS)  
 OBJDIR = ./obj
   
-OBJ = $(OBJDIR)/http_request.o \
-	  $(OBJDIR)/http_request_processor.o \
-	  $(OBJDIR)/http_request_mgr.o \
-	  $(OBJDIR)/http_request_results.o \
-	  $(OBJDIR)/main.o 
+SRCS = $(wildcard *.cpp)
+OBJS = $(patsubst %.cpp, $(OBJDIR)/%.o, $(SRCS))
+	#$(OBJDIR)/http_request.o \
+	  #$(OBJDIR)/http_request_processor.o \
+	  #$(OBJDIR)/http_request_mgr.o \
+	  #$(OBJDIR)/http_request_results.o \
+	  #$(OBJDIR)/main.o 
+
 EXE = main 
-  
 all: init  $(EXE)  
 init:
 	mkdir -p $(OBJDIR)
 
-$(EXE): ${OBJ}  
-	$(MAKEEXE) $(CXXFLAGS) $^ -o $@  
-$(OBJDIR)/%.o: %.cpp  
+$(EXE): $(OBJS)
+	$(MAKEEXE) $(CXXFLAGS) $^ -o $@
+
+$(OBJS): $(OBJDIR)/%.o: %.cpp
 	$(COMPILE.C) $(CXXFLAGS) $< -o $@  
+
 clean:
-	rm -f $(OBJDIR)/*.o $(EXE)  
+	rm -f $(OBJS) $(EXE)  
