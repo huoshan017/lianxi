@@ -10,7 +10,7 @@ int TestMsgHandler::process_one(JmyMsgInfo* info)
 	unsigned int len = info->len;
 	int session_id = info->session_id;
 	JmyTcpSessionMgr* session_mgr = (JmyTcpSessionMgr*)info->param;
-	//std::cout << "TestMsgHandler::process_one: data(" << data << "), len(" << len << ")" << std::endl;
+	std::cout << "TestMsgHandler::process_one: data(" << data << "), len(" << len << ")" << std::endl;
 	JmyTcpSession* session = session_mgr->getSessionById(session_id);
 	if (!session) {
 		std::cout << "error  TestMsgHandler::process_one: session(" << session_id << ") not found" << std::endl;
