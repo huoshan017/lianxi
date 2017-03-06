@@ -80,6 +80,7 @@ void JmyTcpConnector::start()
 		return;
 	}
 
+	std::cout << "JmyTcpConnector::start  recv_buff write len is " << recv_buff_.getWriteLen() << std::endl;
 	sock_.async_read_some(boost::asio::buffer(recv_buff_.getWriteBuff(), recv_buff_.getWriteLen()),
 		[this](const boost::system::error_code& err, size_t bytes_transferred) {
 			if (!err) {
@@ -95,7 +96,6 @@ void JmyTcpConnector::start()
 					std::cout << "JmyTcpConnector::start  handle_read failed" << std::endl;
 					return;
 				}
-				recv_buff_.readLen(nread);
 				start();
 			} else {
 				int ev = err.value();
@@ -125,8 +125,8 @@ int JmyTcpConnector::handle_send()
 	if (send_buff_.getReadLen() == 0)
 		return 0;
 
-	//if (sending_)
-		//return 0;
+	if (sending_)
+		return 0;
 
 	sock_.async_write_some(boost::asio::buffer(send_buff_.getReadBuff(), send_buff_.getReadLen()),
 		[this](const boost::system::error_code& err, size_t bytes_transferred){
@@ -142,9 +142,9 @@ int JmyTcpConnector::handle_send()
 				std::cout << "JmyTcpConnector::handle_send  async_send error: " << err << std::endl;
 				return;
 			}
-			//sending_ = false;
+			sending_ = false;
 		});
-	//sending_ = true;
+	sending_ = true;
 	return 1;
 }
 

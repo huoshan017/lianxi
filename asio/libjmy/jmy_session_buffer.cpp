@@ -102,12 +102,10 @@ unsigned int JmySessionBuffer::getReadLen() const
 bool JmySessionBuffer::checkWriteLen(unsigned int len)
 {
 	unsigned int left_write = getWriteLen();
-	std::cout << "JmySessionBuffer::checkWriteLen  write_offset is " << this->write_offset_ << std::endl;
 	if (left_write < len) {
 		moveDataToFront();
 		left_write = getWriteLen();
 	}
-	std::cout << "JmySessionBuffer::checkWriteLen  write_offset is " << this->write_offset_ << " after move" << std::endl;
 	return left_write >= len;
 }
 
@@ -180,6 +178,8 @@ bool JmyDoubleSessionBuffer::init(std::shared_ptr<JmySessionBufferPool> pool, Se
 	assert(s > 0);
 	if (!buff_.init(p, s, type))
 		return false;
+
+	buff_pool_ = pool;
 	return true;
 }
 

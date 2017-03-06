@@ -79,7 +79,6 @@ int JmyTcpServer::do_accept()
 				if (ec.value()==boost::system::errc::operation_canceled || ec.value()==boost::system::errc::operation_in_progress) {
 					std::cout << "JmyTcpServer::do_accept  error code(" << ec.value() << ")" << std::endl;
 				} else {
-					//session_mgr_->freeSession(curr_session_);
 					std::cout << "JmyTcpServer::do_accept  async_accept error: " << ec << std::endl;
 					return;	
 				}

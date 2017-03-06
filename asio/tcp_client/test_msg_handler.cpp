@@ -27,6 +27,5 @@ int TestMsgHandler::process_one(JmyMsgInfo* info)
 		std::cout << "error  TestMsgHandler::process_one: connector not found" << std::endl;
 		return -1;
 	}
-	//connector->send(1, data, len);
 	return len;
 }

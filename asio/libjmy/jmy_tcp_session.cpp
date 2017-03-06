@@ -58,7 +58,7 @@ void JmyTcpSession::start()
 					std::cout << "JmyTcpSession::start  handle_recv return " << std::endl;
 					return;
 				}
-				recv_buff_.readLen(nread);
+				//recv_buff_.readLen(nread);
 				if (bytes_transferred == 0) {
 					std::this_thread::sleep_for(std::chrono::milliseconds(10));	
 				}

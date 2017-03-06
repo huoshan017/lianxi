@@ -119,7 +119,7 @@ int JmyDataHandler::processData(JmyDoubleSessionBuffer* recv_buffer, int session
 				recv_buffer->moveDataToFront();
 			}
 			recv_buffer->readLen(nhandled);
-			std::cout << "JmyDataHandler::processData  not enough length to get data. data_len: " << data_len << ", left_len: " << len-nhandled-2 << std::endl;
+			//std::cout << "JmyDataHandler::processData  not enough length to get data. data_len: " << data_len << ", left_len: " << len-nhandled-2 << std::endl;
 			break;
 		}
 

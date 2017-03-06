@@ -3,6 +3,8 @@
 #include <chrono>
 #include <iostream>
 
+uint64_t TestMsgHandler::count_ = 0;
+
 int TestMsgHandler::process_one(JmyMsgInfo* info)
 {
 	if (!info) return -1;
@@ -16,9 +18,7 @@ int TestMsgHandler::process_one(JmyMsgInfo* info)
 		std::cout << "error  TestMsgHandler::process_one: session(" << session_id << ") not found" << std::endl;
 		return -1;
 	}
-	static int count = 0;
-	count += 1;
-	std::cout << "TestMsgHandler::process_one  processed count " << count << std::endl;
+	std::cout << "TestMsgHandler::process_one  processed count " << count_++ << std::endl;
 	session->send(1, data, len);
 	return len;
 }

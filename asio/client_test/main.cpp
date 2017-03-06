@@ -55,7 +55,11 @@ int recv_func(ip::tcp::socket& sock, char* buf, int len, bool& receiving, int& n
 	sock.async_read_some(boost::asio::buffer(buf, len), 
 			[&sock, buf, len, &receiving, &nrecv](const boost::system::error_code& err, size_t bytes_transferred){
 		if (!err) {
-			nrecv += bytes_transferred;
+			if (bytes_transferred == 0) {
+				std::this_thread::sleep_for(std::chrono::milliseconds(10));
+			} else {
+				nrecv += bytes_transferred;
+			}
 			std::cout << "recv " << bytes_transferred << " bytes,  nrecv " << nrecv << ",  len " << len << ",  receiving " << receiving << std::endl;
 			receiving = false;
 			recv_func(sock, buf+bytes_transferred, len-bytes_transferred, receiving, nrecv);
@@ -102,7 +106,7 @@ int main(int argc, char* argv[]) {
 	int i = 0;
 	int s = sizeof(str)/sizeof(str[0]);
 	bool send = false;
-	char buf[2048*100];
+	char* buf = new char[2048*10000];
 	int nrecv = 0;
 	bool receiving = false;
 	recv_func(sock, buf, sizeof(buf)-1, receiving, nrecv);
@@ -115,7 +119,7 @@ int main(int argc, char* argv[]) {
 		if (ss == 0) {
 		}
 		output_recv(buf, nrecv);
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
 	service.stop();
 	return 0;

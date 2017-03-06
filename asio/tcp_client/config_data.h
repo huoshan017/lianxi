@@ -6,5 +6,5 @@ JmyId2MsgHandler s_test_handlers[] = {
 };
 
 const JmyConnectorConfig test_connector_config = {
-	{ 1024, 1024 }, s_test_handlers, sizeof(s_test_handlers)/sizeof(s_test_handlers), true, true,
+	{ 1024, 1024}, s_test_handlers, sizeof(s_test_handlers)/sizeof(s_test_handlers), true, true,
 };
