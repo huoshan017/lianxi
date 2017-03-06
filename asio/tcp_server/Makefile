@@ -1,4 +1,4 @@
-CC = g++
+CC = clang++
 INCLUDES = -I/×××
 LIBS = -L/×××
 CCFLAGS = -g -Wall -O0 -std=c++11

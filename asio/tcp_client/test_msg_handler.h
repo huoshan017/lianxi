@@ -2,7 +2,7 @@
 
 #include <memory>
 
-class JmyMsgInfo;
+struct JmyMsgInfo;
 class TestMsgHandler
 {
 public:

@@ -27,6 +27,7 @@ private:
 	uint64_t down_stream_;
 	uint32_t up_last_stream_;
 	uint32_t down_last_stream_;
+	uint32_t last_stream_;
 	uint32_t last_up_bps_;
 	uint32_t last_down_bps_;
 	uint32_t last_bps_;
@@ -34,6 +35,7 @@ private:
 	std::chrono::system_clock::time_point pause_tick_;
 	std::chrono::system_clock::time_point last_up_tick_;
 	std::chrono::system_clock::time_point last_down_tick_;
+	std::chrono::system_clock::time_point last_tick_;
 	uint32_t interval_; // time span to get bps in seconds
 	enum State {
 		STATE_STOP = 1,
