@@ -34,14 +34,16 @@ int JmyDataHandler::processData(JmySessionBuffer& recv_buffer, int session_id, v
 		if (len-nhandled < 2) {
 			recv_buffer.readLen(nhandled);
 			recv_buffer.moveDataToFront();
-			//std::cout << "JmyDataHandler::processData  not enough length to get header" << std::endl;
 			break;
 		}
 
 		unsigned int data_len = ((buff[nhandled]<<8)&0xff00) + (buff[nhandled+1]&0xff);
-		if (len-nhandled-2 < data_len) {
+		if (len-nhandled < data_len+2) {
+			// (can write_len + can read len - nhandled) is not enough to hold next message
+			if (recv_buffer.getWriteLen()+len-nhandled < data_len) {
+				recv_buffer.moveDataToFront();
+			}
 			recv_buffer.readLen(nhandled);
-			//std::cout << "JmyDataHandler::processData  not enough length to get data. data_len: " << data_len << ", left_len: " << len-nhandled-2 << std::endl;
 			break;
 		}
 
@@ -54,8 +56,8 @@ int JmyDataHandler::processData(JmySessionBuffer& recv_buffer, int session_id, v
 		int res = processMsg(&msg_info_);
 		if (res < 0) return res;
 		nhandled += (2+data_len);
-		//std::cout << "JmyDataHandler::processData  processed length of data is " << nhandled << std::endl;
 		if (len - nhandled == 0) {
+			recv_buffer.readLen(nhandled);
 			break;
 		}
 	}
@@ -84,7 +86,6 @@ int JmyDataHandler::processData(JmyDoubleSessionBuffer* recv_buffer, int session
 		if (len-nhandled < 2) {
 			recv_buffer->readLen(nhandled);
 			recv_buffer->moveDataToFront();
-			//std::cout << "JmyDataHandler::processData  not enough length to get header" << std::endl;
 			break;
 		}
 

@@ -48,7 +48,6 @@ int main(int argc, char* argv[])
 #endif
 	int i = 0;
 	int s = sizeof(s_send_data)/sizeof(s_send_data[0]);
-	int count = 0;
 	bool send_failed = false;
 	while (true) {
 		if (!send_failed) {
@@ -56,27 +55,24 @@ int main(int argc, char* argv[])
 				std::cout << "connector is not connected" << std::endl;
 				break;
 			}
-			if (connector.send(1, s_send_data[i], std::strlen(s_send_data[i])) < 0) {
+			int index = i % s;
+			std::cout << "connector send the " << index << " str(" << s_send_data[index] << ")" << std::endl;
+			if (connector.send(1, s_send_data[index], std::strlen(s_send_data[index])) < 0) {
 				std::cout << "connector send failed" << std::endl;
 				send_failed = true;
 				std::this_thread::sleep_for(std::chrono::seconds(1));
 				continue;
 			}
 			i += 1;
-			if (i >= s)
-				i = 0;
-			count += 1;
-			std::cout << "connector is send " << count << " count" << std::endl;
-			if (connector.run() < 0) {
-				std::cout << "connector run failed" << std::endl;
-				break;
-			}
+		}
+		if (connector.run() < 0) {
+			std::cout << "connector run failed" << std::endl;
+			break;
 		}
 		size_t s = service.poll();
-		if (s > 0)
-			std::cout << "connector service polled " << s << " to send or receive data" << std::endl;
-		
-		std::this_thread::sleep_for(std::chrono::seconds(1));
+		if (s > 0) {
+		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	} 
 
 	return 0;
