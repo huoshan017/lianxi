@@ -17,7 +17,7 @@ init:
 	mkdir -p $(OBJDIR) $(JMYOBJDIR)
 
 $(EXE): $(OBJS) $(COMMON_OBJS)
-	$(CC) $^ -o $@ $(INCLUDES) $(LIBS) $(CCFLAGS) -lboost_system -lpthread -lzlog
+	$(CC) $^ -o $@ $(INCLUDES) $(LIBS) $(CCFLAGS) -lboost_system -lpthread $(JMYDIR)/thirdparty/lib/zlog/libzlog.a
 
 $(COMMON_OBJS) : $(JMYOBJDIR)/%.o: $(JMYDIR)/%.cpp
 	$(CC) $(CCFLAGS) -c $< -o $@

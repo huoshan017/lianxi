@@ -1,7 +1,9 @@
 #include "../libjmy/jmy_datatype.h"
 #include "test_msg_handler.h"
 
-JmyId2MsgHandler s_test_handlers[] = {
+#define s_log_cate_name "client_log"
+
+static JmyId2MsgHandler s_test_handlers[] = {
 	{ 1, TestMsgHandler::process_one }
 };
 

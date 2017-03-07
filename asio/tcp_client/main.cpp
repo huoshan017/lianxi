@@ -4,8 +4,9 @@
 #include <cstring>
 #include "../libjmy/jmy_tcp_connector.h"
 #include "../libjmy/jmy_net_tool.h"
-#include "config_data.h"
+#include "../libjmy/jmy_log.h"
 #include "const_data.h"
+#include "util.h"
 
 #define USE_ASYNC_CONNECT 1
 
@@ -15,10 +16,10 @@ bool check_connected(JmyTcpConnector& connector)
 {
 	JmyConnectorState state = connector.getState();
 	if (state == CONNECTOR_STATE_CONNECTED) {
-		std::cout << "connector connect port " << connector.getPort() << " success" << std::endl;
+		ClientLogDebug("connector connect port %d success", connector.getPort());
 		if (!connector.isStarting()) {
 			connector.start();
-			std::cout << "connector starting" << std::endl;
+			ClientLogDebug("connector starting");
 		}
 		return true;
 	}
@@ -27,8 +28,18 @@ bool check_connected(JmyTcpConnector& connector)
 
 int main(int argc, char* argv[])
 {
+	static const char* s_log_conf = "./log.conf";
+	if (!JmyLog::getInstance()->init(s_log_conf)) {
+		std::cout << "load log config file " << s_log_conf << " failed" << std::endl;
+		return -1;
+	}
+	if (!JmyLog::getInstance()->open(s_log_cate_name)) {
+		std::cout << "open log category " << s_log_cate_name << " failed" << std::endl;
+		return -1;
+	}
+
 	if (argc < 2) {
-		std::cout << "argument parameter not enough" << std::endl;
+		ClientLogError("argument parameter not enough");
 		return -1;
 	}
 
@@ -38,7 +49,7 @@ int main(int argc, char* argv[])
 	io_service service;
 	JmyTcpConnector connector(service);
 	if (!connector.loadConfig(test_connector_config)) {
-		std::cout << "connector load config failed" << std::endl;
+		ClientLogError("connector load config failed");
 		return -1;
 	}
 
@@ -67,13 +78,13 @@ int main(int argc, char* argv[])
 		}
 		if (!send_failed) {
 			if (connector.getState() != CONNECTOR_STATE_CONNECTED) {
-				std::cout << "connector is not connected" << std::endl;
+				ClientLogDebug("connector is not connected");
 				break;
 			}
 			int index = i % s;
-			std::cout << "connector send the " << index << " str(" << s_send_data[index] << ") count " << count++ << std::endl;
+			ClientLogDebug("connector send the %d str(%s) count %d", index, s_send_data[index], count++);
 			if (connector.send(1, s_send_data[index], std::strlen(s_send_data[index])) < 0) {
-				std::cout << "connector send failed" << std::endl;
+				ClientLogDebug("connector send failed");
 				send_failed = true;
 				std::this_thread::sleep_for(std::chrono::seconds(1));
 				continue;
@@ -82,7 +93,7 @@ int main(int argc, char* argv[])
 		}
 
 		if (connector.run() < 0) {
-			std::cout << "connector run failed" << std::endl;
+			ClientLogDebug("connector run failed");
 			break;
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
