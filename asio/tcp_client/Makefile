@@ -1,9 +1,9 @@
 CC = g++
+JMYDIR = ../libjmy
 INCLUDES = -I/×××
-LIBS = -L/×××
+LIBS = -L/××× -L$(JMYDIR)/thirdparty/lib/zlog
 CCFLAGS = -g -Wall -O0 -std=c++11
 OBJDIR = ./obj
-JMYDIR = ../libjmy
 JMYOBJDIR = $(JMYDIR)/obj
 EXE = tcp_client
 
@@ -17,7 +17,7 @@ init:
 	mkdir -p $(OBJDIR) $(JMYOBJDIR)
 
 $(EXE): $(OBJS) $(COMMON_OBJS)
-	$(CC) $^ -o $@ $(INCLUDES) $(LIBS) $(CCFLAGS) -lboost_system -lpthread
+	$(CC) $^ -o $@ $(INCLUDES) $(LIBS) $(CCFLAGS) -lboost_system -lpthread -lzlog
 
 $(COMMON_OBJS) : $(JMYOBJDIR)/%.o: $(JMYDIR)/%.cpp
 	$(CC) $(CCFLAGS) -c $< -o $@
