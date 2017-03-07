@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include <boost/asio.hpp>
 #include <chrono>
 #include <iostream>
@@ -7,9 +8,24 @@
 #include "config_data.h"
 #include "const_data.h"
 
-#define USE_ASYNC_CONNECT 0
+#define USE_ASYNC_CONNECT 1
 
 using namespace boost::asio;
+
+bool check_connected(JmyTcpConnector& connector)
+{
+	JmyConnectorState state = connector.getState();
+	if (state == CONNECTOR_STATE_CONNECTED) {
+		std::cout << "connector connect port " << connector.getPort() << " success" << std::endl;
+		if (!connector.isStarting()) {
+			connector.start();
+			std::cout << "connector starting" << std::endl;
+		}
+		return true;
+	}
+	return false;
+}
+
 int main(int argc, char* argv[])
 {
 	if (argc < 2) {
@@ -31,30 +47,26 @@ int main(int argc, char* argv[])
 	connector.connect("127.0.0.1", port);
 	connector.start();
 #else
-	connector.async_connect("127.0.0.1", port);
-	JmyConnectorState state = CONNECTOR_STATE_NOT_CONNECT;
-	while (true)  {
-		size_t s = service.poll();
-		if (s > 0) {
-			std::cout << "connector service polled " << s << " to wait connect server" << std::endl;
-		}
-		state = connector.getState();
-		if (state == CONNECTOR_STATE_CONNECTED) {
-			std::cout << "connector connect port " << port << " success" << std::endl;
-			//connector.start();
-			break;
-		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(1));
-	}
+	connector.asynConnect("127.0.0.1", port);
 #endif
 
-	JmyNetTool nt;
-	nt.start();
+	JmyConnectorState state = CONNECTOR_STATE_NOT_CONNECT;
 	uint64_t count = 0;
 	int i = 0;
 	int s = sizeof(s_send_data)/sizeof(s_send_data[0]);
 	bool send_failed = false;
 	while (true) {
+		size_t ss = service.poll();
+		if (ss > 0) {
+		}
+		if (state == CONNECTOR_STATE_NOT_CONNECT) {
+			if (!check_connected(connector)) {
+				//std::this_thread::sleep_for(std::chrono::milliseconds(100));
+				usleep(10000000);
+				continue;
+			}
+			state = CONNECTOR_STATE_CONNECTED;
+		}
 		if (!send_failed) {
 			if (connector.getState() != CONNECTOR_STATE_CONNECTED) {
 				std::cout << "connector is not connected" << std::endl;
@@ -65,21 +77,19 @@ int main(int argc, char* argv[])
 			if (connector.send(1, s_send_data[index], std::strlen(s_send_data[index])) < 0) {
 				std::cout << "connector send failed" << std::endl;
 				send_failed = true;
-				std::this_thread::sleep_for(std::chrono::seconds(1));
+				sleep(1);
+				//std::this_thread::sleep_for(std::chrono::seconds(1));
 				continue;
 			}
-			nt.addUpStream(std::strlen(s_send_data[index]));
 			i += 1;
 		}
+
 		if (connector.run() < 0) {
 			std::cout << "connector run failed" << std::endl;
 			break;
 		}
-		size_t s = service.poll();
-		if (s > 0) {
-		}
-		std::cout << "connector send bps: " << nt.getSendBps() << std::endl;
-		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		sleep(1);
+		//std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	} 
 
 	return 0;

@@ -111,7 +111,7 @@ uint32_t JmyNetTool::getBps()
 	uint32_t bps = 0;
 	if (d >= interval_ * 1000) {
 		bps = (up_stream_ + down_stream_ - last_stream_) * 1000 / d;
-		last_stream_ = up_stream_ = down_stream_;
+		last_stream_ = (up_stream_ + down_stream_);
 		last_bps_ = bps;
 		last_tick_ = now;
 	} else {

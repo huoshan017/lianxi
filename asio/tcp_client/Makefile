@@ -1,27 +1,28 @@
-CC = clang++
+CC = g++
 INCLUDES = -I/×××
 LIBS = -L/×××
 CCFLAGS = -g -Wall -O0 -std=c++11
 OBJDIR = ./obj
+JMYDIR = ../libjmy
+JMYOBJDIR = $(JMYDIR)/obj
 EXE = tcp_client
 
-COMMON_SRCS = $(wildcard ../libjmy/*.cpp)
-COMMON_OBJS = $(patsubst ../libjmy/%.cpp, ../libjmy/%.o, $(COMMON_SRCS))
+COMMON_SRCS = $(wildcard $(JMYDIR)/*.cpp)
+COMMON_OBJS = $(patsubst $(JMYDIR)/%.cpp, $(JMYOBJDIR)/%.o, $(COMMON_SRCS))
 SRCS = $(wildcard *.cpp)
-OBJS = $(patsubst %.cpp, %.o, $(SRCS))
+OBJS = $(patsubst %.cpp, $(OBJDIR)/%.o, $(SRCS))
 
-all: $(EXE)  
+all: init $(EXE)  
 init:
-	echo $(COMMON_OBJS) $(OBJS)
-	mkdir -p $(OBJDIR)
+	mkdir -p $(OBJDIR) $(JMYOBJDIR)
 
 $(EXE): $(OBJS) $(COMMON_OBJS)
 	$(CC) $^ -o $@ $(INCLUDES) $(LIBS) $(CCFLAGS) -lboost_system -lpthread
 
-$(COMMON_OBJS) : ../libjmy/%.o: ../libjmy/%.cpp
+$(COMMON_OBJS) : $(JMYOBJDIR)/%.o: $(JMYDIR)/%.cpp
 	$(CC) $(CCFLAGS) -c $< -o $@
 
-$(OBJS) : %.o : %.cpp
+$(OBJS) : $(OBJDIR)/%.o : %.cpp
 	$(CC) $(CCFLAGS) -c $< -o $@
 clean:
 	rm -fr $(COMMON_OBJS) $(OBJS) $(EXE)

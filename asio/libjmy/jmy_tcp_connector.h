@@ -5,6 +5,7 @@
 #include "jmy_datatype.h"
 #include "jmy_session_buffer.h"
 #include "jmy_data_handler.h"
+#include "jmy_net_tool.h"
 
 using namespace boost::asio;
 
@@ -30,13 +31,16 @@ public:
 	JmyConnectorState getState() const { return state_; }
 
 	bool loadConfig(const JmyConnectorConfig& conf);
-	void async_connect(const char* ip, short port);
+	void asynConnect(const char* ip, short port);
 	void connect(const char* ip, short port);
 	void start();
+	bool isStarting() const { return starting_; }
 	int send(int msg_id, const char* data, unsigned int len);
 	int run();
 
 	ip::tcp::socket& getSock() { return sock_; }
+	std::string getIp() { return ep_.address().to_string(); }
+	unsigned short getPort() { return ep_.port(); }
 
 private:
 	int handle_send();
@@ -49,7 +53,9 @@ private:
 	JmySessionBuffer send_buff_;
 	JmyDataHandler handler_;
 	JmyConnectorConfig conf_;
+	bool starting_;
 	bool sending_;
+	JmyNetTool tool_;
 };
 
 class JmyTcpMultiSameConnectors
