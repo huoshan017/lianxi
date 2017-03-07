@@ -1,4 +1,3 @@
-#include <unistd.h>
 #include <boost/asio.hpp>
 #include <chrono>
 #include <iostream>
@@ -61,8 +60,7 @@ int main(int argc, char* argv[])
 		}
 		if (state == CONNECTOR_STATE_NOT_CONNECT) {
 			if (!check_connected(connector)) {
-				//std::this_thread::sleep_for(std::chrono::milliseconds(100));
-				usleep(10000000);
+				std::this_thread::sleep_for(std::chrono::milliseconds(100));
 				continue;
 			}
 			state = CONNECTOR_STATE_CONNECTED;
@@ -77,8 +75,7 @@ int main(int argc, char* argv[])
 			if (connector.send(1, s_send_data[index], std::strlen(s_send_data[index])) < 0) {
 				std::cout << "connector send failed" << std::endl;
 				send_failed = true;
-				sleep(1);
-				//std::this_thread::sleep_for(std::chrono::seconds(1));
+				std::this_thread::sleep_for(std::chrono::seconds(1));
 				continue;
 			}
 			i += 1;
@@ -89,7 +86,7 @@ int main(int argc, char* argv[])
 			break;
 		}
 		sleep(1);
-		//std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	} 
 
 	return 0;
