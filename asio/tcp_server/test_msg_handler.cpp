@@ -1,7 +1,7 @@
+#include "../libjmy/jmy.h"
 #include "test_msg_handler.h"
-#include "../libjmy/jmy_tcp_session.h"
+#include "util.h"
 #include <chrono>
-#include <iostream>
 
 uint64_t TestMsgHandler::count_ = 0;
 
@@ -12,13 +12,13 @@ int TestMsgHandler::process_one(JmyMsgInfo* info)
 	unsigned int len = info->len;
 	int session_id = info->session_id;
 	JmyTcpSessionMgr* session_mgr = (JmyTcpSessionMgr*)info->param;
-	std::cout << "TestMsgHandler::process_one: data(" << data << "), len(" << len << ")" << std::endl;
+	ServerLogDebug("TestMsgHandler::process_one: data(%d), len(%d)", data, len);
 	JmyTcpSession* session = session_mgr->getSessionById(session_id);
 	if (!session) {
-		std::cout << "error  TestMsgHandler::process_one: session(" << session_id << ") not found" << std::endl;
+		ServerLogError("error  TestMsgHandler::process_one: session(%d) not found", session_id);
 		return -1;
 	}
-	std::cout << "TestMsgHandler::process_one  processed count " << count_++ << std::endl;
+	ServerLogDebug("TestMsgHandler::process_one  processed count ", count_++);
 	session->send(1, data, len);
 	return len;
 }

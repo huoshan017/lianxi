@@ -1,3 +1,5 @@
+#pragma once
+
 #include "../libjmy/jmy_datatype.h"
 #include "test_msg_handler.h"
 

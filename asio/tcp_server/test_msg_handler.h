@@ -1,7 +1,6 @@
 #pragma once
 
 #include <memory>
-#include "../libjmy/jmy_tcp_session.h"
 
 struct JmyMsgInfo;
 class TestMsgHandler
