@@ -185,12 +185,12 @@ int JmyTcpConnector::run()
  * JmyTcpMultiConnectors
  */
 JmyTcpMultiConnectors::JmyTcpMultiConnectors(io_service& service, int max_count)
-	: service_(service), max_count_(max_count)
+	: service_(service), max_count_(max_count), curr_id_(0)
 {
 }
 
 JmyTcpMultiConnectors::JmyTcpMultiConnectors(io_service& service, const ip::tcp::endpoint& ep, int max_count)
-	: service_(service), max_count_(max_count), ep_(ep)
+	: service_(service), max_count_(max_count), curr_id_(0), ep_(ep)
 {
 }
 
@@ -249,6 +249,10 @@ int JmyTcpMultiConnectors::start(const char* ip, short port)
 		conn = free_conn_.front().second;		
 		conn->reset();
 	}
+	if (!conn->loadConfig(conf_.config)) {
+		LibJmyLogError("connector load config failed");
+		return 0;
+	}
 	// blocking connect
 	conn->connect(ip, port);
 	conn->start();
@@ -261,7 +265,7 @@ int JmyTcpMultiConnectors::start(const char* ip, short port)
 JmyTcpConnector* JmyTcpMultiConnectors::getConnector(int connector_id)
 {
 	std::unordered_map<int, JmyTcpConnector*>::iterator it = id2conn_.find(connector_id);
-	if (it != id2conn_.end())
+	if (it == id2conn_.end())
 		return NULL;
 
 	return it->second;
