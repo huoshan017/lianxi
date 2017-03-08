@@ -1,7 +1,6 @@
 #include "jmy_data_handler.h"
 #include "jmy_tcp_session.h"
 #include "jmy_tcp_connector.h"
-#include <iostream>
 
 JmyDataHandler::JmyDataHandler()
 {
@@ -94,11 +93,11 @@ int JmyDataHandler::processData(JmyDoubleSessionBuffer* recv_buffer, int session
 		// current buffer not enough to hold next message data, switch to large buffer
 		if (!recv_buffer->isLarge() && data_len+2 > recv_buffer->getTotalLen()) {
 			if (!recv_buffer->switchToLarge()) {
-				std::cout << "JmyDataHandler::processData  current buffer size(" << recv_buffer->getTotalLen() << ") not enough to hold next message data(" << data_len << "), and cant malloc new large buffer" << std::endl;
+				LibJmyLogError("current buffer size(%d) not enough to hold next message data(%d), and cant malloc new large buffer", recv_buffer->getTotalLen(), data_len);
 				return -1;
 			}
 			if (data_len+2 > recv_buffer->getTotalLen()) {
-				std::cout << "JmyDataHandler::processData  next message data size(" << data_len << ") is too large than max buffer size(" << recv_buffer->getTotalLen()-2 << ")" << std::endl;
+				LibJmyLogDebug("next message data size(%d) is too large than max buffer size(%d)", data_len, recv_buffer->getTotalLen()-2);
 				return -1;
 			}
 			break;
@@ -107,7 +106,7 @@ int JmyDataHandler::processData(JmyDoubleSessionBuffer* recv_buffer, int session
 		// next message length small than normal buffer size, switch to normal buffer
 		if (recv_buffer->isLarge() && data_len+2 <= recv_buffer->getTotalLen()) {
 			if (!recv_buffer->backToNormal()) {
-				std::cout << "JmyDataHandler::processData  back to normal buffer failed" << std::endl;
+				LibJmyLogError("back to normal buffer failed");
 				return -1;
 			}
 		}
@@ -119,7 +118,6 @@ int JmyDataHandler::processData(JmyDoubleSessionBuffer* recv_buffer, int session
 				recv_buffer->moveDataToFront();
 			}
 			recv_buffer->readLen(nhandled);
-			//std::cout << "JmyDataHandler::processData  not enough length to get data. data_len: " << data_len << ", left_len: " << len-nhandled-2 << std::endl;
 			break;
 		}
 
@@ -147,7 +145,7 @@ int JmyDataHandler::writeData(JmySessionBuffer& send_buffer, int msg_id, const c
 		return 0;
 
 	if (!send_buffer.checkWriteLen(len+2+2)) {
-		std::cout << "JmyDataHandler::writeData  data length(" << len << ") is too large to write" << std::endl;
+		LibJmyLogError("data length(%d) is too large to write", len);
 		return -1;
 	}
 	return writeData<JmySessionBuffer>(&send_buffer, msg_id, data, len);
@@ -162,7 +160,7 @@ int JmyDataHandler::writeData(JmyDoubleSessionBuffer* send_buffer, int msg_id, c
 		bool too_large = true;
 		if (!send_buffer->isLarge()) {
 			if (!send_buffer->switchToLarge()) {
-				std::cout << "JmyDataHandler::writeData  switch to large buffer failed" << std::endl;
+				LibJmyLogError("switch to large buffer failed");
 				return -1;
 			}
 			if (send_buffer->checkWriteLen(len+2+2)) {
@@ -170,14 +168,14 @@ int JmyDataHandler::writeData(JmyDoubleSessionBuffer* send_buffer, int msg_id, c
 			}
 		}
 		if (too_large) {
-			std::cout << "JmyDataHandler::writeData  data length(" << len << ") is too large to write" << std::endl;
+			LibJmyLogError("data length(%d) is too large to write", len);
 			return -1;
 		}
 	}
 	// check if length of data is small than normal buffer, switch to normal buffer
 	if (send_buffer->isLarge() && send_buffer->getNormalLen() >= len+2+2)  {
 		if (!send_buffer->backToNormal()) {
-			std::cout << "JmyDataHandler::writeData  back to normal buffer failed" << std::endl;
+			LibJmyLogError("back to normal buffer failed");
 			return -1;
 		}
 	}
@@ -189,7 +187,7 @@ int JmyDataHandler::processMsg(JmyMsgInfo* info)
 	if (!info) return -1;
 	std::unordered_map<int, jmy_msg_handler>::iterator it = msg_handler_map_.find(info->msg_id);
 	if (it == msg_handler_map_.end()) {
-		std::cout << "JmyDataHandler::processMsg  not found msg(" << info->msg_id << ") handler, session_id(" << info->session_id << ")" << std::endl;
+		LibJmyLogWarn("not found msg(%d) handler, session_id(%d)", info->msg_id, info->session_id);
 		return info->len;
 	}
 	if (it->second(info) < 0)

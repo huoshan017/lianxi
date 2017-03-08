@@ -2,9 +2,7 @@
 #include <chrono>
 #include <iostream>
 #include <cstring>
-#include "../libjmy/jmy_tcp_connector.h"
-#include "../libjmy/jmy_net_tool.h"
-#include "../libjmy/jmy_log.h"
+#include "../libjmy/jmy.h"
 #include "const_data.h"
 #include "util.h"
 
@@ -29,12 +27,16 @@ bool check_connected(JmyTcpConnector& connector)
 int main(int argc, char* argv[])
 {
 	static const char* s_log_conf = "./log.conf";
-	if (!JmyLog::getInstance()->init(s_log_conf)) {
+	if (!JmyLogInit(s_log_conf)) {
 		std::cout << "load log config file " << s_log_conf << " failed" << std::endl;
 		return -1;
 	}
-	if (!JmyLog::getInstance()->open(s_log_cate_name)) {
-		std::cout << "open log category " << s_log_cate_name << " failed" << std::endl;
+	if (!JmyLogOpenLib(s_libjmy_log_cate)) {
+		std::cout << "open lib log " << s_libjmy_log_cate << " failed" << std::endl;
+		return -1;
+	}
+	if (!JmyLogOpen(s_client_log_cate)) {
+		std::cout << "open log " << s_client_log_cate << " failed" << std::endl;
 		return -1;
 	}
 

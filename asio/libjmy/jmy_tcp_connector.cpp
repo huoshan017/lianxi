@@ -1,5 +1,5 @@
 #include "jmy_tcp_connector.h"
-#include <iostream>
+#include "jmy_log.h"
 
 JmyTcpConnector::JmyTcpConnector(io_service& service)
 	: sock_(service), state_(CONNECTOR_STATE_NOT_CONNECT), starting_(false), sending_(false)
@@ -38,7 +38,7 @@ void JmyTcpConnector::reset()
 bool JmyTcpConnector::loadConfig(const JmyConnectorConfig& conf)
 {
 	if (!handler_.loadMsgHandle(conf.handlers, conf.nhandlers)) {
-		std::cout << "JmyTcpConnector::loadConfig  failed to load msg handle" << std::endl;
+		LibJmyLogError("failed to load msg handle");
 		return false;
 	}
 	if (!recv_buff_.init(conf.base.recv_buff_max_size, SESSION_BUFFER_TYPE_RECV))
@@ -57,7 +57,7 @@ void JmyTcpConnector::asynConnect(const char* ip, short port)
 		if (err) {
 			if (err.value() != boost::system::errc::operation_in_progress) {
 				close();
-				std::cerr << "JmyTcpConnector::connect  " << boost::system::system_error(err).what() << std::endl;
+				LibJmyLogError("connect failed: %s", boost::system::system_error(err).what());
 			}
 			return;
 		}
@@ -83,7 +83,7 @@ void JmyTcpConnector::connect(const char* ip, short port)
 void JmyTcpConnector::start()
 {
 	if (state_ != CONNECTOR_STATE_CONNECTED) {
-		std::cout << "JmyTcpConnector::start  socket not connected" << std::endl;
+		LibJmyLogError("socket not connected");
 		return;
 	}
 
@@ -98,10 +98,10 @@ void JmyTcpConnector::start()
 				if (bytes_transferred == 0) {
 					std::this_thread::sleep_for(std::chrono::milliseconds(100));
 				}
-				std::cout << "JmyTcpConnector::start  received " << bytes_transferred << " data" << std::endl;
+				LibJmyLogDebug("received %d data", bytes_transferred);
 				int nread = handler_.processData(recv_buff_, this);
 				if (nread < 0) {
-					std::cout << "JmyTcpConnector::start  handle_read failed" << std::endl;
+					LibJmyLogError("handle_read failed");
 					return;
 				}
 				start();
@@ -110,9 +110,8 @@ void JmyTcpConnector::start()
 				if (ev == 10053 || ev == 10054) {
 
 				}
-				//sock_.close();
 				close();
-				std::cout << "JmyTcpConnector::start  read some data failed, err: " << err << std::endl;
+				LibJmyLogError("read some data failed, err: %d", err.value());
 			}
 		} );
 
@@ -126,7 +125,7 @@ int JmyTcpConnector::send(int msg_id, const char* data, unsigned int len)
 	if (state_ != CONNECTOR_STATE_CONNECTED) return -1;
 	int res = handler_.writeData(send_buff_, msg_id, data, len);
 	if (res < 0) {
-		std::cout << "JmyTcpConnector::send  write data length(" << len << ") failed" << std::endl;
+		LibJmyLogError("write data length(%d) failed", len);
 		return -1;
 	}
 	return len;
@@ -146,15 +145,15 @@ int JmyTcpConnector::handle_send()
 			if (!err) {
 				if (bytes_transferred > 0) {
 					if (!send_buff_.readLen(bytes_transferred)) {
-						std::cout << "JmyTcpConnector::handle_send  send buff read len " << bytes_transferred << " failed" << std::endl;
+						LibJmyLogError("send buff read len %d failed", bytes_transferred);
 						return;
 					}
 					tool_.addUpStream(bytes_transferred);
 				}
-				std::cout << "JmyTcpConnector::handle_send  send " << bytes_transferred << " bytes" << std::endl;
+				LibJmyLogDebug("send %d bytes", bytes_transferred);
 			} else {
 				close();
-				std::cout << "JmyTcpConnector::handle_send  async_send error: " << err << std::endl;
+				LibJmyLogError("async_send error: ", err);
 				return;
 			}
 			sending_ = false;
@@ -173,7 +172,7 @@ int JmyTcpConnector::run()
 		auto now = std::chrono::system_clock::now();
 		if (std::chrono::duration_cast<std::chrono::milliseconds>(now - last_tick).count() >= 1000) {
 			last_tick = now;
-			std::cout << "JmyTcpConnector::run  send_Bps: " << tool_.getSendBps() << ", recv_Bps: " << tool_.getRecvBps() << ", Bps: " << tool_.getBps() << std::endl;
+			LibJmyLogInfo("send_Bps: %d, recv_Bps: %d, Bps: %d", tool_.getBps(), tool_.getRecvBps(), tool_.getSendBps());
 		}
 	}
 

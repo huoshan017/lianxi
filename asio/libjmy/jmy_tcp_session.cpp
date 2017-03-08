@@ -1,8 +1,8 @@
 #include "jmy_tcp_session.h"
 #include "jmy_data_handler.h"
+#include "jmy_log.h"
 #include <thread>
 #include <chrono>
-#include <iostream>
 
 JmyTcpSession::JmyTcpSession(io_service& service) : id_(0), sock_(service), sending_(false)
 {
@@ -43,7 +43,7 @@ void JmyTcpSession::reset()
 void JmyTcpSession::start()
 {
 	if (id_ == 0) {
-		std::cout << "JmyTcpSession::start  not init" << std::endl;
+		LibJmyLogError("not init");
 		return;
 	}
 
@@ -55,7 +55,7 @@ void JmyTcpSession::start()
 				}
 				int nread = handle_recv();
 				if (nread < 0) {
-					std::cout << "JmyTcpSession::start  handle_recv return " << std::endl;
+					LibJmyLogError("handle_recv return ");
 					return;
 				}
 				if (bytes_transferred == 0) {
@@ -69,7 +69,7 @@ void JmyTcpSession::start()
 				}
 				sock_.close();
 				session_mgr_->freeSessionById(getId());
-				std::cout << "JmyTcpSession::handle_recv  read some data failed, err: " << err << ", session_id: " << getId() <<  std::endl;
+				LibJmyLogError("read some data failed, err: %d, session_id: %d", err.value(), getId());
 			}
 		} );
 }
@@ -84,7 +84,7 @@ int JmyTcpSession::send(int msg_id, const char* data, unsigned int len)
 {
 	int res = handler_->writeData(&send_buff_, msg_id, data, len);
 	if (res < 0) {
-		std::cout << "JmyTcpSession::send  write data length(" << len << ") failed" << std::endl;
+		LibJmyLogError("write data length(%d) failed", len);
 		return -1;
 	}
 	//std::cout << "JmyTcpSession::send  session " << getId() << " write length " << res << " of data to send buffer: " << data << std::endl;
@@ -106,7 +106,7 @@ int JmyTcpSession::handle_send()
 				} else {
 					sock_.close();
 					session_mgr_->freeSessionById(getId());
-					std::cout << "JmyTcpSession::handle_send  async_send error: " << err << std::endl;
+					LibJmyLogError("async_send error: ", err.value());
 					return;
 				}
 				sending_ = false;
@@ -219,7 +219,7 @@ int JmyTcpSessionMgr::run()
 	for (auto s: used_session_map_) {
 		if (s.second) {
 			if (s.second->run() < 0) {
-				std::cout << "JmyTcpSessionMgr::run, session: " << s.second->getId() << " run failed" << std::endl; 
+				LibJmyLogError("session: %d run failed", s.second->getId()); 
 			}
 		}
 	}

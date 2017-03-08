@@ -1,8 +1,8 @@
 #include "jmy_session_buffer.h"
 #include "jmy_session_buffer_pool.h"
+#include "jmy_log.h"
 #include <cassert>
 #include <memory.h>
-#include <iostream>
 
 JmySessionBuffer::JmySessionBuffer()
 	: proxy_(false), buff_(NULL), len_(0), type_(SESSION_BUFFER_TYPE_NONE), write_offset_(0), read_offset_(0)
@@ -172,7 +172,7 @@ bool JmyDoubleSessionBuffer::init(std::shared_ptr<JmySessionBufferPool> pool, Se
 	else
 		p = pool->mallocSendBuffer(s);
 	if (!p) {
-		std::cout << "JmyDoubleSessionBuffer::init  failed to init because cant malloc buffer(" << type << ")" << std::endl;
+		LibJmyLogError("failed to init because cant malloc buffer(%d)", type);
 		return false;
 	}
 	assert(s > 0);
@@ -277,17 +277,17 @@ bool JmyDoubleSessionBuffer::switchToLarge()
 		else
 			p = buff_pool_->mallocLargeRecvBuffer(size);
 		if (!p) {
-			std::cout << "JmyDoubleSessionBuffer::switchToLarge  failed to malloc large buffer" << std::endl;
+			LibJmyLogError("failed to malloc large buffer");
 			return false;
 		}
 		if (!large_buff_.init(p, size, buff_.getType())) {
-			std::cout << "JmyDoubleSessionBuffer::switchToLarge  failed to init large buffer" << std::endl;
+			LibJmyLogError("failed to init large buffer");
 			return false;
 		}
 	}
 
 	if (!large_buff_.assign(buff_)) {
-		std::cout << "JmyDoubleSessionBuffer::switchToLarge  failed to assign data to new large buffer" << std::endl;
+		LibJmyLogError("failed to assign data to new large buffer");
 		return false;
 	}
 
@@ -300,16 +300,16 @@ bool JmyDoubleSessionBuffer::backToNormal()
 {
 	if (!use_large_) return true;
 	if (!buff_.assign(large_buff_)) {
-		std::cout << "JmyDoubleSessionBuffer::backToNormal  failed to assign data old buffer" << std::endl;
+		LibJmyLogError("failed to assign data old buffer");
 		return false;
 	}
 	if (large_buff_.getType() == SESSION_BUFFER_TYPE_SEND) {
 		if (!buff_pool_->freeLargeSendBuffer(large_buff_.getBuff())) {
-			std::cout << "JmyDoubleSessionBuffer::backToNormal  failed to free large send buffer" << std::endl;
+			LibJmyLogError("failed to free large send buffer");
 		}
 	} else {
 		if (!buff_pool_->freeLargeRecvBuffer(large_buff_.getBuff())) {
-			std::cout << "JmyDoubleSessionBuffer::backToNormal  failed to free large recv buffer" << std::endl;		
+			LibJmyLogError("failed to free large recv buffer");		
 		}
 	}
 	large_buff_.destroy();

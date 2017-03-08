@@ -5,7 +5,7 @@
 #include "jmy_session_buffer.h"
 #include "jmy_session_buffer_pool.h"
 #include "jmy_tcp_session.h"
-#include <iostream>
+#include "jmy_log.h"
 
 class JmyTcpConnector;
 
@@ -39,19 +39,19 @@ int JmyDataHandler::writeData(SessionBuffer* send_buffer, int msg_id, const char
 	buf[0] = ((len+2)>>8) & 0xff;
 	buf[1] = (len+2)&0xff;
 	if (!send_buffer->writeData(buf, 2)) {
-		std::cout << "JmyDataHandler::writeData  write head failed" << std::endl;
+		LibJmyLogError("write head failed");
 		return -1;
 	}
 	// write msg_id
 	buf[0] = (msg_id>>8)&0xff;
 	buf[1] = msg_id&0xff;
 	if (!send_buffer->writeData(buf, 2)) {
-		std::cout << "JmyDataHandler::writeData  write msg_id failed" << std::endl;
+		LibJmyLogError("write msg_id failed");
 		return -1;
 	}
 	// write body
 	if (!send_buffer->writeData(data, len)) {
-		std::cout << "JmyDataHandler::writeData  write data failed" << std::endl;
+		LibJmyLogError("write data failed");
 		return -1;
 	}
 	return len;

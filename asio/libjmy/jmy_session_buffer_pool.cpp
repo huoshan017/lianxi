@@ -1,5 +1,5 @@
 #include "jmy_session_buffer_pool.h"
-#include <iostream>
+#include "jmy_log.h"
 
 bool JmySessionBufferPool::init(int max_session_size,
 		unsigned int min_send_buff_size, unsigned int min_recv_buff_size,
@@ -10,7 +10,7 @@ bool JmySessionBufferPool::init(int max_session_size,
 	else if (min_send_buff_size <= DEFAULT_SEND_BUFFER_SIZE)
 		min_send_buff_size = DEFAULT_SEND_BUFFER_SIZE;
 	else {
-		std::cout << "JmySessionBufferPool::init  min_send_buff_size(" << min_send_buff_size << ") > DEFAULT_SEND_BUFFER_SIZE(" << DEFAULT_SEND_BUFFER_SIZE << ")" << std::endl;
+		LibJmyLogError("min_send_buff_size(%d) > DEFAULT_SEND_BUFFER_SIZE(%d)", min_send_buff_size, DEFAULT_SEND_BUFFER_SIZE);
 		return false;
 	}
 
@@ -19,7 +19,7 @@ bool JmySessionBufferPool::init(int max_session_size,
 	else if (min_recv_buff_size <= DEFAULT_RECV_BUFFER_SIZE)
 		min_recv_buff_size = DEFAULT_RECV_BUFFER_SIZE;
 	else {
-		std::cout << "JmySessionBufferPool::init  min_recv_buff_size(" << min_recv_buff_size << ") > DEFAULT_RECV_BUFFER_SIZE(" << DEFAULT_RECV_BUFFER_SIZE << ")" << std::endl;
+		LibJmyLogError("min_recv_buff_size(%d) > DEFAULT_RECV_BUFFER_SIZE(%d)", min_recv_buff_size, DEFAULT_RECV_BUFFER_SIZE);
 		return false;
 	}
 
@@ -28,7 +28,7 @@ bool JmySessionBufferPool::init(int max_session_size,
 	else if (max_send_buff_size <= MAX_SEND_BUFFER_SIZE)
 		max_send_buff_size = MAX_SEND_BUFFER_SIZE;
 	else {
-		std::cout << "JmySessionBufferPool::init  max_send_buff_size(" << max_send_buff_size << ") > MAX_SEND_BUFFER_SIZE(" << MAX_SEND_BUFFER_SIZE << ")" << std::endl;
+		LibJmyLogError("max_send_buff_size(%d) > MAX_SEND_BUFFER_SIZE(%d)", max_send_buff_size, MAX_SEND_BUFFER_SIZE);
 		return false;
 	}
 
@@ -37,7 +37,7 @@ bool JmySessionBufferPool::init(int max_session_size,
 	else if (max_recv_buff_size <= MAX_RECV_BUFFER_SIZE)
 		max_recv_buff_size = MAX_RECV_BUFFER_SIZE;
 	else {
-		std::cout << "JmySessionBufferPool::init  max_recv_buff_size(" << max_recv_buff_size << ") > MAX_RECV_BUFFER_SIZE(" << MAX_RECV_BUFFER_SIZE << ")" << std::endl;
+		LibJmyLogError("max_recv_buff_size(%d) > MAX_RECV_BUFFER_SIZE(%d)", max_recv_buff_size, MAX_RECV_BUFFER_SIZE);
 		return false;
 	}
 		

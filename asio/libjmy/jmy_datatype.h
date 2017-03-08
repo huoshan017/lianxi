@@ -13,7 +13,6 @@ struct JmyMsgInfo {
 	JmyMsgInfo() : msg_id(0), data(NULL), len(0), session_id(0), param(NULL) {}
 };
 
-class JmyTcpSessionMgr;
 typedef int (*jmy_msg_handler)(JmyMsgInfo*);
 
 struct JmyId2MsgHandler {

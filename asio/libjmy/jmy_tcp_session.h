@@ -10,6 +10,7 @@ using namespace boost::asio;
 
 class JmySessionBufferPool;
 class JmyDataHandler;
+class JmyTcpSessionMgr;
 
 class JmyTcpSession
 {

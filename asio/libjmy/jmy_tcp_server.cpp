@@ -1,7 +1,7 @@
 #include "jmy_tcp_server.h"
 #include "jmy_tcp_session.h"
 #include "jmy_session_buffer_pool.h"
-#include <iostream>
+#include "jmy_log.h"
 
 JmyTcpServer::JmyTcpServer() : sock_(service_), curr_session_(service_), inited_(false)
 {
@@ -77,18 +77,18 @@ int JmyTcpServer::do_accept()
 		[this](boost::system::error_code ec){
 			if (ec) {
 				if (ec.value()==boost::system::errc::operation_canceled || ec.value()==boost::system::errc::operation_in_progress) {
-					std::cout << "JmyTcpServer::do_accept  error code(" << ec.value() << ")" << std::endl;
+					LibJmyLogError("error code(%d)", ec.value());
 				} else {
-					std::cout << "JmyTcpServer::do_accept  async_accept error: " << ec << std::endl;
+					LibJmyLogError("async_accept error: %d", ec.value());
 					return;	
 				}
 			} else {
 				JmyTcpSession* session = session_mgr_->getOneSession(session_buff_pool_, handler_);
 				if (!session) {
-					std::cout << "JmyTcpServer::do_accept  get free MyTcpSession failed" << std::endl;
+					LibJmyLogError("get free MyTcpSession failed");
 					return;
 				}
-				std::cout << "JmyTcpServer::do_accept  new session " << session->getId() << " start" << std::endl;
+				LibJmyLogDebug("new session %d start", session->getId());
 				session->getSock() = std::move(curr_session_.getSock());
 				session->getSock().set_option(ip::tcp::no_delay(true));
 				session->start();
@@ -102,7 +102,6 @@ int JmyTcpServer::do_accept()
 int JmyTcpServer::do_loop()
 {
 	size_t s = service_.run();
-	std::cout << "JmyTcpServer::do_loop return result: " << s << std::endl;
 	return s;
 }
 #endif
