@@ -234,9 +234,7 @@ bool JmyTcpMultiConnectors::loadConfig(const JmyMultiConnectorsConfig& conf)
 	return true;
 }
 
-
-
-int JmyTcpMultiConnectors::start()
+int JmyTcpMultiConnectors::start(const char* ip, short port)
 {
 	size_t s = id2conn_.size();
 	if ((int)s >= max_count_) {
@@ -251,8 +249,11 @@ int JmyTcpMultiConnectors::start()
 		conn = free_conn_.front().second;		
 		conn->reset();
 	}
+	// blocking connect
+	conn->connect(ip, port);
 	conn->start();
 	curr_id_ += 1;
+	if (curr_id_ > MaxId) curr_id_ = 1;
 	id2conn_.insert(std::make_pair(curr_id_, conn));
 	return curr_id_;
 }
@@ -264,6 +265,15 @@ JmyTcpConnector* JmyTcpMultiConnectors::getConnector(int connector_id)
 		return NULL;
 
 	return it->second;
+}
+
+JmyConnectorState JmyTcpMultiConnectors::getState(int connector_id)
+{
+	JmyTcpConnector* conn = getConnector(connector_id);
+	if (!conn) {
+		return CONNECTOR_STATE_NOT_CONNECT;
+	}
+	return conn->getState();
 }
 
 int JmyTcpMultiConnectors::send(int connector_id, int msg_id, const char* data, unsigned int len)
@@ -288,12 +298,12 @@ int JmyTcpMultiConnectors::run(int connector_id)
 	return conn->run();
 }
 
-int JmyTcpMultiConnectors::startInturn(int count)
+int JmyTcpMultiConnectors::startInturn(int count, const char* ip, short port)
 {
 	int c = 0;
 	count = max_count_ < count ? max_count_: count;
 	for (; c<count; ++c) {
-		if (start() < 0) {
+		if (start(ip, port) < 0) {
 			break;
 		}
 	}

@@ -69,15 +69,15 @@ public:
 	void reset();
 
 	bool loadConfig(const JmyMultiConnectorsConfig& conf);
-	int start();
+	int start(const char* ip, short port);
 	int send(int connector_id, int msg_id, const char* data, unsigned int len);
 	int run(int connector_id);
-	int startInturn(int count);
+	int startInturn(int count, const char* ip, short port);
 	int sendInturn(int msg_id, const char* data, unsigned int len);
 	int runInturn();
 
-private:
 	JmyTcpConnector* getConnector(int connector_id);
+	JmyConnectorState getState(int connector_id);
 
 private:
 	enum { MaxId = 999999, };
