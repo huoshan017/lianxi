@@ -34,23 +34,16 @@ struct JmyServerConfig {
 	unsigned int max_conn;
 };
 
-struct JmyConnectorBaseConfig {
+struct JmyConnectorConfig {
 	unsigned int recv_buff_max_size;
 	unsigned int send_buff_max_size;
-};
-
-struct JmyMultiSameConnectorsConfig {
-	JmyConnectorBaseConfig base_conf;
-	JmyId2MsgHandler* handlers;
-	int nhandlers;
-	unsigned int max_count;
-	bool is_delay;
-};
-
-struct JmyConnectorConfig {
-	JmyConnectorBaseConfig base;
 	JmyId2MsgHandler* handlers;
 	int nhandlers;
 	bool no_delay;
 	bool connected_start;
+};
+
+struct JmyMultiConnectorsConfig {
+	JmyConnectorConfig config;
+	unsigned int max_count;
 };

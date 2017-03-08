@@ -17,7 +17,7 @@ enum JmyConnectorState {
 	CONNECTOR_STATE_DISCONNECT = 4,
 };
 
-class JmyTcpConnector //: public std::enable_shared_from_this<JmyTcpConnector>
+class JmyTcpConnector 
 {
 public:
 	JmyTcpConnector(io_service& service);
@@ -28,8 +28,6 @@ public:
 	void destroy();
 	void reset();
 
-	JmyConnectorState getState() const { return state_; }
-
 	bool loadConfig(const JmyConnectorConfig& conf);
 	void asynConnect(const char* ip, short port);
 	void connect(const char* ip, short port);
@@ -38,6 +36,7 @@ public:
 	int send(int msg_id, const char* data, unsigned int len);
 	int run();
 
+	JmyConnectorState getState() const { return state_; }
 	ip::tcp::socket& getSock() { return sock_; }
 	std::string getIp() { return ep_.address().to_string(); }
 	unsigned short getPort() { return ep_.port(); }
@@ -58,24 +57,36 @@ private:
 	JmyNetTool tool_;
 };
 
-class JmyTcpMultiSameConnectors
+class JmyTcpMultiConnectors
 {
 public:
-	JmyTcpMultiSameConnectors();
-	JmyTcpMultiSameConnectors(io_service& service, const ip::tcp::endpoint& ep);
-	~JmyTcpMultiSameConnectors();
+	JmyTcpMultiConnectors(io_service& service, int max_count = 5000);
+	JmyTcpMultiConnectors(io_service& service, const ip::tcp::endpoint& ep, int max_count = 5000);
+	~JmyTcpMultiConnectors();
 
-	bool init(io_service& service);
 	void close();
 	void destroy();
+	void reset();
 
-	bool loadConfig(const JmyMultiSameConnectorsConfig& conf);
-	bool start();
-	int send(int connector_id, const char* data, unsigned int len);
-	int run();
+	bool loadConfig(const JmyMultiConnectorsConfig& conf);
+	int start();
+	int send(int connector_id, int msg_id, const char* data, unsigned int len);
+	int run(int connector_id);
+	int startInturn(int count);
+	int sendInturn(int msg_id, const char* data, unsigned int len);
+	int runInturn();
 
 private:
-	std::unordered_map<int, std::shared_ptr<ip::tcp::socket> > id2socks_;
-	ip::tcp::endpoint ep_;
+	JmyTcpConnector* getConnector(int connector_id);
+
+private:
+	enum { MaxId = 999999, };
+	io_service& service_;
+	int max_count_;
+	//int curr_count_;
 	int curr_id_;
+	std::unordered_map<int, JmyTcpConnector*> id2conn_;
+	std::list<std::pair<int, JmyTcpConnector*> > free_conn_;
+	ip::tcp::endpoint ep_;
+	JmyMultiConnectorsConfig conf_;
 };

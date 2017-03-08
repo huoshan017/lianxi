@@ -1,4 +1,4 @@
-CC = g++
+CC = clang++
 JMYDIR = ../libjmy
 INCLUDES = -I/×××
 LIBS = -L/××× -L$(JMYDIR)/thirdparty/lib/zlog
