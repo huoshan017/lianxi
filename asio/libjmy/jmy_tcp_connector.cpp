@@ -1,5 +1,6 @@
 #include "jmy_tcp_connector.h"
 #include "jmy_log.h"
+#include <thread>
 
 JmyTcpConnector::JmyTcpConnector(io_service& service, JmyTcpConnectorMgr& mgr) :
 	mgr_(mgr),
@@ -185,7 +186,7 @@ int JmyTcpConnector::run()
 		auto now = std::chrono::system_clock::now();
 		if (std::chrono::duration_cast<std::chrono::milliseconds>(now - last_tick).count() >= 1000) {
 			last_tick = now;
-			LibJmyLogInfo("send_Bps: %d, recv_Bps: %d, Bps: %d", tool_.getBps(), tool_.getRecvBps(), tool_.getSendBps());
+			LibJmyLogInfo("id(%d)  send_Bps: %d, recv_Bps: %d, Bps: %d", getId(), tool_.getBps(), tool_.getRecvBps(), tool_.getSendBps());
 		}
 	}
 

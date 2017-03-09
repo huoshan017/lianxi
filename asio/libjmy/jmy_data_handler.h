@@ -21,6 +21,7 @@ public:
 	int processData(JmyDoubleSessionBuffer* recv_buffer, int session_id, std::shared_ptr<JmyTcpSessionMgr> session_mgr);
 	int writeData(JmySessionBuffer& send_buff, int msg_id, const char* data, unsigned int len);
 	int writeData(JmyDoubleSessionBuffer* write_buffer, int msg_id, const char* data, unsigned int len);
+	int writeData(JmySessionBufferList* buffer_list, int msg_id, const char* data, unsigned int len);
 
 private:
 	template <class SessionBuffer>

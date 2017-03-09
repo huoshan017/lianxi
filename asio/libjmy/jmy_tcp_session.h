@@ -27,8 +27,11 @@ public:
 	void start();
 	int run();
 	int send(int msg_id, const char* data, unsigned int len);
+
 	ip::tcp::socket& getSock() { return sock_; }
 	int getId() const { return id_; }
+	void* getUnusedData() const { return unused_data_; }
+	void setUnusedData(void* data) { unused_data_ = data; }
 
 private:
 	int handle_recv();
@@ -42,7 +45,7 @@ private:
 	JmyDoubleSessionBuffer recv_buff_;
 	JmyDoubleSessionBuffer send_buff_;
 	bool sending_;
-	void* unused_data;
+	void* unused_data_;
 };
 
 class JmyTcpSessionMgr : public std::enable_shared_from_this<JmyTcpSessionMgr>

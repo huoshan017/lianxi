@@ -182,6 +182,14 @@ int JmyDataHandler::writeData(JmyDoubleSessionBuffer* send_buffer, int msg_id, c
 	return writeData<JmyDoubleSessionBuffer>(send_buffer, msg_id, data, len);
 }
 
+int JmyDataHandler::writeData(JmySessionBufferList* buffer_list, int msg_id, const char* data, unsigned int len)
+{
+	if (!buffer_list || !data || !len)
+		return 0;
+
+	return 0; 
+}
+
 int JmyDataHandler::processMsg(JmyMsgInfo* info)
 {
 	if (!info) return -1;

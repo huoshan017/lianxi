@@ -4,7 +4,7 @@
 #include <thread>
 #include <chrono>
 
-JmyTcpSession::JmyTcpSession(io_service& service) : id_(0), sock_(service), sending_(false)
+JmyTcpSession::JmyTcpSession(io_service& service) : id_(0), sock_(service), sending_(false), unused_data_(NULL)
 {
 }
 

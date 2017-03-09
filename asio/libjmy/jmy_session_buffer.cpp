@@ -316,3 +316,92 @@ bool JmyDoubleSessionBuffer::backToNormal()
 	use_large_ = false;
 	return true;
 }
+
+/**
+ * JmySessionBufferList
+ */
+JmySessionBufferList::JmySessionBufferList() :
+	max_bytes_(0), curr_used_bytes_(0), max_count_(0), curr_count_(0)
+{
+}
+
+JmySessionBufferList::~JmySessionBufferList()
+{
+	destroy();
+}
+
+bool JmySessionBufferList::init(unsigned int max_bytes, unsigned int max_count)
+{
+	max_bytes_ = max_bytes;
+	max_count_ = max_count;
+	return true;
+}
+
+void JmySessionBufferList::destroy()
+{
+	std::list<buffer>::iterator it = list_.begin();
+	for (; it!=list_.end(); ++it) {
+		if (it->data_) {
+			delete it->data_;
+		}
+	}
+	list_.clear();
+}
+
+bool JmySessionBufferList::writeData(const char* data, unsigned int len)
+{
+	if (max_bytes_ > 0) {
+		if (curr_used_bytes_ + len > max_bytes_) {
+			LibJmyLogError("buffer list used bytes(%d) great to max bytes(%d)", curr_used_bytes_+len, max_bytes_);
+			return false;
+		}
+	}
+	if (max_count_ > 0) {
+		if (curr_count_ + 1 > max_count_) {
+			LibJmyLogError("buffer list used data count(%d) is max", max_count_);
+			return false;
+		}
+	}
+	buffer b;
+	b.init(data, len);
+	list_.push_back(b);
+	if (curr_read_iter_ == list_.end())
+		curr_read_iter_ = list_.begin();
+	if (max_bytes_ > 0)
+		curr_used_bytes_ += len;
+	return true;
+}
+
+const char* JmySessionBufferList::getReadBuff()
+{
+	if (curr_read_iter_ == list_.end())
+		return NULL;
+	buffer& b = *curr_read_iter_;
+	return b.data_ + b.roffset_;
+}
+
+unsigned int JmySessionBufferList::getReadLen()
+{
+	if (curr_read_iter_ == list_.end())
+		return 0;
+	buffer& b = *curr_read_iter_;
+	unsigned int read_len = b.len_ - b.roffset_;
+	if (read_len == 0) {
+		curr_read_iter_++;
+	}
+	return read_len;
+}
+
+bool JmySessionBufferList::readLen(unsigned int len)
+{
+	if (curr_read_iter_ == list_.end())
+		return false;
+	buffer& b = *curr_read_iter_;
+	unsigned int read_len = b.len_ - b.roffset_;
+	if (read_len < len)
+		return false;
+	b.roffset_ += len;
+	if (b.len_ <= b.roffset_)
+		curr_read_iter_++;
+	return true;
+}

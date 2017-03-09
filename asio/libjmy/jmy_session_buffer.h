@@ -1,6 +1,8 @@
 #pragma once
 
-#include <thread>
+#include <list>
+#include <memory>
+#include <cstring>
 #include "jmy_session_buffer_pool.h"
 
 enum SessionBufferType {
@@ -87,5 +89,43 @@ private:
 class JmySessionBufferList
 {
 public:
-	
+	JmySessionBufferList();
+	~JmySessionBufferList();
+
+	bool init(unsigned int max_bytes = 0, unsigned int max_count = 0);
+	void destroy();
+
+	bool writeData(const char* data, unsigned int len);
+	const char* getReadBuff();
+	unsigned int getReadLen();
+	bool readLen(unsigned int len);
+
+private:
+	struct buffer {
+		const char* data_;
+		unsigned int len_;
+		unsigned int roffset_;
+		buffer() : data_(NULL), len_(0), roffset_(0) {}
+		~buffer() { destroy(); }
+		bool init(const char* data, unsigned int len) {
+			if (!data || !len) return false;
+			data_ = new char[len];
+			std::memcpy((void*)data_, (void*)data, len);
+			len_ = len;
+			return true;
+		}
+		void destroy() {
+			if (data_) {
+				delete []data_;
+				data_ = NULL;
+				len_ = 0;
+			}
+		}
+	};
+	std::list<buffer> list_;
+	std::list<buffer>::iterator curr_read_iter_;
+	unsigned int max_bytes_;
+	unsigned int curr_used_bytes_;
+	unsigned int max_count_;
+	unsigned int curr_count_;
 };
