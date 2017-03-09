@@ -3,29 +3,51 @@
 #include "const_data.h"
 #include "util.h"
 
-int TestMsgHandler::count_ = 0;
+std::unordered_map<JmyTcpConnectorMgr*, std::unordered_map<int, int> > TestMsgHandler::mgr2id_;
 
 int TestMsgHandler::process_one(JmyMsgInfo* info)
 {
 	if (!info) return -1;
 	const char* data = info->data;
 	unsigned int len = info->len;
-	JmyTcpConnector* connector = (JmyTcpConnector*)info->param;
+	int cid = info->session_id;
+	JmyTcpConnectorMgr* mgr = (JmyTcpConnectorMgr*)info->param;
+	JmyTcpConnector* conn = mgr->get(cid);
+	if (!conn) {
+		ClientLogError("get connector(%d) failed", cid);
+		return 0;
+	}
+
 	int s = sizeof(s_send_data)/sizeof(s_send_data[0]);
-	int index = get_count() % s;
+#if 0
+	std::unordered_map<JmyTcpConnectorMgr*, std::unordered_map<int, int> >::iterator it = mgr2id_.find(mgr);
+	if (it == mgr2id_.end()) {
+		std::unordered_map<int, int> id2idx;
+		mgr2id_.insert(std::make_pair(mgr, id2idx));
+		it = mgr2id_.find(mgr);
+	}
+	std::unordered_map<int, int>::iterator iit = it->second.find(cid);
+	if (iit == it->second.end()) {
+		it->second.insert(std::make_pair(cid, 0));
+		iit = it->second.find(cid);
+	}
+	
+	int index = (iit->second);
+	iit->second += 1;
+	if (iit->second >= s) {
+		iit->second = 0;
+	}
+#endif
+	long index = (long)conn->getUnusedData();
 	if (std::memcmp(data, s_send_data[index], len) != 0) {
-		ClientLogError("TestMsgHandler::process_one  get data from msg(%s) compared from s_send_data[%d] (%s) is different", data, index, s_send_data[index]);
+		ClientLogError("get data from msg(%s) compared from s_send_data[%d] (%s) is different", data, index, s_send_data[index]);
 	} else {
-		//std::cout << "TestMsgHandler::process_one  compare data(" << data << ") is same" << std::endl;
+		ClientLogDebug("compare data(%s) is same", data);
 	}
-	inc_count();
-
-	static int count = 0;
-	count += 1;
-
-	if (!connector) {
-		ClientLogError("error  TestMsgHandler::process_one: connector not found");
-		return -1;
+	index += 1;
+	if (index >= s) {
+		index = 0;
 	}
+	conn->setUnusedData((void*)index);
 	return len;
 }

@@ -1,15 +1,15 @@
 #pragma once
 
 #include <memory>
+#include <unordered_map>
 
 struct JmyMsgInfo;
+class JmyTcpConnectorMgr;
 class TestMsgHandler
 {
 public:
 	static int process_one(JmyMsgInfo*);
-	static int inc_count() { return count_ += 1; }
-	static int get_count() { return count_; }
 
 private:
-	static int count_;
+	static std::unordered_map<JmyTcpConnectorMgr*, std::unordered_map<int, int> > mgr2id_;
 };

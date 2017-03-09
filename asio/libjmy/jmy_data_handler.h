@@ -7,7 +7,7 @@
 #include "jmy_tcp_session.h"
 #include "jmy_log.h"
 
-class JmyTcpConnector;
+class JmyTcpConnectorMgr;
 
 class JmyDataHandler
 {
@@ -17,7 +17,7 @@ public:
 	bool loadMsgHandle(const JmyId2MsgHandler id2handlers[], int size);
 	int processData(JmySessionBuffer& recv_buff, int session_id, void* param);
 	int processData(JmySessionBuffer& recv_buff, int session_id, std::shared_ptr<JmyTcpSessionMgr> session_mgr);
-	int processData(JmySessionBuffer& recv_buff, JmyTcpConnector* connector);
+	int processData(JmySessionBuffer& recv_buff, int connector_id, JmyTcpConnectorMgr* mgr);
 	int processData(JmyDoubleSessionBuffer* recv_buffer, int session_id, std::shared_ptr<JmyTcpSessionMgr> session_mgr);
 	int writeData(JmySessionBuffer& send_buff, int msg_id, const char* data, unsigned int len);
 	int writeData(JmyDoubleSessionBuffer* write_buffer, int msg_id, const char* data, unsigned int len);

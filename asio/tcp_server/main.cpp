@@ -40,7 +40,7 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-	ServerLogDebug("start listening port %d", LISTEN_PORT);
+	ServerLogInfo("start listening port %d", LISTEN_PORT);
 
 	while (server.run() >= 0) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));

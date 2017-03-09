@@ -17,7 +17,7 @@ bool check_connected(JmyTcpConnector& connector)
 		ClientLogDebug("connector connect port %d success", connector.getPort());
 		if (!connector.isStarting()) {
 			connector.start();
-			ClientLogDebug("connector starting");
+			ClientLogInfo("connector starting");
 		}
 		return true;
 	}

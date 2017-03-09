@@ -88,10 +88,12 @@ int JmyTcpServer::do_accept()
 					LibJmyLogError("get free MyTcpSession failed");
 					return;
 				}
-				LibJmyLogDebug("new session %d start", session->getId());
+
 				session->getSock() = std::move(curr_session_.getSock());
 				session->getSock().set_option(ip::tcp::no_delay(true));
 				session->start();
+				ip::tcp::endpoint ep = session->getSock().remote_endpoint();
+				LibJmyLogInfo("new session %d(%s:%d) start", session->getId(), ep.address().to_string().c_str(), ep.port());
 			}
 			do_accept();
 		});

@@ -42,6 +42,7 @@ private:
 	JmyDoubleSessionBuffer recv_buff_;
 	JmyDoubleSessionBuffer send_buff_;
 	bool sending_;
+	void* unused_data;
 };
 
 class JmyTcpSessionMgr : public std::enable_shared_from_this<JmyTcpSessionMgr>

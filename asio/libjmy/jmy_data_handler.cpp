@@ -68,9 +68,9 @@ int JmyDataHandler::processData(JmySessionBuffer& recv_buffer, int session_id, s
 	return processData(recv_buffer, session_id, (void*)session_mgr.get());
 }
 
-int JmyDataHandler::processData(JmySessionBuffer& recv_buffer, JmyTcpConnector* connector)
+int JmyDataHandler::processData(JmySessionBuffer& recv_buffer, int connector_id, JmyTcpConnectorMgr* mgr)
 {
-	return processData(recv_buffer, 0, (void*)connector);
+	return processData(recv_buffer, connector_id, (void*)mgr);
 }
 
 int JmyDataHandler::processData(JmyDoubleSessionBuffer* recv_buffer, int session_id, std::shared_ptr<JmyTcpSessionMgr> session_mgr)

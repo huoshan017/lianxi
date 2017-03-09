@@ -34,7 +34,7 @@ struct JmyServerConfig {
 	unsigned int max_conn;
 };
 
-struct JmyConnectorConfig {
+struct JmyConnectorConfigCommon {
 	unsigned int recv_buff_max_size;
 	unsigned int send_buff_max_size;
 	JmyId2MsgHandler* handlers;
@@ -44,6 +44,14 @@ struct JmyConnectorConfig {
 };
 
 struct JmyMultiConnectorsConfig {
-	JmyConnectorConfig config;
+	JmyConnectorConfigCommon common;
 	unsigned int max_count;
+};
+
+struct JmyConnectorConfig {
+	JmyConnectorConfigCommon common;
+	int conn_id;
+	void assign(JmyMultiConnectorsConfig& conf) {
+		common = conf.common;
+	}
 };

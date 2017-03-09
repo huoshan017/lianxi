@@ -12,6 +12,12 @@
 
 using namespace boost::asio;
 
+struct conn_data {
+	int index_;
+	bool send_failed_;
+	conn_data(int index, bool send_failed) : index_(index), send_failed_(send_failed) {}
+};
+
 static bool check_connected(JmyTcpMultiConnectors& connectors, int connector_id)
 {
 	JmyConnectorState state = connectors.getState(connector_id);
@@ -29,35 +35,24 @@ static void connectors_run(io_service* service, int client_count)
 		return;
 	}
 	
-	std::set<int> connector_ids;
+	std::map<int, conn_data> conns;
 	for (int i=0; i<client_count; ++i) {
-		int cid = connectors.start("127.0.0.1", 10000);
-		if (cid < 0) {
+		JmyTcpConnector* conn = connectors.start("127.0.0.1", 10000);
+		if (!conn) {
 			ClientLogError("connector(index:%d) start failed", i);
 			return;
 		}
-		if (cid == 0) {
-			ClientLogDebug("connector(index:%d) start full", i);
-			break;
-		}
-		JmyTcpConnector* conn = connectors.getConnector(cid);
-		if (!conn) {
-			ClientLogDebug("connector %d not found", cid);
-			return;
-		}
-		ClientLogDebug("connector(%d) start, state %d", cid, conn->getState());
-		connector_ids.insert(cid);
+		ClientLogInfo("connector(%d) start, state %d", conn->getId(), conn->getState());
+		conns.insert(std::make_pair(conn->getId(), conn_data(0, false)));
 	}
 
 	JmyConnectorState state = CONNECTOR_STATE_NOT_CONNECT;
 	uint64_t count = 0;
-	int i = 0;
 	int s = sizeof(s_send_data)/sizeof(s_send_data[0]);
-	bool send_failed = false;
 	while (true) {
-		std::set<int>::iterator it = connector_ids.begin();
-		for (; it!=connector_ids.end(); ++it) {
-			int cid = *it;
+		std::map<int, conn_data>::iterator it = conns.begin();
+		for (; it!=conns.end(); ++it) {
+			int cid = it->first;
 #if 1
 			if (state == CONNECTOR_STATE_NOT_CONNECT) {
 				if (!check_connected(connectors, cid)) {
@@ -67,21 +62,24 @@ static void connectors_run(io_service* service, int client_count)
 				state = CONNECTOR_STATE_CONNECTED;
 			}
 #endif
-			if (!send_failed) {
+			if (!it->second.send_failed_) {
 				state = connectors.getState(cid);
 				if (state != CONNECTOR_STATE_CONNECTED) {
-					ClientLogDebug("connector(%d) is not connected, state(%d)", cid, state);
+					ClientLogInfo("connector(%d) is not connected, state(%d)", cid, state);
 					break;
 				}
-				int index = i % s;
+				int index = it->second.index_;
 				ClientLogDebug("connector send the %d str(%s) count %d", index, s_send_data[index], count++);
 				if (connectors.send(cid, 1, s_send_data[index], std::strlen(s_send_data[index])) < 0) {
-					ClientLogDebug("connector send failed");
-					send_failed = true;
+					ClientLogWarn("connector send failed");
+					it->second.send_failed_ = true;
 					std::this_thread::sleep_for(std::chrono::seconds(1));
 					continue;
 				}
-				i += 1;
+				it->second.index_ += 1;
+				if (it->second.index_ >= s) {
+					it->second.index_ = 0;
+				}
 			}
 		}
 		if (connectors.runInturn() < 0) {
@@ -90,6 +88,7 @@ static void connectors_run(io_service* service, int client_count)
 		}
 		size_t ss = service->poll();
 		if (ss > 0) {
+			//
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	} 
@@ -122,11 +121,17 @@ int main(int argc, char* argv[])
 	const int thread_count = 10;
 	boost::thread_group ths;
 	for (int i=0; i<thread_count; ++i) {
-		int per_count = client_count/thread_count + (client_count%thread_count)/(i+1);
+		int per_count = 0;
+#if 1
+		if (client_count % thread_count >= i + 1)
+			per_count = client_count/thread_count + 1;
+		else
+			per_count = client_count/thread_count;
+#endif
 		if (per_count <= 0)
 			break;
 		ths.create_thread(std::bind(connectors_run, &service, per_count));
-		ClientLogDebug("thread run %d clients", per_count);
+		ClientLogInfo("thread run %d clients", per_count);
 	}
 	ths.join_all();
 	return 0;

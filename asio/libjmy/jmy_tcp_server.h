@@ -24,6 +24,8 @@ public:
 	int start();
 	int run();
 
+	io_service& getService() { return service_; }
+
 private:
 	int do_accept();
 #if USE_THREAD

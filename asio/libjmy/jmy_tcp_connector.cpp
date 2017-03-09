@@ -1,13 +1,24 @@
 #include "jmy_tcp_connector.h"
 #include "jmy_log.h"
 
-JmyTcpConnector::JmyTcpConnector(io_service& service)
-	: sock_(service), state_(CONNECTOR_STATE_NOT_CONNECT), starting_(false), sending_(false)
+JmyTcpConnector::JmyTcpConnector(io_service& service, JmyTcpConnectorMgr& mgr) :
+	mgr_(mgr),
+	sock_(service),
+	state_(CONNECTOR_STATE_NOT_CONNECT),
+	starting_(false),
+	sending_(false),
+	unused_data_(NULL)
 {
 }
 
-JmyTcpConnector::JmyTcpConnector(io_service& service, const ip::tcp::endpoint& ep)
-	: sock_(service), ep_(ep), state_(CONNECTOR_STATE_NOT_CONNECT), starting_(false), sending_(false)
+JmyTcpConnector::JmyTcpConnector(io_service& service, JmyTcpConnectorMgr& mgr, const ip::tcp::endpoint& ep) :
+	mgr_(mgr),
+	sock_(service),
+	ep_(ep),
+	state_(CONNECTOR_STATE_NOT_CONNECT),
+	starting_(false),
+	sending_(false),
+	unused_data_(NULL)
 {
 }
 
@@ -37,13 +48,13 @@ void JmyTcpConnector::reset()
 
 bool JmyTcpConnector::loadConfig(const JmyConnectorConfig& conf)
 {
-	if (!handler_.loadMsgHandle(conf.handlers, conf.nhandlers)) {
+	if (!handler_.loadMsgHandle(conf.common.handlers, conf.common.nhandlers)) {
 		LibJmyLogError("failed to load msg handle");
 		return false;
 	}
-	if (!recv_buff_.init(conf.recv_buff_max_size, SESSION_BUFFER_TYPE_RECV))
+	if (!recv_buff_.init(conf.common.recv_buff_max_size, SESSION_BUFFER_TYPE_RECV))
 		return false;
-	if (!send_buff_.init(conf.send_buff_max_size, SESSION_BUFFER_TYPE_SEND))
+	if (!send_buff_.init(conf.common.send_buff_max_size, SESSION_BUFFER_TYPE_SEND))
 		return false;
 
 	return true;
@@ -62,9 +73,9 @@ void JmyTcpConnector::asynConnect(const char* ip, short port)
 			return;
 		}
 		ep_ = ep;
-		sock_.set_option(ip::tcp::no_delay(conf_.no_delay));
+		sock_.set_option(ip::tcp::no_delay(conf_.common.no_delay));
 		state_ = CONNECTOR_STATE_CONNECTED;
-		if (conf_.connected_start) {
+		if (conf_.common.connected_start) {
 			start();
 		}
 	});
@@ -99,7 +110,7 @@ void JmyTcpConnector::start()
 					std::this_thread::sleep_for(std::chrono::milliseconds(100));
 				}
 				LibJmyLogDebug("received %d data", bytes_transferred);
-				int nread = handler_.processData(recv_buff_, this);
+				int nread = handler_.processData(recv_buff_, getId(), (void*)&mgr_);
 				if (nread < 0) {
 					LibJmyLogError("handle_read failed");
 					return;
@@ -155,7 +166,7 @@ int JmyTcpConnector::handle_send()
 			} else {
 				close();
 				state_ = CONNECTOR_STATE_DISCONNECT;
-				LibJmyLogError("async_send error: ", err);
+				LibJmyLogError("async_send error: %d", err.value());
 				return;
 			}
 			sending_ = false;
@@ -182,15 +193,135 @@ int JmyTcpConnector::run()
 }
 
 /**
+ * JmyTcpConnectorMgr
+ */
+JmyTcpConnectorMgr::JmyTcpConnectorMgr() : use_auto_id_(false), use_multi_threads_(false), curr_id_(0)
+{
+}
+
+JmyTcpConnectorMgr::~JmyTcpConnectorMgr()
+{
+}
+
+void JmyTcpConnectorMgr::clear()
+{
+	std::unordered_map<int, JmyTcpConnector*>::iterator it = conns_.begin();
+	for (; it!=conns_.end(); ++it) {
+		if (it->second) {
+			delete it->second;
+		}
+	}
+	conns_.clear();
+}
+
+void JmyTcpConnectorMgr::init(bool use_multi_threads, bool use_auto_id)
+{
+	use_multi_threads_ = use_multi_threads;
+	use_auto_id_ = use_auto_id;
+}
+
+JmyTcpConnector* JmyTcpConnectorMgr::newConnector(io_service& service)
+{
+	if (!use_auto_id_)
+		return 0;
+
+	if (use_multi_threads_) {
+		std::lock_guard<std::mutex> lock(mtx_);
+	}
+	JmyTcpConnector* conn = new JmyTcpConnector(service, *this);
+	curr_id_ += 1;
+	conns_.insert(std::make_pair(curr_id_, conn));
+	conn->conf_.conn_id = curr_id_;
+	LibJmyLogInfo("new connector(%d)", curr_id_);
+	return conn;
+}
+
+JmyTcpConnector* JmyTcpConnectorMgr::newConnector(io_service& service, int id)
+{
+	if (use_auto_id_)
+		return NULL;
+
+	if (use_multi_threads_) {
+		std::lock_guard<std::mutex> lock(mtx_);
+	}
+	if (conns_.find(id) != conns_.end())
+		return NULL;
+	JmyTcpConnector* conn = new JmyTcpConnector(service, *this);
+	conns_.insert(std::make_pair(id, conn));
+	return conn;
+}
+
+JmyTcpConnector* JmyTcpConnectorMgr::get(int id)
+{
+	if (use_multi_threads_) {
+		std::lock_guard<std::mutex> lock(mtx_);
+	}
+	std::unordered_map<int, JmyTcpConnector*>::iterator it = conns_.find(id);
+	if (it == conns_.end())
+		return NULL;
+
+	if (!it->second) {
+		conns_.erase(id);
+	}
+	return it->second;
+}
+
+bool JmyTcpConnectorMgr::check(int id, bool locked)
+{
+	if (!locked && use_multi_threads_) {
+		std::lock_guard<std::mutex> lock(mtx_);
+	}
+	std::unordered_map<int, JmyTcpConnector*>::iterator it = conns_.find(id);
+	if (it == conns_.end())
+		return false;
+	if (!it->second) {
+		conns_.erase(id);
+		return false;
+	}
+	return true;
+}
+
+bool JmyTcpConnectorMgr::remove(int id)
+{
+	if (use_multi_threads_) {
+		std::lock_guard<std::mutex> lock(mtx_);
+	}
+	if (!check(id, true)) {
+		LibJmyLogWarn("not found connector(%d), remove failed", id);
+		return false;
+	}
+	conns_.erase(id);
+	return true;
+}
+
+bool JmyTcpConnectorMgr::remove(JmyTcpConnector* conn)
+{
+	if (use_multi_threads_) {
+		std::lock_guard<std::mutex> lock(mtx_);
+	}
+
+	bool found = false;
+	std::unordered_map<int, JmyTcpConnector*>::iterator it = conns_.begin();
+	for (; it!=conns_.end(); ++it) {
+		if (it->second == conn) {
+			found = true;
+			break;
+		}
+	}
+	conns_.erase(it);
+	return true;
+}
+
+/**
  * JmyTcpMultiConnectors
  */
 JmyTcpMultiConnectors::JmyTcpMultiConnectors(io_service& service, int max_count)
-	: service_(service), max_count_(max_count), curr_id_(0)
+	: service_(service), max_count_(max_count)
 {
 }
 
 JmyTcpMultiConnectors::JmyTcpMultiConnectors(io_service& service, const ip::tcp::endpoint& ep, int max_count)
-	: service_(service), max_count_(max_count), curr_id_(0), ep_(ep)
+	: service_(service), max_count_(max_count), ep_(ep)
 {
 }
 
@@ -201,23 +332,14 @@ JmyTcpMultiConnectors::~JmyTcpMultiConnectors()
 
 void JmyTcpMultiConnectors::close()
 {
-	auto it = id2conn_.begin();
-	for (; it!=id2conn_.end(); ++it) {
-		if (it->second) {
-			it->second->close();
-		}
-	}
+	used_ids_.clear();
+	free_ids_.clear();
 }
 
 void JmyTcpMultiConnectors::destroy()
 {
-	std::unordered_map<int, JmyTcpConnector*>::iterator it = id2conn_.begin();
-	for (; it!=id2conn_.end(); ++it) {
-		if (it->second) {
-			it->second->destroy();
-		}
-	}
-	id2conn_.clear();
+	close();
+	max_count_ = 0;
 }
 
 void JmyTcpMultiConnectors::reset()
@@ -231,44 +353,59 @@ bool JmyTcpMultiConnectors::loadConfig(const JmyMultiConnectorsConfig& conf)
 		return false;
 	}
 	conf_ = conf;
+	mgr_.init(true, true);
 	return true;
 }
 
-int JmyTcpMultiConnectors::start(const char* ip, short port)
+JmyTcpConnector* JmyTcpMultiConnectors::start(const char* ip, short port)
 {
-	size_t s = id2conn_.size();
+	size_t s = used_ids_.size();
 	if ((int)s >= max_count_) {
 		LibJmyLogWarn("current connector count %d is max", (int)s);
 		return 0;
 	}
 
 	JmyTcpConnector* conn = NULL;
-	if (free_conn_.size() == 0) {
-		conn = new JmyTcpConnector(service_);
+	int id = 0;
+	if (free_ids_.size() == 0) {
+		conn = mgr_.newConnector(service_);
+		if (!conn) {
+			LibJmyLogError("insert connector failed");
+			return NULL;
+		}
+		id = conn->getId();
+		LibJmyLogInfo("connector id = %d", id);
 	} else {
-		conn = free_conn_.front().second;		
+		id = free_ids_.front();
+		conn = mgr_.get(id);
+		if (!conn) {
+			LibJmyLogError("get connector(%d) failed", id);
+			return NULL;
+		}
 		conn->reset();
 	}
-	if (!conn->loadConfig(conf_.config)) {
+
+	JmyConnectorConfig conf;
+	conf.conn_id = id;
+	conf.assign(conf_);
+	if (!conn->loadConfig(conf)) {
 		LibJmyLogError("connector load config failed");
 		return 0;
 	}
 	// blocking connect
 	conn->connect(ip, port);
 	conn->start();
-	curr_id_ += 1;
-	if (curr_id_ > MaxId) curr_id_ = 1;
-	id2conn_.insert(std::make_pair(curr_id_, conn));
-	return curr_id_;
+	used_ids_.insert(id);
+	return conn;
 }
 
 JmyTcpConnector* JmyTcpMultiConnectors::getConnector(int connector_id)
 {
-	std::unordered_map<int, JmyTcpConnector*>::iterator it = id2conn_.find(connector_id);
-	if (it == id2conn_.end())
+	std::set<int>::iterator it = used_ids_.find(connector_id);
+	if (it == used_ids_.end())
 		return NULL;
 
-	return it->second;
+	return mgr_.get(connector_id);
 }
 
 JmyConnectorState JmyTcpMultiConnectors::getState(int connector_id)
@@ -288,7 +425,10 @@ int JmyTcpMultiConnectors::send(int connector_id, int msg_id, const char* data, 
 
 	int res = conn->send(msg_id, data, len);
 	if (res < 0) {
-		id2conn_.erase(connector_id);
+		used_ids_.erase(connector_id);
+		free_ids_.push_back(connector_id);
+		conn->close();
+		conn->reset();
 	}
 	return res;
 }
@@ -299,7 +439,12 @@ int JmyTcpMultiConnectors::run(int connector_id)
 	if (!conn)
 		return -1;
 
-	return conn->run();
+	int res = conn->run();
+	if (res < 0) {
+		used_ids_.erase(connector_id);
+		free_ids_.push_back(connector_id);
+	}
+	return res;
 }
 
 int JmyTcpMultiConnectors::startInturn(int count, const char* ip, short port)
@@ -307,7 +452,7 @@ int JmyTcpMultiConnectors::startInturn(int count, const char* ip, short port)
 	int c = 0;
 	count = max_count_ < count ? max_count_: count;
 	for (; c<count; ++c) {
-		if (start(ip, port) < 0) {
+		if (start(ip, port) == NULL) {
 			break;
 		}
 	}
@@ -315,18 +460,20 @@ int JmyTcpMultiConnectors::startInturn(int count, const char* ip, short port)
 }
 
 struct connector_send {
-	connector_send(int msg_id, const char* data, unsigned int len)
-		: msg_id_(msg_id), data_(data), len_(len), count_(0)
+	connector_send(JmyTcpConnectorMgr& mgr, int msg_id, const char* data, unsigned int len)
+		: mgr_(mgr),  msg_id_(msg_id), data_(data), len_(len), count_(0)
 	{
 	}
-	template <class T>
-	void operator()(T& t) {
-		if (t.second->send(msg_id_, data_, len_) > 0) {
+	void operator()(int id) {
+		JmyTcpConnector* conn = mgr_.get(id);
+		if (!conn) return;
+		if (conn->send(msg_id_, data_, len_) > 0) {
 			count_ += 1;	
 		}
 	}
 	int get_count() const { return count_; }
 private:
+	JmyTcpConnectorMgr& mgr_;
 	int msg_id_;
 	const char* data_;
 	unsigned int len_;
@@ -335,18 +482,19 @@ private:
 
 int JmyTcpMultiConnectors::sendInturn(int msg_id, const char* data, unsigned int len)
 {
-	connector_send cs(msg_id, data, len);
-	std::for_each(id2conn_.begin(), id2conn_.end(), cs);
+	connector_send cs(mgr_, msg_id, data, len);
+	std::for_each(used_ids_.begin(), used_ids_.end(), cs);
 	return cs.get_count();
 }
 
 int JmyTcpMultiConnectors::runInturn()
 {
 	int c = 0;
-	std::unordered_map<int, JmyTcpConnector*>::iterator it = id2conn_.begin();
-	for (; it!=id2conn_.end(); ++it) {
-		if (it->second) {
-			if (it->second->run() > 0)
+	std::set<int>::iterator it = used_ids_.begin();
+	for (; it!=used_ids_.end(); ++it) {
+		JmyTcpConnector* conn = getConnector(*it);
+		if (conn) {
+			if (conn->run() >= 0)
 				c += 1;
 		}
 	}

@@ -1,6 +1,8 @@
 #pragma once
 
 #include <unordered_map>
+#include <set>
+#include <mutex>
 #include <boost/asio.hpp>
 #include "jmy_datatype.h"
 #include "jmy_session_buffer.h"
@@ -20,8 +22,8 @@ enum JmyConnectorState {
 class JmyTcpConnector 
 {
 public:
-	JmyTcpConnector(io_service& service);
-	JmyTcpConnector(io_service& service, const ip::tcp::endpoint& ep);
+	JmyTcpConnector(io_service& service, JmyTcpConnectorMgr& mgr);
+	JmyTcpConnector(io_service& service, JmyTcpConnectorMgr& mgr, const ip::tcp::endpoint& ep);
 	~JmyTcpConnector();
 
 	void close();
@@ -38,13 +40,17 @@ public:
 
 	JmyConnectorState getState() const { return state_; }
 	ip::tcp::socket& getSock() { return sock_; }
-	std::string getIp() { return ep_.address().to_string(); }
-	unsigned short getPort() { return ep_.port(); }
+	std::string getIp() const { return ep_.address().to_string(); }
+	unsigned short getPort() const { return ep_.port(); }
+	int getId() const { return conf_.conn_id; }
+	void* getUnusedData() const { return unused_data_; }
+	void setUnusedData(void* data) { unused_data_ = data; }
 
 private:
 	int handle_send();
 
 private:
+	JmyTcpConnectorMgr& mgr_;
 	ip::tcp::socket sock_;
 	ip::tcp::endpoint ep_;
 	JmyConnectorState state_;
@@ -55,6 +61,37 @@ private:
 	bool starting_;
 	bool sending_;
 	JmyNetTool tool_;
+	void* unused_data_;
+
+	friend class JmyTcpConnectorMgr;
+};
+
+class JmyTcpConnectorMgr 
+{
+public:
+	JmyTcpConnectorMgr();
+	~JmyTcpConnectorMgr();
+	void clear();
+
+	void init(bool use_multi_threads = false, bool use_auto_id = false);
+	void useMultiThreads(bool enable = false) { use_multi_threads_ = enable; }
+	void useAutoId(bool enable = false) { use_auto_id_ = enable; }
+	JmyTcpConnector* newConnector(io_service& service);
+	JmyTcpConnector* newConnector(io_service& service, int id);
+	JmyTcpConnector* get(int id);
+	bool check(int id, bool locked = false);
+	bool insert(int id, JmyTcpConnector* conn);
+	int insert(JmyTcpConnector* conn);
+	bool remove(int id);
+	bool remove(JmyTcpConnector* conn);
+
+private:
+	enum { MaxId = 99999, };
+	std::unordered_map<int, JmyTcpConnector*> conns_;
+	bool use_auto_id_;
+	bool use_multi_threads_;
+	std::mutex mtx_;
+	int curr_id_;
 };
 
 class JmyTcpMultiConnectors
@@ -69,7 +106,7 @@ public:
 	void reset();
 
 	bool loadConfig(const JmyMultiConnectorsConfig& conf);
-	int start(const char* ip, short port);
+	JmyTcpConnector* start(const char* ip, short port);
 	int send(int connector_id, int msg_id, const char* data, unsigned int len);
 	int run(int connector_id);
 	int startInturn(int count, const char* ip, short port);
@@ -80,13 +117,11 @@ public:
 	JmyConnectorState getState(int connector_id);
 
 private:
-	enum { MaxId = 999999, };
 	io_service& service_;
 	int max_count_;
-	//int curr_count_;
-	int curr_id_;
-	std::unordered_map<int, JmyTcpConnector*> id2conn_;
-	std::list<std::pair<int, JmyTcpConnector*> > free_conn_;
+	std::set<int> used_ids_;
+	std::list<int> free_ids_;
 	ip::tcp::endpoint ep_;
 	JmyMultiConnectorsConfig conf_;
+	JmyTcpConnectorMgr mgr_;
 };
