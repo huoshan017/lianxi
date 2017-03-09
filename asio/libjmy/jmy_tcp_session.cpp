@@ -87,7 +87,7 @@ int JmyTcpSession::send(int msg_id, const char* data, unsigned int len)
 		LibJmyLogError("write data length(%d) failed", len);
 		return -1;
 	}
-	//std::cout << "JmyTcpSession::send  session " << getId() << " write length " << res << " of data to send buffer: " << data << std::endl;
+	//LibJmyLogDebug("JmyTcpSession::send session %d write length %d of data to send buffer: %s", getId(), res, data);
 	return len;
 }
 
