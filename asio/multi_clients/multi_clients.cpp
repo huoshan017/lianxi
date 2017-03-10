@@ -30,6 +30,7 @@ static bool check_connected(JmyTcpMultiConnectors& connectors, int connector_id)
 static void connectors_run(io_service* service, int client_count)
 {
 	JmyTcpMultiConnectors connectors(*service, client_count);
+	ClientLogInfo("use_send_list(%d)", test_connector_config.common.use_send_list);
 	if (!connectors.loadConfig(test_connector_config)) {
 		ClientLogError("connector load config failed");
 		return;

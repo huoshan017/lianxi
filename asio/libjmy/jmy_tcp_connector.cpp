@@ -8,7 +8,8 @@ JmyTcpConnector::JmyTcpConnector(io_service& service, JmyTcpConnectorMgr& mgr) :
 	state_(CONNECTOR_STATE_NOT_CONNECT),
 	starting_(false),
 	sending_(false),
-	unused_data_(NULL)
+	unused_data_(NULL),
+	use_send_list_(false)
 {
 }
 
@@ -19,7 +20,8 @@ JmyTcpConnector::JmyTcpConnector(io_service& service, JmyTcpConnectorMgr& mgr, c
 	state_(CONNECTOR_STATE_NOT_CONNECT),
 	starting_(false),
 	sending_(false),
-	unused_data_(NULL)
+	unused_data_(NULL),
+	use_send_list_(false)
 {
 }
 
@@ -57,6 +59,12 @@ bool JmyTcpConnector::loadConfig(const JmyConnectorConfig& conf)
 		return false;
 	if (!send_buff_.init(conf.common.send_buff_max_size, SESSION_BUFFER_TYPE_SEND))
 		return false;
+
+	use_send_list_ = conf.common.use_send_list;
+	if (use_send_list_) {
+		send_buff_list_.init(0, 0);
+	}
+	LibJmyLogInfo("use send list enable(%d)", (int)use_send_list_);
 
 	return true;
 }
@@ -99,34 +107,33 @@ void JmyTcpConnector::start()
 		return;
 	}
 
-	sock_.async_read_some(boost::asio::buffer(recv_buff_.getWriteBuff(), recv_buff_.getWriteLen()),
-		[this](const boost::system::error_code& err, size_t bytes_transferred) {
-			if (!err) {
-				if (bytes_transferred > 0) {
-					recv_buff_.writeLen(bytes_transferred);
-					// recv bytes add to net tool
-					tool_.addDownStream(bytes_transferred);
-				}
-				if (bytes_transferred == 0) {
-					std::this_thread::sleep_for(std::chrono::milliseconds(100));
-				}
-				LibJmyLogDebug("received %d data", bytes_transferred);
-				int nread = handler_.processData(recv_buff_, getId(), (void*)&mgr_);
-				if (nread < 0) {
-					LibJmyLogError("handle_read failed");
-					return;
-				}
-				start();
-			} else {
-				int ev = err.value();
-				if (ev == 10053 || ev == 10054) {
-
-				}
-				close();
-				state_ = CONNECTOR_STATE_DISCONNECT;
-				LibJmyLogError("read some data failed, err: %d", err.value());
+	sock_.async_read_some(boost::asio::buffer(recv_buff_.getWriteBuff(), recv_buff_.getWriteLen()), [this](const boost::system::error_code& err, size_t bytes_transferred) {
+		if (!err) {
+			if (bytes_transferred > 0) {
+				recv_buff_.writeLen(bytes_transferred);
+				// recv bytes add to net tool
+				tool_.addDownStream(bytes_transferred);
 			}
-		} );
+			if (bytes_transferred == 0) {
+				std::this_thread::sleep_for(std::chrono::milliseconds(100));
+			}
+			LibJmyLogDebug("received %d data", bytes_transferred);
+			int nread = handler_.processData(recv_buff_, getId(), (void*)&mgr_);
+			if (nread < 0) {
+				LibJmyLogError("handle_read failed");
+				return;
+			}
+			start();
+		} else {
+			int ev = err.value();
+			if (ev == 10053 || ev == 10054) {
+
+			}
+			close();
+			state_ = CONNECTOR_STATE_DISCONNECT;
+			LibJmyLogError("read some data failed, err: %d", err.value());
+		}
+	});
 
 	// net tool start
 	tool_.start();
@@ -136,10 +143,18 @@ void JmyTcpConnector::start()
 int JmyTcpConnector::send(int msg_id, const char* data, unsigned int len)
 		{
 	if (state_ != CONNECTOR_STATE_CONNECTED) return -1;
-	int res = handler_.writeData(send_buff_, msg_id, data, len);
-	if (res < 0) {
-		LibJmyLogError("write data length(%d) failed", len);
-		return -1;
+	if (!use_send_list_) {
+		int res = handler_.writeData(send_buff_, msg_id, data, len);
+		if (res < 0) {
+			LibJmyLogError("write data length(%d) failed", len);
+			return -1;
+		}
+	} else {
+		int res = handler_.writeData(&send_buff_list_, msg_id, data, len);
+		if (res < 0) {
+			LibJmyLogError("write data length(%d) failed", len);
+			return -1;
+		}
 	}
 	return len;
 }
@@ -147,14 +162,23 @@ int JmyTcpConnector::send(int msg_id, const char* data, unsigned int len)
 int JmyTcpConnector::handle_send()
 {
 	if (state_ != CONNECTOR_STATE_CONNECTED) return -1;
-	if (send_buff_.getReadLen() == 0)
+
+	unsigned int read_len = 0;
+	if (!use_send_list_)
+		read_len = send_buff_.getReadLen();
+	else
+		read_len = send_buff_list_.getReadLen();
+
+	if (read_len == 0) {
+		LibJmyLogDebug("read len is 0");
 		return 0;
+	}
 
 	if (sending_)
 		return 0;
 
-	sock_.async_write_some(boost::asio::buffer(send_buff_.getReadBuff(), send_buff_.getReadLen()),
-		[this](const boost::system::error_code& err, size_t bytes_transferred){
+	if (!use_send_list_) {
+		sock_.async_write_some(boost::asio::buffer(send_buff_.getReadBuff(), send_buff_.getReadLen()), [this](const boost::system::error_code& err, size_t bytes_transferred) {
 			if (!err) {
 				if (bytes_transferred > 0) {
 					if (!send_buff_.readLen(bytes_transferred)) {
@@ -167,11 +191,32 @@ int JmyTcpConnector::handle_send()
 			} else {
 				close();
 				state_ = CONNECTOR_STATE_DISCONNECT;
-				LibJmyLogError("async_send error: %d", err.value());
+				LibJmyLogError("async_write_some error: %d", err.value());
 				return;
 			}
 			sending_ = false;
 		});
+	} else {
+		LibJmyLogDebug("to async_send send_buff_list  read_buff(0x%x), read_len(%d)", send_buff_list_.getReadBuff(), send_buff_list_.getReadLen());
+		sock_.async_send(boost::asio::buffer(send_buff_list_.getReadBuff(), send_buff_list_.getReadLen()), [this](const boost::system::error_code& err, size_t bytes_transferred) {
+			if (!err) {
+				if (bytes_transferred > 0) {
+					if (!send_buff_list_.readLen(bytes_transferred)) {
+						LibJmyLogError("send buff list read lne %d failed", bytes_transferred);
+						return;
+					}
+					tool_.addUpStream(bytes_transferred);
+				}
+				LibJmyLogDebug("send %d bytes", bytes_transferred);
+			} else {
+				close();
+				state_ = CONNECTOR_STATE_DISCONNECT;
+				LibJmyLogError("async_send error: %d", err.value());
+				return;
+			}	
+			sending_ = false;
+		});
+	}
 	sending_ = true;
 	return 1;
 }

@@ -14,6 +14,7 @@ class JmyDataHandler
 public:
 	JmyDataHandler();
 	~JmyDataHandler();
+	bool registerMsgHandle(JmyId2MsgHandler id2handler);
 	bool loadMsgHandle(const JmyId2MsgHandler id2handlers[], int size);
 	int processData(JmySessionBuffer& recv_buff, int session_id, void* param);
 	int processData(JmySessionBuffer& recv_buff, int session_id, std::shared_ptr<JmyTcpSessionMgr> session_mgr);
@@ -32,53 +33,26 @@ private:
 	JmyMsgInfo msg_info_;
 };
 
-#if 0
-template <class SessionBuffer>
-int JmyDataHandler::writeData(SessionBuffer* send_buffer, int msg_id, const char* data, unsigned int len)
-{
-	// write head
-	char buf[2];
-	buf[0] = ((len+2)>>8) & 0xff;
-	buf[1] = (len+2)&0xff;
-	if (!send_buffer->writeData(buf, 2)) {
-		LibJmyLogError("write head failed");
-		return -1;
-	}
-	// write msg_id
-	buf[0] = (msg_id>>8)&0xff;
-	buf[1] = msg_id&0xff;
-	if (!send_buffer->writeData(buf, 2)) {
-		LibJmyLogError("write msg_id failed");
-		return -1;
-	}
-	// write body
-	if (!send_buffer->writeData(data, len)) {
-		LibJmyLogError("write data failed");
-		return -1;
-	}
-	return len;
-}
-#endif
-
 template <class SessionBuffer>
 int JmyDataHandler::writeData(SessionBuffer* buffer, int msg_id, const char* data, unsigned int len)
 {
-	JmyData datas[3];
-	// head
-	char head_buf[2];
+	JmyData datas[2];
+
+	// len
+	char head_buf[4];
 	head_buf[0] = ((len+2)>>8) & 0xff;
-	head_buf[1] = (len+2)&0xff;
-	datas[0].data = head_buf;
-	datas[0].len = 2;
+	head_buf[1] = (len+2) & 0xff;	
+
 	// msg_id
-	char msgid_buf[2];
-	msgid_buf[0] = (msg_id>>8)&0xff;
-	msgid_buf[1] = msg_id&0xff;
-	datas[1].data = msgid_buf;
-	datas[1].len = 2;
-	// body
-	datas[2].data = data;
-	datas[2].len = len;
+	head_buf[2] = (msg_id>>8) & 0xff;
+	head_buf[3] = msg_id & 0xff;
+
+	datas[0].data = head_buf;
+	datas[0].len = 4;
+
+	datas[1].data = data;
+	datas[1].len = len;
+
 	// write
 	if (!buffer->writeData(datas, sizeof(datas)/sizeof(datas[0]))) {
 		LibJmyLogError("write data failed");

@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <cstring>
 
 struct JmyData {
 	const char* data;
@@ -46,6 +47,7 @@ struct JmyConnectorConfigCommon {
 	int nhandlers;
 	bool no_delay;
 	bool connected_start;
+	bool use_send_list;
 };
 
 struct JmyMultiConnectorsConfig {
@@ -59,4 +61,13 @@ struct JmyConnectorConfig {
 	void assign(JmyMultiConnectorsConfig& conf) {
 		common = conf.common;
 	}
+};
+
+enum JmyBufferDropCondition {
+	DropConditionImmidate			= 0x0001,
+	DropConditionGreatBufferCount	= 0x0002,
+	DropConditionGreatUsedBytes		= 0x0004,
+	DropConditionTimeOut			= 0x0008,
+	DropConditionManual				= 0x0010,
+	DropConditionCount,
 };

@@ -49,17 +49,18 @@ int main(int argc, char* argv[])
 	short port = (short)(std::atoi(argv[1]));
 
 	io_service service;
-	JmyTcpConnector connector(service);
-	if (!connector.loadConfig(test_connector_config)) {
+	JmyTcpConnectorMgr mgr;
+	JmyTcpConnector* connector = mgr.newConnector(service);
+	if (!connector->loadConfig(test_connector_config)) {
 		ClientLogError("connector load config failed");
 		return -1;
 	}
 
 #if !USE_ASYNC_CONNECT
-	connector.connect("127.0.0.1", port);
-	connector.start();
+	connector->connect("127.0.0.1", port);
+	connector->start();
 #else
-	connector.asynConnect("127.0.0.1", port);
+	connector->asynConnect("127.0.0.1", port);
 #endif
 
 	JmyConnectorState state = CONNECTOR_STATE_NOT_CONNECT;
@@ -72,20 +73,20 @@ int main(int argc, char* argv[])
 		if (ss > 0) {
 		}
 		if (state == CONNECTOR_STATE_NOT_CONNECT) {
-			if (!check_connected(connector)) {
+			if (!check_connected(*connector)) {
 				std::this_thread::sleep_for(std::chrono::milliseconds(100));
 				continue;
 			}
 			state = CONNECTOR_STATE_CONNECTED;
 		}
 		if (!send_failed) {
-			if (connector.getState() != CONNECTOR_STATE_CONNECTED) {
+			if (connector->getState() != CONNECTOR_STATE_CONNECTED) {
 				ClientLogDebug("connector is not connected");
 				break;
 			}
 			int index = i % s;
 			ClientLogDebug("connector send the %d str(%s) count %d", index, s_send_data[index], count++);
-			if (connector.send(1, s_send_data[index], std::strlen(s_send_data[index])) < 0) {
+			if (connector->send(1, s_send_data[index], std::strlen(s_send_data[index])) < 0) {
 				ClientLogDebug("connector send failed");
 				send_failed = true;
 				std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -94,7 +95,7 @@ int main(int argc, char* argv[])
 			i += 1;
 		}
 
-		if (connector.run() < 0) {
+		if (connector->run() < 0) {
 			ClientLogDebug("connector run failed");
 			break;
 		}

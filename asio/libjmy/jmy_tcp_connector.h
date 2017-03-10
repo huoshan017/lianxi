@@ -56,13 +56,14 @@ private:
 	JmyConnectorState state_;
 	JmySessionBuffer recv_buff_;
 	JmySessionBuffer send_buff_;
-	JmySessionBufferList send_buff_list_;
 	JmyDataHandler handler_;
 	JmyConnectorConfig conf_;
 	bool starting_;
 	bool sending_;
 	JmyNetTool tool_;
 	void* unused_data_;
+	bool use_send_list_;
+	JmySessionBufferList send_buff_list_;
 
 	friend class JmyTcpConnectorMgr;
 };

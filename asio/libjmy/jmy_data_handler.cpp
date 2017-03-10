@@ -10,6 +10,14 @@ JmyDataHandler::~JmyDataHandler()
 {
 }
 
+bool JmyDataHandler::registerMsgHandle(JmyId2MsgHandler id2handler)
+{
+	if (msg_handler_map_.find(id2handler.msg_id) != msg_handler_map_.end())
+		return false;
+	msg_handler_map_.insert(std::make_pair(id2handler.msg_id, id2handler.handler));
+	return true;
+}
+
 bool JmyDataHandler::loadMsgHandle(const JmyId2MsgHandler id2handlers[], int size)
 {
 	if (!id2handlers || size == 0)

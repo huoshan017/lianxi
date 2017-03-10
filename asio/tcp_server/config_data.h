@@ -10,7 +10,7 @@ static JmyId2MsgHandler s_test_handlers[] = {
 	{ 1, TestMsgHandler::process_one }
 };
 
-const JmyServerConfig test_config = {
+static JmyServerConfig test_config = {
 	{1024, 1024, 1024, 1024},
 	s_test_handlers,
 	sizeof(s_test_handlers)/sizeof(s_test_handlers[0]),

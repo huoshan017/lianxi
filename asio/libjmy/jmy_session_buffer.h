@@ -4,6 +4,7 @@
 #include <memory>
 #include <cstring>
 #include "jmy_session_buffer_pool.h"
+#include "jmy_datatype.h"
 
 enum SessionBufferType {
 	SESSION_BUFFER_TYPE_NONE,
@@ -90,6 +91,25 @@ private:
 	std::shared_ptr<JmySessionBufferPool> buff_pool_;
 };
 
+struct JmyBufferDropConditionData {
+	uint32_t conds;
+	uint32_t params[DropConditionCount];
+	JmyBufferDropConditionData() {
+		conds &= DropConditionImmidate;
+		std::memset(params, 0, sizeof(params));
+	}
+	bool hasCond(JmyBufferDropCondition cond) {
+		return conds & cond;
+	}
+	uint32_t getParam(JmyBufferDropCondition cond) {
+		return params[cond];
+	}
+	void setCond(JmyBufferDropCondition cond, uint32_t param) {
+		conds &= cond;
+		params[cond] = param;
+	}
+};
+
 class JmySessionBufferList
 {
 public:
@@ -97,13 +117,17 @@ public:
 	~JmySessionBufferList();
 
 	bool init(unsigned int max_bytes = 0, unsigned int max_count = 0);
-	void destroy();
+	void reset();
+	void addDropCondition(JmyBufferDropCondition cond, uint32_t param);
 
 	bool writeData(const char* data, unsigned int len);
 	bool writeData(JmyData* datas, int count);
 	const char* getReadBuff();
 	unsigned int getReadLen();
 	bool readLen(unsigned int len);
+	void dropUsed(unsigned int len = 0);
+	unsigned int getUsingSize() const { return using_list_.size(); }
+	unsigned int getUsedSize() const { return used_list_.size(); }
 
 private:
 	struct buffer {
@@ -112,13 +136,24 @@ private:
 		unsigned int roffset_;
 		unsigned int woffset_;
 		buffer() : data_(NULL), len_(0), roffset_(0), woffset_(0) {}
+		buffer(buffer&& b) : data_(b.data_), len_(b.len_), roffset_(b.roffset_), woffset_(b.woffset_) {
+			b.data_ = NULL;
+		}
+		buffer& operator=(buffer&& b) {
+			data_ = b.data_;
+			len_ = b.len_;
+			roffset_ = b.roffset_;
+			woffset_ = b.woffset_;
+			b.data_ = NULL;
+			return *this;
+		}
 		~buffer() { destroy(); }
 		bool init(const char* data, unsigned int len) {
 			if (!data || !len) return false;
 			if (data_ && len_!=len) {
 				delete [] data_;
-				data_ = new char[len];
 			}
+			data_ = new char[len];
 			std::memcpy((void*)data_, (void*)data, len);
 			len_ = len;
 			roffset_ = 0;
@@ -129,8 +164,8 @@ private:
 			if (!len) return false;
 			if (data_ && len_!=len) {
 				delete [] data_;
-				data_ = new char[len];
 			}
+			data_ = new char[len];
 			len_ = len;
 			roffset_ = 0;
 			woffset_ = 0;
@@ -171,10 +206,11 @@ private:
 			roffset_ = woffset_ = 0;
 		}
 	};
-	std::list<buffer> list_;
-	std::list<buffer>::iterator curr_read_iter_;
+	std::list<buffer> using_list_;
+	std::list<buffer> used_list_;
 	unsigned int max_bytes_;
 	unsigned int curr_used_bytes_;
 	unsigned int max_count_;
 	unsigned int curr_count_;
+	JmyBufferDropConditionData drop_cond_;
 };

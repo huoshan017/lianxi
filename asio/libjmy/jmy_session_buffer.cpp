@@ -355,7 +355,6 @@ JmySessionBufferList::JmySessionBufferList() :
 
 JmySessionBufferList::~JmySessionBufferList()
 {
-	destroy();
 }
 
 bool JmySessionBufferList::init(unsigned int max_bytes, unsigned int max_count)
@@ -365,15 +364,17 @@ bool JmySessionBufferList::init(unsigned int max_bytes, unsigned int max_count)
 	return true;
 }
 
-void JmySessionBufferList::destroy()
+void JmySessionBufferList::reset()
 {
-	std::list<buffer>::iterator it = list_.begin();
-	for (; it!=list_.end(); ++it) {
-		if (it->data_) {
-			delete it->data_;
-		}
-	}
-	list_.clear();
+	using_list_.clear();
+	used_list_.clear();
+	curr_used_bytes_ = 0;
+	curr_count_ = 0;
+}
+
+void JmySessionBufferList::addDropCondition(JmyBufferDropCondition cond, uint32_t param)
+{
+	drop_cond_.setCond(cond, param);
 }
 
 bool JmySessionBufferList::writeData(const char* data, unsigned int len)
@@ -389,12 +390,17 @@ bool JmySessionBufferList::writeData(const char* data, unsigned int len)
 	}
 	
 	buffer b;
-	b.init(data, len);
-	list_.push_back(b);
-	if (curr_read_iter_ == list_.end())
-		curr_read_iter_ = list_.begin();
+	if (!b.init(data, len)) {
+		LibJmyLogError("buffer init failed");
+		return false;
+	}
+
+	using_list_.push_back(std::move(b));
+	if (max_count_ > 0)
+		curr_count_ += 1;
 	if (max_bytes_ > 0)
 		curr_used_bytes_ += len;
+
 	return true;
 }
 
@@ -429,40 +435,60 @@ bool JmySessionBufferList::writeData(JmyData* datas, int count)
 		if (!b.write(datas[i].data, datas[i].len))
 			return false;
 	}
-	list_.push_back(b);
+
+	using_list_.push_back(std::move(b));
+	if (max_count_ > 0)
+		curr_count_ += 1;
+	if (max_bytes_ > 0)
+		curr_used_bytes_ += total_len;
 
 	return true;
 }
 
 const char* JmySessionBufferList::getReadBuff()
 {
-	if (curr_read_iter_ == list_.end())
+	if (using_list_.size() == 0)
 		return NULL;
-	buffer& b = *curr_read_iter_;
+	buffer& b = using_list_.front();
 	return b.read_buff();
 }
 
 unsigned int JmySessionBufferList::getReadLen()
 {
-	if (curr_read_iter_ == list_.end())
+	if (using_list_.size() == 0)
 		return 0;
-	buffer& b = *curr_read_iter_;
+	buffer& b = using_list_.front();
 	unsigned int read_len = b.read_len();
-	if (read_len == 0) {
-		curr_read_iter_++;
-	}
 	return read_len;
 }
 
 bool JmySessionBufferList::readLen(unsigned int len)
 {
-	if (curr_read_iter_ == list_.end())
+	if (using_list_.size() == 0)
 		return false;
-	buffer& b = *curr_read_iter_;
-	if (!b.read(len)) {
+
+	buffer& b = using_list_.front();
+	if (!b.read(len))
 		return false;
+
+	if (b.is_read_out()) {
+		using_list_.pop_front();
+		if (drop_cond_.hasCond(DropConditionImmidate)) {
+			used_list_.push_back(std::move(b));
+		}
 	}
-	if (b.is_read_out())
-		curr_read_iter_++;
 	return true;
+}
+
+void JmySessionBufferList::dropUsed(unsigned int len)
+{
+	if (len == 0) {
+		used_list_.clear();
+	}
+	unsigned int i = 0;
+	for (; i<len; i++) {
+		if (used_list_.size() == 0)
+			break;
+		used_list_.pop_front();
+	}
 }
