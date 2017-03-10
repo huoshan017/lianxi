@@ -473,7 +473,7 @@ bool JmySessionBufferList::readLen(unsigned int len)
 
 	if (b.is_read_out()) {
 		using_list_.pop_front();
-		if (drop_cond_.hasCond(DropConditionImmidate)) {
+		if (drop_cond_.hasCond(DropConditionImmediate)) {
 			used_list_.push_back(std::move(b));
 		}
 	}
@@ -482,6 +482,7 @@ bool JmySessionBufferList::readLen(unsigned int len)
 
 void JmySessionBufferList::dropUsed(unsigned int len)
 {
+	// drop all
 	if (len == 0) {
 		used_list_.clear();
 	}

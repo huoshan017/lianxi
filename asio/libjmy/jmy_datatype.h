@@ -64,7 +64,7 @@ struct JmyConnectorConfig {
 };
 
 enum JmyBufferDropCondition {
-	DropConditionImmidate			= 0x0001,
+	DropConditionImmediate			= 0x0001,
 	DropConditionGreatBufferCount	= 0x0002,
 	DropConditionGreatUsedBytes		= 0x0004,
 	DropConditionTimeOut			= 0x0008,

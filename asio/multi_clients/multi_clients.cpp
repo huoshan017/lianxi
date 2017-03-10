@@ -70,7 +70,6 @@ static void connectors_run(io_service* service, int client_count)
 					break;
 				}
 				int index = it->second.index_;
-				ClientLogDebug("connector send the %d str(%s) count %d", index, s_send_data[index], count++);
 				if (connectors.send(cid, 1, s_send_data[index], std::strlen(s_send_data[index])) < 0) {
 					ClientLogWarn("connector send failed");
 					it->second.send_failed_ = true;
@@ -81,6 +80,7 @@ static void connectors_run(io_service* service, int client_count)
 				if (it->second.index_ >= s) {
 					it->second.index_ = 0;
 				}
+				ClientLogInfo("connector(%d) send the %d str(%s) count %d", cid, index, s_send_data[index], count++);
 			}
 		}
 		if (connectors.runInturn() < 0) {

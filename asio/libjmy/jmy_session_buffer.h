@@ -95,7 +95,7 @@ struct JmyBufferDropConditionData {
 	uint32_t conds;
 	uint32_t params[DropConditionCount];
 	JmyBufferDropConditionData() {
-		conds &= DropConditionImmidate;
+		conds &= DropConditionImmediate;
 		std::memset(params, 0, sizeof(params));
 	}
 	bool hasCond(JmyBufferDropCondition cond) {
