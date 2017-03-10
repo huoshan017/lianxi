@@ -11,6 +11,8 @@ enum SessionBufferType {
 	SESSION_BUFFER_TYPE_SEND,
 };
 
+struct JmyData;
+
 class JmySessionBuffer
 {
 public:
@@ -40,6 +42,7 @@ public:
 	bool readLen(unsigned int len);
 	void moveDataToFront();
 	bool writeData(const char* data, unsigned int len);
+	bool writeData(JmyData* datas, int len);
 
 private:
 	bool proxy_;
@@ -75,6 +78,7 @@ public:
 	bool readLen(unsigned int len);
 	void moveDataToFront();
 	bool writeData(const char* data, unsigned int len);
+	bool writeData(JmyData* datas, int len);
 
 	bool switchToLarge();
 	bool backToNormal();
@@ -96,6 +100,7 @@ public:
 	void destroy();
 
 	bool writeData(const char* data, unsigned int len);
+	bool writeData(JmyData* datas, int count);
 	const char* getReadBuff();
 	unsigned int getReadLen();
 	bool readLen(unsigned int len);
@@ -105,21 +110,65 @@ private:
 		const char* data_;
 		unsigned int len_;
 		unsigned int roffset_;
-		buffer() : data_(NULL), len_(0), roffset_(0) {}
+		unsigned int woffset_;
+		buffer() : data_(NULL), len_(0), roffset_(0), woffset_(0) {}
 		~buffer() { destroy(); }
 		bool init(const char* data, unsigned int len) {
 			if (!data || !len) return false;
-			data_ = new char[len];
+			if (data_ && len_!=len) {
+				delete [] data_;
+				data_ = new char[len];
+			}
 			std::memcpy((void*)data_, (void*)data, len);
 			len_ = len;
+			roffset_ = 0;
+			woffset_ = len;
+			return true;
+		}
+		bool init(unsigned int len) {
+			if (!len) return false;
+			if (data_ && len_!=len) {
+				delete [] data_;
+				data_ = new char[len];
+			}
+			len_ = len;
+			roffset_ = 0;
+			woffset_ = 0;
+			return true;
+		}
+		bool write(const char* data, unsigned int len) {
+			if (!data || !len) return false;
+			int left = len_ - woffset_;
+			if (left < (int)len)
+				return false;
+
+			std::memcpy((void*)(data_+woffset_), (void*)data, len);
+			woffset_ += len;
+			return true;
+		}
+		const char* read_buff() {
+			return data_ + roffset_;
+		}
+		unsigned int read_len() {
+			if (woffset_ < roffset_) return 0;
+			return woffset_ - roffset_;
+		}
+		bool read(unsigned int len) {
+			if (len > woffset_-roffset_) return false;
+			roffset_ += len;
+			return true;
+		}
+		bool is_read_out() {
+			if (roffset_ < len_) return false;
 			return true;
 		}
 		void destroy() {
 			if (data_) {
 				delete []data_;
 				data_ = NULL;
-				len_ = 0;
 			}
+			len_ = 0;
+			roffset_ = woffset_ = 0;
 		}
 	};
 	std::list<buffer> list_;

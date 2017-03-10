@@ -3,6 +3,11 @@
 #include <cstddef>
 #include <memory>
 
+struct JmyData {
+	const char* data;
+	unsigned int len;
+};
+
 struct JmyMsgInfo {
 	int msg_id;
 	char* data;

@@ -32,6 +32,7 @@ private:
 	JmyMsgInfo msg_info_;
 };
 
+#if 0
 template <class SessionBuffer>
 int JmyDataHandler::writeData(SessionBuffer* send_buffer, int msg_id, const char* data, unsigned int len)
 {
@@ -52,6 +53,34 @@ int JmyDataHandler::writeData(SessionBuffer* send_buffer, int msg_id, const char
 	}
 	// write body
 	if (!send_buffer->writeData(data, len)) {
+		LibJmyLogError("write data failed");
+		return -1;
+	}
+	return len;
+}
+#endif
+
+template <class SessionBuffer>
+int JmyDataHandler::writeData(SessionBuffer* buffer, int msg_id, const char* data, unsigned int len)
+{
+	JmyData datas[3];
+	// head
+	char head_buf[2];
+	head_buf[0] = ((len+2)>>8) & 0xff;
+	head_buf[1] = (len+2)&0xff;
+	datas[0].data = head_buf;
+	datas[0].len = 2;
+	// msg_id
+	char msgid_buf[2];
+	msgid_buf[0] = (msg_id>>8)&0xff;
+	msgid_buf[1] = msg_id&0xff;
+	datas[1].data = msgid_buf;
+	datas[1].len = 2;
+	// body
+	datas[2].data = data;
+	datas[2].len = len;
+	// write
+	if (!buffer->writeData(datas, sizeof(datas)/sizeof(datas[0]))) {
 		LibJmyLogError("write data failed");
 		return -1;
 	}

@@ -56,6 +56,7 @@ private:
 	JmyConnectorState state_;
 	JmySessionBuffer recv_buff_;
 	JmySessionBuffer send_buff_;
+	JmySessionBufferList send_buff_list_;
 	JmyDataHandler handler_;
 	JmyConnectorConfig conf_;
 	bool starting_;

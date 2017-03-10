@@ -1,5 +1,6 @@
 #include "jmy_session_buffer.h"
 #include "jmy_session_buffer_pool.h"
+#include "jmy_datatype.h"
 #include "jmy_log.h"
 #include <cassert>
 #include <memory.h>
@@ -149,11 +150,32 @@ bool JmySessionBuffer::writeData(const char* data, unsigned int len)
 	return true;
 }
 
+bool JmySessionBuffer::writeData(JmyData* datas, int len)
+{
+	if (!datas || !len)
+		return false;
+
+	unsigned int total_len = 0;
+	int i = 0;
+	for (; i<len; i++) {
+		total_len += datas[i].len;
+	}
+
+	if (total_len > getWriteLen()) {
+		return false;
+	}
+
+	for (i=0; i<len; i++) {
+		memcpy(buff_+write_offset_, datas[i].data, datas[i].len);
+		write_offset_ += datas[i].len;
+	}
+
+	return true;
+}
 
 /**
  * JmyDoubleSessionBuffer
  */
-
 JmyDoubleSessionBuffer::JmyDoubleSessionBuffer() : use_large_(false)
 {
 }
@@ -265,6 +287,12 @@ bool JmyDoubleSessionBuffer::writeData(const char* data, unsigned int len)
 	return large_buff_.writeData(data, len);
 }
 
+bool JmyDoubleSessionBuffer::writeData(JmyData* datas, int len)
+{
+	if (!use_large_) return buff_.writeData(datas, len);
+	return large_buff_.writeData(datas, len);
+}
+
 bool JmyDoubleSessionBuffer::switchToLarge()
 {
 	if (use_large_) return true;
@@ -350,18 +378,16 @@ void JmySessionBufferList::destroy()
 
 bool JmySessionBufferList::writeData(const char* data, unsigned int len)
 {
-	if (max_bytes_ > 0) {
-		if (curr_used_bytes_ + len > max_bytes_) {
-			LibJmyLogError("buffer list used bytes(%d) great to max bytes(%d)", curr_used_bytes_+len, max_bytes_);
-			return false;
-		}
+	if (max_count_>0 && curr_count_+1>max_count_) {
+		LibJmyLogError("buffer list used data count(%d) is max", max_count_);
+		return false;
 	}
-	if (max_count_ > 0) {
-		if (curr_count_ + 1 > max_count_) {
-			LibJmyLogError("buffer list used data count(%d) is max", max_count_);
-			return false;
-		}
+
+	if (max_bytes_>0 && curr_used_bytes_+len>max_bytes_) {
+		LibJmyLogError("buffer list used bytes(%d) great to max bytes(%d)", curr_used_bytes_+len, max_bytes_);
+		return false;
 	}
+	
 	buffer b;
 	b.init(data, len);
 	list_.push_back(b);
@@ -372,12 +398,48 @@ bool JmySessionBufferList::writeData(const char* data, unsigned int len)
 	return true;
 }
 
+bool JmySessionBufferList::writeData(JmyData* datas, int count)
+{
+	if (!datas || !count)
+		return false;
+
+	if (max_count_>0 && curr_count_+1>max_count_) {
+		LibJmyLogError("buffer list used data count(%d) is max", max_count_);
+		return false;
+	}
+
+	unsigned int total_len = 0;
+	int i = 0;
+	for (; i<count; ++i) {
+		total_len += datas[i].len;
+	}
+
+	if (max_bytes_>0 && curr_used_bytes_+total_len>max_bytes_) {
+		LibJmyLogError("buffer list used bytes(%d) great to max bytes(%d)", curr_used_bytes_+total_len, max_bytes_);
+		return false;
+	}
+
+	buffer b;
+	if (!b.init(total_len)) {
+		LibJmyLogError("init new buffer by length(%d) failed", total_len);
+		return false;
+	}
+
+	for (i=0; i<count; ++i) {
+		if (!b.write(datas[i].data, datas[i].len))
+			return false;
+	}
+	list_.push_back(b);
+
+	return true;
+}
+
 const char* JmySessionBufferList::getReadBuff()
 {
 	if (curr_read_iter_ == list_.end())
 		return NULL;
 	buffer& b = *curr_read_iter_;
-	return b.data_ + b.roffset_;
+	return b.read_buff();
 }
 
 unsigned int JmySessionBufferList::getReadLen()
@@ -385,7 +447,7 @@ unsigned int JmySessionBufferList::getReadLen()
 	if (curr_read_iter_ == list_.end())
 		return 0;
 	buffer& b = *curr_read_iter_;
-	unsigned int read_len = b.len_ - b.roffset_;
+	unsigned int read_len = b.read_len();
 	if (read_len == 0) {
 		curr_read_iter_++;
 	}
@@ -397,11 +459,10 @@ bool JmySessionBufferList::readLen(unsigned int len)
 	if (curr_read_iter_ == list_.end())
 		return false;
 	buffer& b = *curr_read_iter_;
-	unsigned int read_len = b.len_ - b.roffset_;
-	if (read_len < len)
+	if (!b.read(len)) {
 		return false;
-	b.roffset_ += len;
-	if (b.len_ <= b.roffset_)
+	}
+	if (b.is_read_out())
 		curr_read_iter_++;
 	return true;
 }

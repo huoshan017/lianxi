@@ -145,7 +145,7 @@ int JmyDataHandler::writeData(JmySessionBuffer& send_buffer, int msg_id, const c
 		return 0;
 
 	if (!send_buffer.checkWriteLen(len+2+2)) {
-		LibJmyLogError("data length(%d) is too large to write", len);
+		LibJmyLogError("data length(%d) is not enough to write", len);
 		return -1;
 	}
 	return writeData<JmySessionBuffer>(&send_buffer, msg_id, data, len);
@@ -168,7 +168,7 @@ int JmyDataHandler::writeData(JmyDoubleSessionBuffer* send_buffer, int msg_id, c
 			}
 		}
 		if (too_large) {
-			LibJmyLogError("data length(%d) is too large to write", len);
+			LibJmyLogError("data length(%d) is not enough to write", len);
 			return -1;
 		}
 	}
@@ -187,7 +187,7 @@ int JmyDataHandler::writeData(JmySessionBufferList* buffer_list, int msg_id, con
 	if (!buffer_list || !data || !len)
 		return 0;
 
-	return 0; 
+	return writeData<JmySessionBufferList>(buffer_list, msg_id, data, len);
 }
 
 int JmyDataHandler::processMsg(JmyMsgInfo* info)
