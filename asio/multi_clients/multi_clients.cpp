@@ -80,7 +80,7 @@ static void connectors_run(io_service* service, int client_count)
 				if (it->second.index_ >= s) {
 					it->second.index_ = 0;
 				}
-				ClientLogInfo("connector(%d) send the %d str(%s) count %d", cid, index, s_send_data[index], count++);
+				ClientLogDebug("connector(%d) send the %d str(%s) count %d", cid, index, s_send_data[index], count++);
 			}
 		}
 		if (connectors.runInturn() < 0) {
@@ -119,7 +119,7 @@ int main(int argc, char* argv[])
 	(void)argv;
 	io_service service;
 	int client_count = (std::atoi(argv[1]));
-	const int thread_count = 10;
+	const int thread_count = 2;
 	boost::thread_group ths;
 	for (int i=0; i<thread_count; ++i) {
 		int per_count = 0;

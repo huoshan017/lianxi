@@ -64,6 +64,7 @@ private:
 	void* unused_data_;
 	bool use_send_list_;
 	JmySessionBufferList send_buff_list_;
+	std::chrono::system_clock::time_point last_tick_;
 
 	friend class JmyTcpConnectorMgr;
 };

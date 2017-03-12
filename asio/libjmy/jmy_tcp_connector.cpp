@@ -137,7 +137,10 @@ void JmyTcpConnector::start()
 
 	// net tool start
 	tool_.start();
-	starting_ = true;
+	if (!starting_) {
+		starting_ = true;
+		last_tick_ = std::chrono::system_clock::now();
+	}
 }
 
 int JmyTcpConnector::send(int msg_id, const char* data, unsigned int len)
@@ -187,18 +190,17 @@ int JmyTcpConnector::handle_send()
 					}
 					tool_.addUpStream(bytes_transferred);
 				}
-				LibJmyLogDebug("send %d bytes", bytes_transferred);
+				LibJmyLogInfo("connector(%d) send %d bytes", getId(), bytes_transferred);
 			} else {
 				close();
 				state_ = CONNECTOR_STATE_DISCONNECT;
-				LibJmyLogError("async_write_some error: %d", err.value());
+				LibJmyLogError("connector(%d) async_write_some error: %d", getId(), err.value());
 				return;
 			}
 			sending_ = false;
 		});
 	} else {
-		LibJmyLogDebug("to async_send send_buff_list  read_buff(0x%x), read_len(%d)", send_buff_list_.getReadBuff(), send_buff_list_.getReadLen());
-		sock_.async_send(boost::asio::buffer(send_buff_list_.getReadBuff(), send_buff_list_.getReadLen()), [this](const boost::system::error_code& err, size_t bytes_transferred) {
+		sock_.async_write_some(boost::asio::buffer(send_buff_list_.getReadBuff(), send_buff_list_.getReadLen()), [this](const boost::system::error_code& err, size_t bytes_transferred) {
 			if (!err) {
 				if (bytes_transferred > 0) {
 					if (!send_buff_list_.readLen(bytes_transferred)) {
@@ -207,11 +209,11 @@ int JmyTcpConnector::handle_send()
 					}
 					tool_.addUpStream(bytes_transferred);
 				}
-				LibJmyLogDebug("send %d bytes", bytes_transferred);
+				LibJmyLogDebug("connector(%d) send %d bytes", getId(), bytes_transferred);
 			} else {
 				close();
 				state_ = CONNECTOR_STATE_DISCONNECT;
-				LibJmyLogError("async_send error: %d", err.value());
+				LibJmyLogError("connector(%d) async_send error: %d", getId(), err.value());
 				return;
 			}	
 			sending_ = false;
@@ -226,13 +228,12 @@ int JmyTcpConnector::run()
 	int res = 0;
 	if (state_ == CONNECTOR_STATE_CONNECTED)
 		res = handle_send();
-	static std::chrono::system_clock::time_point last_tick = std::chrono::system_clock::now();
+
 	if (starting_) {
 		auto now = std::chrono::system_clock::now();
-		if (std::chrono::duration_cast<std::chrono::milliseconds>(now - last_tick).count() >= 1000) {
-			last_tick = now;
-			if (getId() > 1)
-				LibJmyLogInfo("id(%d)  send_Bps: %d, recv_Bps: %d, Bps: %d", getId(), tool_.getRecvBps(), tool_.getSendBps(), tool_.getBps());
+		if (std::chrono::duration_cast<std::chrono::milliseconds>(now - last_tick_).count() >= 1000) {
+			last_tick_ = now;
+			LibJmyLogInfo("id(%d)  send_Bps: %d, recv_Bps: %d, Bps: %d", getId(), tool_.getRecvBps(), tool_.getSendBps(), tool_.getBps());
 		}
 	}
 
