@@ -348,6 +348,9 @@ bool JmyDoubleSessionBuffer::backToNormal()
 /**
  * JmySessionBufferList
  */
+std::atomic<uint64_t> JmySessionBufferList::buffer::init_count_;
+std::atomic<uint64_t> JmySessionBufferList::buffer::uninit_count_;
+
 JmySessionBufferList::JmySessionBufferList() :
 	max_bytes_(0), curr_used_bytes_(0), max_count_(0), curr_count_(0)
 {
@@ -479,6 +482,7 @@ bool JmySessionBufferList::readLen(unsigned int len)
 			used_list_.push_back(std::move(b));
 		}
 	}
+	//LibJmyLogInfo("using_list size(%u), used_list size(%u)", using_list_.size(), used_list_.size());
 	return true;
 }
 

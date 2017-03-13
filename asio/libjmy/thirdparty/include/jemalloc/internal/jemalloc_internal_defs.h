@@ -6,8 +6,8 @@
  * public APIs to be prefixed.  This makes it possible, with some care, to use
  * multiple allocators simultaneously.
  */
-/* #undef JEMALLOC_PREFIX */
-/* #undef JEMALLOC_CPREFIX */
+#define JEMALLOC_PREFIX "yes"
+#define JEMALLOC_CPREFIX "YES"
 
 /*
  * JEMALLOC_PRIVATE_NAMESPACE is used as a prefix for all library-private APIs.
@@ -31,7 +31,7 @@
 #define LG_VADDR 48
 
 /* Defined if C11 atomics are available. */
-/* #undef JEMALLOC_C11_ATOMICS */
+#define JEMALLOC_C11_ATOMICS 1
 
 /* Defined if GCC __atomic atomics are available. */
 #define JEMALLOC_GCC_ATOMIC_ATOMICS 1
@@ -138,19 +138,19 @@
  * JEMALLOC_DEBUG enables assertions and other sanity checks, and disables
  * inline functions.
  */
-#define JEMALLOC_DEBUG 
+/* #undef JEMALLOC_DEBUG */
 
 /* JEMALLOC_STATS enables statistics calculation. */
-/* #undef JEMALLOC_STATS */
+#define JEMALLOC_STATS 
 
 /* JEMALLOC_PROF enables allocation profiling. */
-#define JEMALLOC_PROF 
+/* #undef JEMALLOC_PROF */
 
 /* Use libunwind for profile backtracing if defined. */
 /* #undef JEMALLOC_PROF_LIBUNWIND */
 
 /* Use libgcc for profile backtracing if defined. */
-#define JEMALLOC_PROF_LIBGCC 
+/* #undef JEMALLOC_PROF_LIBGCC */
 
 /* Use gcc intrinsics for profile backtracing if defined. */
 /* #undef JEMALLOC_PROF_GCC */
@@ -160,7 +160,7 @@
  * This makes it possible to allocate/deallocate objects without any locking
  * when the cache is in the steady state.
  */
-/* #undef JEMALLOC_TCACHE */
+#define JEMALLOC_TCACHE 
 
 /*
  * JEMALLOC_DSS enables use of sbrk(2) to allocate extents from the data storage
@@ -236,7 +236,7 @@
  * JEMALLOC_IVSALLOC enables ivsalloc(), which verifies that pointers reside
  * within jemalloc-owned extents before dereferencing them.
  */
-#define JEMALLOC_IVSALLOC 
+/* #undef JEMALLOC_IVSALLOC */
 
 /*
  * If defined, explicitly attempt to more uniformly distribute large allocation

@@ -26,8 +26,16 @@ bool JmyLog::open(const char* category)
 	if (!cat) {
 		return false;
 	}
-	str2cate_.insert(std::make_pair(category, cat));
-	return true;
+	bool b = false;
+	for (unsigned long i=0; i<sizeof(cates_)/sizeof(cates_[0]); ++i) {
+		if (cates_[i].cate_str == "") {
+			cates_[i].cate_str = category;
+			cates_[i].cate = cat;
+			b = true;
+			break;
+		}
+	}
+	return b;
 }
 
 bool JmyLog::openLib(const char* category)
@@ -45,14 +53,12 @@ bool JmyLog::reload()
 	if (rc != 0) {
 		return false;
 	}
-	auto it = str2cate_.begin();
-	for (; it!=str2cate_.end(); ++it) {
-		zlog_category_t* cat = zlog_get_category(it->first.c_str());
+	for (unsigned long i=0; i<sizeof(cates_)/sizeof(cates_[0]); ++i) {
+		zlog_category_t* cat = zlog_get_category(cates_[i].cate_str.c_str());
 		if (!cat) {
 			zlog_fini();
 			return false;
 		}
-		it->second = cat;
 	}
 	if (lib_str_ != "") {
 		lib_cate_ = zlog_get_category(lib_str_.c_str());
@@ -63,7 +69,11 @@ bool JmyLog::reload()
 void JmyLog::destroy()
 {
 	zlog_fini();
-	str2cate_.clear();
+	for (unsigned long i=0; i<sizeof(cates_)/sizeof(cates_[i]); ++i) {
+		if (cates_[i].cate_str != "") {
+			cates_[i].cate_str = "";
+		}
+	}
 	lib_str_ = "";
 	lib_cate_ = NULL;
 }
@@ -74,13 +84,19 @@ void JmyLog::log(const char* category,
 				long line, int level,
 				const char *format, ...)
 {
-	auto it = str2cate_.find(category);
-	if (it == str2cate_.end())
-		return;
-
+	zlog_category_t* c = NULL;
+	unsigned long i = 0;
+	unsigned long s = sizeof(cates_)/sizeof(cates_[0]);
+	for (; i<s; ++i) {
+		if (cates_[i].cate_str == category) {
+			c = cates_[i].cate;
+			break;
+		}
+	}
+	if (!c) return;
 	va_list vl;
 	va_start(vl, format);
-	vzlog(it->second, file, filelen, func, funclen, line, level, format, vl);
+	vzlog(c, file, filelen, func, funclen, line, level, format, vl);
 	va_end(vl);
 }
 

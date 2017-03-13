@@ -1,3 +1,4 @@
+#undef je_yes
 #undef je_malloc_conf
 #undef je_malloc_message
 #undef je_malloc

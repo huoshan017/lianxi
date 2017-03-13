@@ -1,8 +1,9 @@
 CC = clang++
 JMYDIR = ../libjmy
 INCLUDES = -I/×××
-LIBS = -L/××× -L$(JMYDIR)/thirdparty/lib/zlog
-CCFLAGS = -g -Wall -O0 -std=c++11
+THIRDLIB = $(JMYDIR)/thirdparty/lib
+LIBS = -L/××× -L$(THIRDLIB)/zlog -L$(THIRDLIB)/jemalloc
+CCFLAGS = -g -Wall -O0 -std=c++11 -DJEMALLOC_NO_DEMANGLE
 OBJDIR = ./obj
 JMYOBJDIR = $(JMYDIR)/obj
 EXE = multi_clients
@@ -17,7 +18,7 @@ init:
 	mkdir -p $(OBJDIR) $(JMYOBJDIR)
 
 $(EXE): $(OBJS) $(COMMON_OBJS)
-	$(CC) $^ -o $@ $(INCLUDES) $(LIBS) $(CCFLAGS) -lboost_system -lboost_thread -lpthread $(JMYDIR)/thirdparty/lib/zlog/libzlog.a
+	$(CC) $^ -o $@ $(INCLUDES) $(LIBS) $(CCFLAGS) -lboost_system -lboost_thread $(THIRDLIB)/zlog/libzlog.a $(THIRDLIB)/jemalloc/libjemalloc.a -lpthread
 
 $(COMMON_OBJS) : $(JMYOBJDIR)/%.o: $(JMYDIR)/%.cpp
 	$(CC) $(CCFLAGS) -c $< -o $@

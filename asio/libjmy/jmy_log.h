@@ -8,7 +8,7 @@ extern "C" {
 }
 #endif
 
-#include <unordered_map>
+//#include <unordered_map>
 #include <string>
 #include "jmy_singleton.hpp"
 
@@ -34,7 +34,13 @@ public:
 
 private:
 	std::string filepath_;
-	std::unordered_map<std::string, zlog_category_t*> str2cate_;
+	//std::unordered_map<std::string, zlog_category_t*> str2cate_;
+	struct cate_pair {
+		std::string cate_str;
+		zlog_category_t* cate;
+	};
+	enum { MaxCateCount = 10 };
+	cate_pair cates_[MaxCateCount];	
 	std::string lib_str_;
 	zlog_category_t* lib_cate_;
 };

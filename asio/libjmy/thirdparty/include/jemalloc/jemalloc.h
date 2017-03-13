@@ -56,28 +56,29 @@ extern "C" {
  * these macro definitions.
  */
 #ifndef JEMALLOC_NO_RENAME
-#  define je_malloc_conf malloc_conf
-#  define je_malloc_message malloc_message
-#  define je_malloc malloc
-#  define je_calloc calloc
-#  define je_posix_memalign posix_memalign
-#  define je_aligned_alloc aligned_alloc
-#  define je_realloc realloc
-#  define je_free free
-#  define je_mallocx mallocx
-#  define je_rallocx rallocx
-#  define je_xallocx xallocx
-#  define je_sallocx sallocx
-#  define je_dallocx dallocx
-#  define je_sdallocx sdallocx
-#  define je_nallocx nallocx
-#  define je_mallctl mallctl
-#  define je_mallctlnametomib mallctlnametomib
-#  define je_mallctlbymib mallctlbymib
-#  define je_malloc_stats_print malloc_stats_print
-#  define je_malloc_usable_size malloc_usable_size
-#  define je_memalign memalign
-#  define je_valloc valloc
+#  define je_yes
+#  define je_malloc_conf yesmalloc_conf
+#  define je_malloc_message yesmalloc_message
+#  define je_malloc yesmalloc
+#  define je_calloc yescalloc
+#  define je_posix_memalign yesposix_memalign
+#  define je_aligned_alloc yesaligned_alloc
+#  define je_realloc yesrealloc
+#  define je_free yesfree
+#  define je_mallocx yesmallocx
+#  define je_rallocx yesrallocx
+#  define je_xallocx yesxallocx
+#  define je_sallocx yessallocx
+#  define je_dallocx yesdallocx
+#  define je_sdallocx yessdallocx
+#  define je_nallocx yesnallocx
+#  define je_mallctl yesmallctl
+#  define je_mallctlnametomib yesmallctlnametomib
+#  define je_mallctlbymib yesmallctlbymib
+#  define je_malloc_stats_print yesmalloc_stats_print
+#  define je_malloc_usable_size yesmalloc_usable_size
+#  define je_memalign yesmemalign
+#  define je_valloc yesvalloc
 #endif
 
 #include <stdlib.h>
@@ -350,6 +351,7 @@ struct extent_hooks_s {
 #  ifndef JEMALLOC_NO_DEMANGLE
 #    define JEMALLOC_NO_DEMANGLE
 #  endif
+#  define yes je_yes
 #  define malloc_conf je_malloc_conf
 #  define malloc_message je_malloc_message
 #  define malloc je_malloc
@@ -382,6 +384,7 @@ struct extent_hooks_s {
  * and/or --with-jemalloc-prefix.
  */
 #ifndef JEMALLOC_NO_DEMANGLE
+#  undef je_yes
 #  undef je_malloc_conf
 #  undef je_malloc_message
 #  undef je_malloc

@@ -3,8 +3,12 @@
 #include <list>
 #include <memory>
 #include <cstring>
+#include <chrono>
+#include <atomic>
 #include "jmy_session_buffer_pool.h"
 #include "jmy_datatype.h"
+#include "jmy_mem.h"
+#include "jmy_log.h"
 
 enum SessionBufferType {
 	SESSION_BUFFER_TYPE_NONE,
@@ -95,11 +99,11 @@ struct JmyBufferDropConditionData {
 	uint32_t conds;
 	uint32_t params[DropConditionCount];
 	JmyBufferDropConditionData() {
-		conds &= DropConditionImmediate;
+		conds |= DropConditionImmediate;
 		std::memset(params, 0, sizeof(params));
 	}
 	bool hasCond(JmyBufferDropCondition cond) {
-		return conds & cond;
+		return (conds & cond) > 0;
 	}
 	uint32_t getParam(JmyBufferDropCondition cond) {
 		return params[cond];
@@ -135,6 +139,8 @@ private:
 		unsigned int len_;
 		unsigned int roffset_;
 		unsigned int woffset_;
+		static std::atomic<uint64_t> init_count_;
+		static std::atomic<uint64_t> uninit_count_;
 		buffer() : data_(NULL), len_(0), roffset_(0), woffset_(0) {}
 		buffer(buffer&& b) : data_(b.data_), len_(b.len_), roffset_(b.roffset_), woffset_(b.woffset_) {
 			b.data_ = NULL;
@@ -151,9 +157,11 @@ private:
 		bool init(const char* data, unsigned int len) {
 			if (!data || !len) return false;
 			if (data_ && len_!=len) {
-				delete [] data_;
+				jmy_mem_free((void*)data_); //delete [] data_;
+				uninit_count_ += 1;
 			}
-			data_ = new char[len];
+			data_ = (const char*)jmy_mem_malloc(len);//new char[len];
+			init_count_ += 1;
 			std::memcpy((void*)data_, (void*)data, len);
 			len_ = len;
 			roffset_ = 0;
@@ -163,9 +171,11 @@ private:
 		bool init(unsigned int len) {
 			if (!len) return false;
 			if (data_ && len_!=len) {
-				delete [] data_;
+				jmy_mem_free((void*)data_); //delete [] data_;
+				uninit_count_ += 1;
 			}
-			data_ = new char[len];
+			data_ = (const char*)jmy_mem_malloc(len); //data_ = new char[len];
+			init_count_ += 1;
 			len_ = len;
 			roffset_ = 0;
 			woffset_ = 0;
@@ -199,13 +209,24 @@ private:
 		}
 		void destroy() {
 			if (data_) {
-				delete []data_;
+				jmy_mem_free((void*)data_); //delete []data_;
+				uninit_count_ += 1;
 				data_ = NULL;
 			}
 			len_ = 0;
 			roffset_ = woffset_ = 0;
+			output_malloc_and_free_count();
+		}
+		void output_malloc_and_free_count() {
+			static auto last_tick = std::chrono::system_clock::now();
+			auto now = std::chrono::system_clock::now();
+			if (std::chrono::duration_cast<std::chrono::milliseconds>(now - last_tick).count() >= 1000) {
+				last_tick = now;
+				LibJmyLogInfo("init count(%llu)  uninit count(%llu)", init_count_.operator unsigned long(), uninit_count_.operator unsigned long());
+			}
 		}
 	};
+
 	std::list<buffer> using_list_;
 	std::list<buffer> used_list_;
 	unsigned int max_bytes_;

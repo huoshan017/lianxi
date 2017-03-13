@@ -233,7 +233,7 @@ int JmyTcpConnector::run()
 		auto now = std::chrono::system_clock::now();
 		if (std::chrono::duration_cast<std::chrono::milliseconds>(now - last_tick_).count() >= 1000) {
 			last_tick_ = now;
-			LibJmyLogInfo("id(%d)  send_Bps: %d, recv_Bps: %d, Bps: %d", getId(), tool_.getRecvBps(), tool_.getSendBps(), tool_.getBps());
+			LibJmyLogDebug("id(%d)  send_Bps: %d, recv_Bps: %d, Bps: %d", getId(), tool_.getRecvBps(), tool_.getSendBps(), tool_.getBps());
 		}
 	}
 
