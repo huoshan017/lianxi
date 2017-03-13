@@ -21,7 +21,7 @@ public:
 	bool open(const char* category);
 	bool openLib(const char* category);
 	bool reload();
-	void destroy();
+	void close();
 	void log(const char* cate_name,
 			const char *file, size_t filelen,
 			const char *func, size_t funclen,

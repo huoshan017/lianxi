@@ -7,7 +7,7 @@ JmyLog::JmyLog()
 
 JmyLog::~JmyLog()
 {
-	destroy();
+	close();
 }
 
 bool JmyLog::init(const char* filepath)
@@ -66,7 +66,7 @@ bool JmyLog::reload()
 	return true;
 }
 
-void JmyLog::destroy()
+void JmyLog::close()
 {
 	zlog_fini();
 	for (unsigned long i=0; i<sizeof(cates_)/sizeof(cates_[i]); ++i) {
