@@ -49,14 +49,15 @@ template <class SessionBuffer>
 int JmyDataHandler::writeData(SessionBuffer* buffer, int msg_id, const char* data, unsigned int len)
 {
 	char head_buf[16];
-	if (!jmy_net_proto_pack_msgid(head_buf, sizeof(head_buf), msg_id)) {
+	int res = jmy_net_proto_pack_msgid(head_buf, sizeof(head_buf), msg_id, len);
+	if (res < 0) {
 		LibJmyLogError("pack msgid(%d) failed", msg_id);
 		return -1;
 	}
 
 	JmyData datas[2];
 	datas[0].data = head_buf;
-	datas[0].len = sizeof(head_buf);
+	datas[0].len = res;
 	datas[1].data = data;
 	datas[1].len = len;
 
@@ -72,11 +73,12 @@ template <class SessionBuffer>
 int JmyDataHandler::writeAck(SessionBuffer* buffer, unsigned short msg_count)
 {
 	char buf[8];
-	if (!jmy_net_proto_pack_ack(buf, sizeof(buf), msg_count)) {
+	int res = jmy_net_proto_pack_ack(buf, sizeof(buf), msg_count);
+	if (res < 0) {
 		LibJmyLogError("pack ack(msg_count:%d) failed", msg_count);
 		return -1;
 	}
-	if (!buffer->writeData(buf, sizeof(buf))) {
+	if (!buffer->writeData(buf, res)) {
 		LibJmyLogError("write ack failed!!! msg_count(%d)", msg_count);
 		return -1;
 	}
@@ -87,7 +89,8 @@ template <class SessionBuffer>
 int JmyDataHandler::writeHeartbeat(SessionBuffer* buffer)
 {
 	char buf[8];
-	if (!jmy_net_proto_pack_heartbeat(buf, sizeof(buf))) {
+	int res = jmy_net_proto_pack_heartbeat(buf, sizeof(buf));
+	if (res < 0) {
 		LibJmyLogError("pack heart beat failed");
 		return -1;
 	}

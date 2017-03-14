@@ -2,26 +2,26 @@
 #include "jmy_datatype.h"
 #include "jmy_log.h"
 
-bool jmy_net_proto_pack_msgid(char* buf, unsigned char len, int msgid) {
-	if (!buf || len < 5) return false;
+int jmy_net_proto_pack_msgid(char* buf, unsigned char len, int msgid, unsigned short data_len) {
+	if (!buf || len < UserDataHeadLen) return -1;
 	buf[0] = (char)JmyPacketUserData;
-	buf[1] = ((len+2)>>8) & 0xff;
-	buf[2] = (len+2) & 0xff;	
+	buf[1] = ((data_len+2)>>8) & 0xff;
+	buf[2] = (data_len+2) & 0xff;	
 	buf[3] = (msgid>>8) & 0xff;
 	buf[4] = msgid & 0xff;
-	return true;
+	return UserDataHeadLen;
 }
 
-bool jmy_net_proto_pack_ack(char* buf, unsigned char len, unsigned short msg_count) {
-	if (!buf || len < 3) return false;
+int jmy_net_proto_pack_ack(char* buf, unsigned char len, unsigned short msg_count) {
+	if (!buf || len < AckHeadLen) return -1;
 	buf[0] = (char)JmyPacketAck;
 	buf[1] = (msg_count>>8) & 0xff;
 	buf[2] = msg_count & 0xff;
-	return true;
+	return AckHeadLen;
 }
 
-bool jmy_net_proto_pack_heartbeat(char* buf, unsigned char len) {
-	if (!buf || len < 5) return false;
+int jmy_net_proto_pack_heartbeat(char* buf, unsigned char len) {
+	if (!buf || len < HeartbeatHeadLen) return -1;
 	buf[0] = (char)JmyPacketHeartbeat;
 	std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
 	std::time_t t = std::chrono::system_clock::to_time_t(now);
@@ -29,7 +29,7 @@ bool jmy_net_proto_pack_heartbeat(char* buf, unsigned char len) {
 	buf[2] = (t>>16) & 0xff;
 	buf[3] = (t>>8) & 0xff;
 	buf[4] = t & 0xff;
-	return true;
+	return HeartbeatHeadLen;
 }
 
 int jmy_net_proto_unpack_data_head(const char* buf, unsigned int len, JmyPacketUnpackData& data, int session_id, void* param) {

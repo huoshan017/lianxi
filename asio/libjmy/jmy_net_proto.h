@@ -18,6 +18,8 @@ enum JmyPacketUnpackResult {
 };
 
 enum { UserDataHeadLen = 5, };
+enum { AckHeadLen = 3, };
+enum { HeartbeatHeadLen = 5, };
 
 struct JmyPacketUnpackData {
 	JmyPacketType type;
@@ -32,17 +34,17 @@ struct JmyPacketUnpackData {
 /**
  * pack use data
  */
-bool jmy_net_proto_pack_msgid(char* buf, unsigned char len, int msgid);
+int jmy_net_proto_pack_msgid(char* buf, unsigned char len, int msgid, unsigned short data_len);
 
 /**
  * pack ack
  */
-bool jmy_net_proto_pack_ack(char* buf, unsigned char len, unsigned short msg_count);
+int jmy_net_proto_pack_ack(char* buf, unsigned char len, unsigned short msg_count);
 
 /**
  * pack heartbeat
  */
-bool jmy_net_proto_pack_heartbeat(char* buf, unsigned char len);
+int jmy_net_proto_pack_heartbeat(char* buf, unsigned char len);
 
 /**
  * unpack data

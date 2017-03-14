@@ -49,23 +49,23 @@ int JmyDataHandler::processOne(JmySessionBuffer& session_buffer, unsigned int of
 {
 	const char* buff = session_buffer.getReadBuff();
 	unsigned int read_len = session_buffer.getReadLen();
-	int r = jmy_net_proto_unpack_data_head(buff, offset, data, session_id, param);
+	int r = jmy_net_proto_unpack_data_head(buff+offset, read_len-offset, data, session_id, param);
 	if (r == 0) {
 		return 0;
 	}
 	if (r < 0) {
-		if (unpack_data_.type == JmyPacketUserData && unpack_data_.result == JmyPacketUnpackMsgLenInvalid) {
-			LibJmyLogError("data len(%d) is invalid", unpack_data_.data);
+		if (data.type == JmyPacketUserData && data.result == JmyPacketUnpackMsgLenInvalid) {
+			LibJmyLogError("data len(%d) is invalid", data.data);
 		}
 		return -1;
 	}
 
 	// user data
-	if (unpack_data_.type == JmyPacketUserData) {
-		if (unpack_data_.result == JmyPacketUnpackDataNotEnough) {
+	if (data.type == JmyPacketUserData) {
+		if (data.result == JmyPacketUnpackDataNotEnough) {
 			session_buffer.moveDataToFront();
 			return 0;
-		} else if (unpack_data_.result == JmyPacketUnpackUserDataNotEnough) {
+		} else if (data.result == JmyPacketUnpackUserDataNotEnough) {
 			int can_read_len = (int)(session_buffer.getTotalLen() - read_len - offset); 
 			// (can write_len + can read len - nhandled) is not enough to hold next message
 			if (can_read_len < unpack_data_.data) {
@@ -74,17 +74,17 @@ int JmyDataHandler::processOne(JmySessionBuffer& session_buffer, unsigned int of
 			return 0;
 		}
 
-		int res = processMsg(&unpack_data_.msg_info);
+		int res = processMsg(&data.msg_info);
 		if (res < 0) return res;
 	}
 	// ack
-	else if (unpack_data_.type == JmyPacketAck) {
+	else if (data.type == JmyPacketAck) {
 		if (ack_handler_) {
 			ack_handler_(session_id);
 		}
 	}
 	// heart beat
-	else if (unpack_data_.type == JmyPacketHeartbeat) {
+	else if (data.type == JmyPacketHeartbeat) {
 		if (heartbeat_handler_) {
 			heartbeat_handler_(session_id);
 		}
@@ -215,10 +215,6 @@ int JmyDataHandler::processData(JmyDoubleSessionBuffer& recv_buffer, int session
 			}
 		}
 		nhandled += res;
-		if (len - nhandled == 0) {
-			buff.readLen(nhandled);
-			break;
-		}
 		if (len - nhandled == 0) {
 			buff.readLen(nhandled);
 			break;
