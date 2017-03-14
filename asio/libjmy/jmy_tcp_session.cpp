@@ -76,7 +76,7 @@ void JmyTcpSession::start()
 
 int JmyTcpSession::handle_recv()
 {
-	int nread = handler_->processData(&recv_buff_, getId(), session_mgr_);	
+	int nread = handler_->processData(recv_buff_, getId(), session_mgr_);	
 	return nread;
 }
 

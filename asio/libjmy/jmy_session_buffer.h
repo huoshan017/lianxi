@@ -78,6 +78,7 @@ public:
 	unsigned int getReadLen() const;
 	bool checkWriteLen(unsigned int len);
 	char* getBuff() { return use_large_?large_buff_.getBuff():buff_.getBuff(); }
+	JmySessionBuffer& getSessionBuffer() { return use_large_?large_buff_:buff_; }
 
 	bool writeLen(unsigned int len);
 	bool readLen(unsigned int len);
@@ -98,10 +99,10 @@ private:
 struct JmyBufferDropConditionData {
 	uint32_t conds;
 	uint32_t params[DropConditionCount];
-	JmyBufferDropConditionData() {
-		conds |= DropConditionImmediate;
+	JmyBufferDropConditionData() : conds(0) {
 		std::memset(params, 0, sizeof(params));
 	}
+	bool noCond() { return conds == 0; }
 	bool hasCond(JmyBufferDropCondition cond) {
 		return (conds & cond) > 0;
 	}
@@ -109,7 +110,7 @@ struct JmyBufferDropConditionData {
 		return params[cond];
 	}
 	void setCond(JmyBufferDropCondition cond, uint32_t param) {
-		conds &= cond;
+		conds |= cond;
 		params[cond] = param;
 	}
 };
@@ -123,6 +124,8 @@ public:
 	bool init(unsigned int max_bytes = 0, unsigned int max_count = 0);
 	void reset();
 	void addDropCondition(JmyBufferDropCondition cond, uint32_t param);
+	bool hasCond(JmyBufferDropCondition cond) { return drop_cond_.hasCond(cond); }
+	uint32_t getCondParam(JmyBufferDropCondition cond) { return drop_cond_.getParam(cond); }
 
 	bool writeData(const char* data, unsigned int len);
 	bool writeData(JmyData* datas, int count);
@@ -132,6 +135,7 @@ public:
 	void dropUsed(unsigned int len = 0);
 	unsigned int getUsingSize() const { return using_list_.size(); }
 	unsigned int getUsedSize() const { return used_list_.size(); }
+	unsigned int getUsedBytes() const { return curr_used_bytes_; }
 
 private:
 	struct buffer {
@@ -218,8 +222,8 @@ private:
 			output_malloc_and_free_count();
 		}
 		void output_malloc_and_free_count() {
-			static auto last_tick = std::chrono::system_clock::now();
-			auto now = std::chrono::system_clock::now();
+			static std::chrono::system_clock::time_point last_tick = std::chrono::system_clock::now();
+			std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
 			if (std::chrono::duration_cast<std::chrono::milliseconds>(now - last_tick).count() >= 1000) {
 				last_tick = now;
 				LibJmyLogInfo("init count(%llu)  uninit count(%llu)", init_count_.operator unsigned long(), uninit_count_.operator unsigned long());

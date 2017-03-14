@@ -476,9 +476,10 @@ bool JmySessionBufferList::readLen(unsigned int len)
 
 	if (b.is_read_out()) {
 		using_list_.pop_front();
-		if (drop_cond_.hasCond(DropConditionImmediate)) {
+		if (drop_cond_.noCond()) {
 			b.destroy();
-		} else {
+		}
+		else {
 			used_list_.push_back(std::move(b));
 		}
 	}

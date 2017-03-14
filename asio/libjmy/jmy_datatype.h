@@ -15,7 +15,6 @@ struct JmyMsgInfo {
 	unsigned int len;
 	int session_id;
 	void* param;
-
 	JmyMsgInfo() : msg_id(0), data(NULL), len(0), session_id(0), param(NULL) {}
 };
 
@@ -25,6 +24,9 @@ struct JmyId2MsgHandler {
 	int msg_id;
 	jmy_msg_handler handler;
 };
+
+typedef int (*jmy_ack_handler)(int session_id);
+typedef int (*jmy_heartbeat_handler)(int session_id);
 
 struct JmySessionConfig {
 	unsigned int recv_buff_min;
@@ -64,7 +66,7 @@ struct JmyConnectorConfig {
 };
 
 enum JmyBufferDropCondition {
-	DropConditionImmediate			= 0x0001,
+	//DropConditionImmediate			= 0x0001,
 	DropConditionGreatBufferCount	= 0x0002,
 	DropConditionGreatUsedBytes		= 0x0004,
 	DropConditionTimeOut			= 0x0008,
