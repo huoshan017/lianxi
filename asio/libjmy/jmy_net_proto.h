@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include "jmy_datatype.h"
+#include "jmy_const.h"
 #include "jmy_log.h"
 
 enum JmyPacketType {
@@ -18,7 +19,7 @@ enum JmyPacketUnpackResult {
 };
 
 enum { UserDataHeadLen = 5, };
-enum { AckHeadLen = 3, };
+enum { AckHeadLen = 5, };
 enum { HeartbeatHeadLen = 5, };
 
 struct JmyPacketUnpackData {
@@ -39,7 +40,7 @@ int jmy_net_proto_pack_msgid(char* buf, unsigned char len, int msgid, unsigned s
 /**
  * pack ack
  */
-int jmy_net_proto_pack_ack(char* buf, unsigned char len, unsigned short msg_count);
+int jmy_net_proto_pack_ack(char* buf, unsigned char len, unsigned short msg_count, unsigned short curr_id);
 
 /**
  * pack heartbeat
@@ -50,3 +51,9 @@ int jmy_net_proto_pack_heartbeat(char* buf, unsigned char len);
  * unpack data
  */
 int jmy_net_proto_unpack_data_head(const char* buf, unsigned int len, JmyPacketUnpackData& data, int session_id, void* param);
+
+/**
+ * sessoin info 
+ */
+inline bool jmy_id_to_session_info(int session_id, JmySessionInfo& info);
+inline int jmy_session_info_to_id(const JmySessionInfo& info);

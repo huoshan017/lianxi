@@ -4,7 +4,7 @@
 #include <thread>
 #include <chrono>
 
-JmyTcpSession::JmyTcpSession(io_service& service) : id_(0), sock_(service), sending_(false), unused_data_(NULL)
+JmyTcpSession::JmyTcpSession(io_service& service) : id_(0), sock_(service), sending_(false), unused_data_(NULL), use_send_list_(false)
 {
 }
 
@@ -16,13 +16,18 @@ JmyTcpSession::~JmyTcpSession()
 bool JmyTcpSession::init(int id,
 		std::shared_ptr<JmyTcpSessionMgr> session_mgr,
 		std::shared_ptr<JmySessionBufferPool> pool,
-		std::shared_ptr<JmyDataHandler> handler)
+		std::shared_ptr<JmyDataHandler> handler,
+		bool use_send_list)
 {
 	if (!recv_buff_.init(pool, SESSION_BUFFER_TYPE_RECV)) return false;
 	if (!send_buff_.init(pool, SESSION_BUFFER_TYPE_SEND)) return false;
+	if (use_send_list) {
+		send_buff_list_.init(0, 0);
+	}
 	id_ = id;
 	session_mgr_ = session_mgr;
 	handler_ = handler;
+	use_send_list_ = use_send_list;
 	return true;
 }
 
@@ -30,6 +35,9 @@ void JmyTcpSession::close()
 {
 	recv_buff_.destroy();
 	send_buff_.destroy();
+	if (use_send_list_) {
+		send_buff_list_.reset();
+	}
 	sock_.close();
 }
 
@@ -99,18 +107,31 @@ int JmyTcpSession::handle_send()
 	if (sending_)
 		return 0;
 
-	sock_.async_write_some(boost::asio::buffer(send_buff_.getReadBuff(), send_buff_.getReadLen()),
-			[this](const boost::system::error_code& err, size_t bytes_transferred){
-				if (!err) {
-					send_buff_.readLen(bytes_transferred);
-				} else {
-					sock_.close();
-					session_mgr_->freeSessionById(getId());
-					LibJmyLogError("async_send error: ", err.value());
-					return;
-				}
-				sending_ = false;
-			});
+	if (use_send_list_) {
+		sock_.async_write_some(boost::asio::buffer(send_buff_list_.getReadBuff(), send_buff_list_.getReadLen()), [this](const boost::system::error_code& err, size_t bytes_transferred){
+			if (!err) {
+				send_buff_list_.readLen(bytes_transferred);
+			} else {
+				sock_.close();
+				session_mgr_->freeSessionById(getId());
+				LibJmyLogError("async_write_some error: ", err.value());
+				return;
+			}
+			sending_ = false;
+		});
+	} else {
+		sock_.async_write_some(boost::asio::buffer(send_buff_.getReadBuff(), send_buff_.getReadLen()), [this](const boost::system::error_code& err, size_t bytes_transferred){
+			if (!err) {
+				send_buff_.readLen(bytes_transferred);
+			} else {
+				sock_.close();
+				session_mgr_->freeSessionById(getId());
+				LibJmyLogError("async_send error: ", err.value());
+				return;
+			}
+			sending_ = false;
+		});
+	}
 	sending_ = true;
 	return 1;
 }
@@ -163,7 +184,9 @@ void JmyTcpSessionMgr::clear()
 	free_session_list_.clear();
 }
 
-JmyTcpSession* JmyTcpSessionMgr::getOneSession(std::shared_ptr<JmySessionBufferPool> pool, std::shared_ptr<JmyDataHandler> handler)
+JmyTcpSession* JmyTcpSessionMgr::getOneSession(std::shared_ptr<JmySessionBufferPool> pool,
+												std::shared_ptr<JmyDataHandler> handler,
+												bool use_send_list)
 {
 	if (free_session_list_.size() == 0)
 		return NULL;
@@ -176,7 +199,7 @@ JmyTcpSession* JmyTcpSessionMgr::getOneSession(std::shared_ptr<JmySessionBufferP
 	if (curr_id_ > max_session_size_*2)
 		curr_id_ = 1;
 
-	if (!session->init(curr_id_, shared_from_this(), pool, handler))
+	if (!session->init(curr_id_, shared_from_this(), pool, handler, use_send_list))
 		return NULL;
 
 	free_session_list_.pop_front();

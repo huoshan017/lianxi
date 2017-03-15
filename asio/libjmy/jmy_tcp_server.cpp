@@ -31,11 +31,16 @@ bool JmyTcpServer::loadConfig(const JmyServerConfig& conf)
 	if (!res) return false;
 	res = session_mgr_->init(conf.max_conn, service_);
 	if (res) inited_ = true;
-	res = session_buff_pool_->init(conf.max_conn,
+	// use send list
+	if (conf.session_conf.use_send_list) {
+		
+	} else {
+		res = session_buff_pool_->init(conf.max_conn,
 							conf.session_conf.send_buff_min,
 							conf.session_conf.recv_buff_min,
 							conf.session_conf.send_buff_max,
 							conf.session_conf.recv_buff_max);
+	}
 	return res;
 }
 
@@ -83,7 +88,7 @@ int JmyTcpServer::do_accept()
 					return;	
 				}
 			} else {
-				JmyTcpSession* session = session_mgr_->getOneSession(session_buff_pool_, handler_);
+				JmyTcpSession* session = session_mgr_->getOneSession(session_buff_pool_, handler_, conf_.session_conf.use_send_list);
 				if (!session) {
 					LibJmyLogError("get free MyTcpSession failed");
 					return;

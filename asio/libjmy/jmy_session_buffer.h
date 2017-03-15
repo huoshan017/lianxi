@@ -120,6 +120,7 @@ class JmySessionBufferList
 public:
 	JmySessionBufferList();
 	~JmySessionBufferList();
+	void destroy();
 
 	bool init(unsigned int max_bytes = 0, unsigned int max_count = 0);
 	void reset();

@@ -21,7 +21,8 @@ public:
 	bool init(int id,
 			std::shared_ptr<JmyTcpSessionMgr> session_mgr,
 			std::shared_ptr<JmySessionBufferPool> pool,
-			std::shared_ptr<JmyDataHandler> handler);
+			std::shared_ptr<JmyDataHandler> handler,
+			bool use_send_list = false);
 	void close();
 	void reset();
 	void start();
@@ -44,8 +45,10 @@ private:
 	std::shared_ptr<JmyDataHandler> handler_;
 	JmyDoubleSessionBuffer recv_buff_;
 	JmyDoubleSessionBuffer send_buff_;
+	JmySessionBufferList send_buff_list_;
 	bool sending_;
 	void* unused_data_;
+	bool use_send_list_;
 };
 
 class JmyTcpSessionMgr : public std::enable_shared_from_this<JmyTcpSessionMgr>
@@ -58,7 +61,8 @@ public:
 	void clear();
 	
 	JmyTcpSession* getOneSession(std::shared_ptr<JmySessionBufferPool> pool,
-								std::shared_ptr<JmyDataHandler> handler);
+								std::shared_ptr<JmyDataHandler> handler,
+								bool use_send_list = false);
 	int freeSession(JmyTcpSession*);
 	int freeSessionById(int id);
 	JmyTcpSession* getSessionById(int id);

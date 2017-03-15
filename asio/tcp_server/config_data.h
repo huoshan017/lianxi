@@ -11,7 +11,7 @@ static JmyId2MsgHandler s_test_handlers[] = {
 };
 
 static JmyServerConfig test_config = {
-	{1024, 1024, 1024, 1024},
+	{ 1024, 1024, 1024, 1024, true, { { 1, 100000 }, 100, 10 } },
 	s_test_handlers,
 	sizeof(s_test_handlers)/sizeof(s_test_handlers[0]),
 	1024*10

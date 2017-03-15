@@ -11,5 +11,5 @@ static JmyId2MsgHandler s_test_handlers[] = {
 };
 
 static JmyMultiConnectorsConfig test_connector_config = {
-	{ 1024, 1024, s_test_handlers, sizeof(s_test_handlers)/sizeof(s_test_handlers), true, true, true }, 1000,
+	{ 1024, 1024, s_test_handlers, sizeof(s_test_handlers)/sizeof(s_test_handlers), true, true, true, { { 1, 10000 }, 100, 10 } }, 1000,
 };

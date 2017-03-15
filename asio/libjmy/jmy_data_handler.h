@@ -19,28 +19,32 @@ public:
 	bool registerAckHandle(jmy_ack_handler handler);
 	bool registerHeartbeatHandle(jmy_heartbeat_handler handler);
 	bool loadMsgHandle(const JmyId2MsgHandler id2handlers[], int size);
+	// return messages count
 	int processData(JmySessionBuffer& recv_buff, int session_id, void* param);
 	int processData(JmySessionBuffer& recv_buff, int session_id, std::shared_ptr<JmyTcpSessionMgr> session_mgr);
 	int processData(JmySessionBuffer& recv_buff, int connector_id, JmyTcpConnectorMgr* mgr);
 	int processData(JmyDoubleSessionBuffer& recv_buffer, int session_id, std::shared_ptr<JmyTcpSessionMgr> session_mgr);
+	// return write bytes count
 	int writeData(JmySessionBuffer& buffer, int msg_id, const char* data, unsigned int len);
 	int writeData(JmyDoubleSessionBuffer* buffer, int msg_id, const char* data, unsigned int len);
 	int writeData(JmySessionBufferList* buffer_list, int msg_id, const char* data, unsigned int len);
 
-private:
 	template <class SessionBuffer>
 	int writeData(SessionBuffer* buffer, int msg_id, const char* data, unsigned int len);
 	template <class SessionBuffer>
-	int writeAck(SessionBuffer* buffer, unsigned short msg_count);
+	int writeAck(SessionBuffer* buffer, unsigned short msg_count, unsigned short curr_id);
 	template <class SessionBuffer>
 	int writeHeartbeat(SessionBuffer* buffer);
 
+private:
 	int processOne(JmySessionBuffer& session_buffer, unsigned int offset, JmyPacketUnpackData& data, int session_id, void* param);
 	int processMsg(JmyMsgInfo*);
 
 private:
 	std::unordered_map<int, jmy_msg_handler> msg_handler_map_;
 	JmyPacketUnpackData unpack_data_;
+	JmyAckMsgInfo ack_info_;
+	JmyHeartbeatMsgInfo heartbeat_info_;
 	jmy_ack_handler ack_handler_;
 	jmy_heartbeat_handler heartbeat_handler_;
 };
@@ -70,10 +74,10 @@ int JmyDataHandler::writeData(SessionBuffer* buffer, int msg_id, const char* dat
 }
 
 template <class SessionBuffer>
-int JmyDataHandler::writeAck(SessionBuffer* buffer, unsigned short msg_count)
+int JmyDataHandler::writeAck(SessionBuffer* buffer, unsigned short msg_count, unsigned short curr_id)
 {
 	char buf[8];
-	int res = jmy_net_proto_pack_ack(buf, sizeof(buf), msg_count);
+	int res = jmy_net_proto_pack_ack(buf, sizeof(buf), msg_count, curr_id);
 	if (res < 0) {
 		LibJmyLogError("pack ack(msg_count:%d) failed", msg_count);
 		return -1;

@@ -50,9 +50,6 @@ int JmyDataHandler::processOne(JmySessionBuffer& session_buffer, unsigned int of
 	const char* buff = session_buffer.getReadBuff();
 	unsigned int read_len = session_buffer.getReadLen();
 	int r = jmy_net_proto_unpack_data_head(buff+offset, read_len-offset, data, session_id, param);
-	if (r == 0) {
-		return 0;
-	}
 	if (r < 0) {
 		if (data.type == JmyPacketUserData && data.result == JmyPacketUnpackMsgLenInvalid) {
 			LibJmyLogError("data len(%d) is invalid", data.data);
@@ -66,11 +63,13 @@ int JmyDataHandler::processOne(JmySessionBuffer& session_buffer, unsigned int of
 			session_buffer.moveDataToFront();
 			return 0;
 		} else if (data.result == JmyPacketUnpackUserDataNotEnough) {
-			int can_read_len = (int)(session_buffer.getTotalLen() - read_len - offset); 
+			unsigned int write_len = session_buffer.getWriteLen();
+			int can_read_len = (int)(write_len + read_len - offset); 
 			// (can write_len + can read len - nhandled) is not enough to hold next message
 			if (can_read_len < unpack_data_.data) {
 				session_buffer.moveDataToFront();
 			}
+			//LibJmyLogInfo("can_read_len: %d, next message len: %d", can_read_len, unpack_data_.data);
 			return 0;
 		}
 
@@ -80,13 +79,17 @@ int JmyDataHandler::processOne(JmySessionBuffer& session_buffer, unsigned int of
 	// ack
 	else if (data.type == JmyPacketAck) {
 		if (ack_handler_) {
-			ack_handler_(session_id);
+			ack_info_.session_id = session_id;
+			ack_info_.ack_count = (unsigned short)data.data;
+			ack_info_.curr_id = (unsigned short)(int)(long)data.param;
+			ack_handler_(&ack_info_);
 		}
 	}
 	// heart beat
 	else if (data.type == JmyPacketHeartbeat) {
 		if (heartbeat_handler_) {
-			heartbeat_handler_(session_id);
+			heartbeat_info_.session_id = session_id;
+			heartbeat_handler_(&heartbeat_info_);
 		}
 	}
 	// other invalid packet
@@ -101,6 +104,7 @@ int JmyDataHandler::processData(JmySessionBuffer& recv_buffer, int session_id, v
 	unsigned int len = recv_buffer.getReadLen();
 
 	unsigned int nhandled = 0;
+	int count = 0;
 	while (true) {
 		int res = processOne(recv_buffer, nhandled, unpack_data_, session_id, param);
 		if (res < 0) {
@@ -111,12 +115,13 @@ int JmyDataHandler::processData(JmySessionBuffer& recv_buffer, int session_id, v
 			break;
 		}
 		nhandled += res;
+		count += 1;
 		if (len - nhandled == 0) {
 			recv_buffer.readLen(nhandled);
 			break;
 		}
 	}
-	return nhandled;
+	return count;
 }
 
 int JmyDataHandler::processData(JmySessionBuffer& recv_buffer, int session_id, std::shared_ptr<JmyTcpSessionMgr> session_mgr)
@@ -183,9 +188,10 @@ int JmyDataHandler::processData(JmyDoubleSessionBuffer& recv_buffer, int session
 		if (res < 0) return res;
 		nhandled += (data_len+2);
 #endif
-	JmySessionBuffer& buff = recv_buffer.getSessionBuffer();	
+	JmySessionBuffer& buff = recv_buffer.getSessionBuffer();
 	unsigned int len = recv_buffer.getReadLen();
 	int nhandled = 0;
+	int count = 0;
 	while (true) {
 		int res = processOne(buff, nhandled, unpack_data_, session_id, (void*)session_mgr.get());
 		if (res < 0) {
@@ -193,13 +199,13 @@ int JmyDataHandler::processData(JmyDoubleSessionBuffer& recv_buffer, int session
 		}
 		// not enough data to read
 		if (res == 0) {
-			if (!recv_buffer.isLarge() && /*data_len+2*/unpack_data_.data > (int)recv_buffer.getTotalLen()) {
+			if (!recv_buffer.isLarge() && unpack_data_.data > (int)recv_buffer.getTotalLen()) {
 				if (!recv_buffer.switchToLarge()) {
-					LibJmyLogError("current buffer size(%d) not enough to hold next message data(%d), and cant malloc new large buffer", recv_buffer.getTotalLen(), /*data_len*/unpack_data_.data);
+					LibJmyLogError("current buffer size(%d) not enough to hold next message data(%d), and cant malloc new large buffer", recv_buffer.getTotalLen(), unpack_data_.data);
 					return -1;
 				}
-				if (/*data_len+2*/unpack_data_.data > (int)recv_buffer.getTotalLen()) {
-					LibJmyLogDebug("next message data size(%d) is too large than max buffer size(%d)", /*data_len*/unpack_data_.data, recv_buffer.getTotalLen()-2);
+				if (unpack_data_.data > (int)recv_buffer.getTotalLen()) {
+					LibJmyLogDebug("next message data size(%d) is too large than max buffer size(%d)", unpack_data_.data, recv_buffer.getTotalLen()-2);
 					return -1;
 				}
 			}
@@ -208,19 +214,20 @@ int JmyDataHandler::processData(JmyDoubleSessionBuffer& recv_buffer, int session
 		}
 		
 		// next message length small than normal buffer size, switch to normal buffer
-		if (recv_buffer.isLarge() && /*data_len+2*/unpack_data_.data <= (int)recv_buffer.getTotalLen()) {
+		if (recv_buffer.isLarge() && unpack_data_.data <= (int)recv_buffer.getTotalLen()) {
 			if (!recv_buffer.backToNormal()) {
 				LibJmyLogError("back to normal buffer failed");
 				return -1;
 			}
 		}
 		nhandled += res;
+		count += 1;
 		if (len - nhandled == 0) {
 			buff.readLen(nhandled);
 			break;
 		}
 	}
-	return nhandled;
+	return count;
 }
 
 int JmyDataHandler::writeData(JmySessionBuffer& send_buffer, int msg_id, const char* data, unsigned int len)

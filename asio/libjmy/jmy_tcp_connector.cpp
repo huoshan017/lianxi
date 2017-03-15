@@ -6,10 +6,10 @@ JmyTcpConnector::JmyTcpConnector(io_service& service, JmyTcpConnectorMgr& mgr) :
 	mgr_(mgr),
 	sock_(service),
 	state_(CONNECTOR_STATE_NOT_CONNECT),
+	use_send_list_(false),
 	starting_(false),
 	sending_(false),
-	unused_data_(NULL),
-	use_send_list_(false)
+	unused_data_(NULL)
 {
 }
 
@@ -18,10 +18,10 @@ JmyTcpConnector::JmyTcpConnector(io_service& service, JmyTcpConnectorMgr& mgr, c
 	sock_(service),
 	ep_(ep),
 	state_(CONNECTOR_STATE_NOT_CONNECT),
+	use_send_list_(false),
 	starting_(false),
 	sending_(false),
-	unused_data_(NULL),
-	use_send_list_(false)
+	unused_data_(NULL)
 {
 }
 
@@ -100,6 +100,44 @@ void JmyTcpConnector::connect(const char* ip, short port)
 	state_ = CONNECTOR_STATE_CONNECTED;
 }
 
+int JmyTcpConnector::check_reconn_info_for_recv(unsigned short recv_count)
+{
+	JmyReconnectConfig& conf = conf_.common.reconn_conf;
+	// ack count add recv count beyond the id scope
+	if (reconn_info_.ack_recv_msg_count + recv_count > conf.range.max-conf.range.min+1) {
+		LibJmyLogError("received msg count %d is great to max id %d",
+				reconn_info_.ack_recv_msg_count + recv_count, conf.range.max-conf.range.min);
+		return -1;
+	}
+
+	unsigned short curr_id = reconn_info_.curr_ack_recv_id;
+	// curr recv id rotate
+	if (curr_id + recv_count > conf.range.max)
+		curr_id = curr_id + recv_count - conf.range.max + conf.range.min;
+
+	// receive count reached ack count limit
+	if (reconn_info_.ack_recv_msg_count + recv_count >= conf.ack_recv_count) {
+		if (!use_send_list_) {
+			int res = handler_.writeAck(&send_buff_, recv_count, curr_id);
+			if (res < 0) {
+				LibJmyLogError("write ack (recv_count:%d, curr_id:%d) failed", recv_count, curr_id);
+				return -1;
+			}
+		} else {
+			int res = handler_.writeAck(&send_buff_list_, recv_count, curr_id);
+			if (res < 0) {
+				LibJmyLogError("write ack (recv_count:%d, curr_id:%d) failed", recv_count, curr_id);
+				return -1;
+			}
+		}
+		reconn_info_.ack_recv_msg_count = 0;
+		reconn_info_.curr_ack_recv_id = curr_id;
+	} else {
+		reconn_info_.ack_recv_msg_count += recv_count;
+	}
+	return 0;
+}
+
 void JmyTcpConnector::start()
 {
 	if (state_ != CONNECTOR_STATE_CONNECTED) {
@@ -118,11 +156,20 @@ void JmyTcpConnector::start()
 				std::this_thread::sleep_for(std::chrono::milliseconds(100));
 			}
 			LibJmyLogDebug("received %d data", bytes_transferred);
-			int nread = handler_.processData(recv_buff_, getId(), (void*)&mgr_);
-			if (nread < 0) {
-				LibJmyLogError("handle_read failed");
-				return;
+
+			{
+				// data process
+				int count = handler_.processData(recv_buff_, getId(), (void*)&mgr_);
+				if (count < 0) {
+					LibJmyLogError("handle_read failed");
+					return;
+				}
+				// check receive info to ack
+				if (check_reconn_info_for_recv(count) < 0) {
+					return;
+				}
 			}
+
 			start();
 		} else {
 			int ev = err.value();
@@ -167,10 +214,7 @@ int JmyTcpConnector::handle_send()
 	if (state_ != CONNECTOR_STATE_CONNECTED) return -1;
 
 	unsigned int read_len = 0;
-	if (!use_send_list_)
-		read_len = send_buff_.getReadLen();
-	else
-		read_len = send_buff_list_.getReadLen();
+	read_len = use_send_list_ ? send_buff_list_.getReadLen() : send_buff_.getReadLen();
 
 	if (read_len == 0) {
 		LibJmyLogDebug("read len is 0");

@@ -48,6 +48,8 @@ public:
 
 private:
 	int handle_send();
+	int check_reconn_info_for_recv(unsigned short recv_count);
+	int check_reconn_info_for_send();
 
 private:
 	JmyTcpConnectorMgr& mgr_;
@@ -56,15 +58,17 @@ private:
 	JmyConnectorState state_;
 	JmySessionBuffer recv_buff_;
 	JmySessionBuffer send_buff_;
+	JmySessionBufferList send_buff_list_;
+	bool use_send_list_;
 	JmyDataHandler handler_;
 	JmyConnectorConfig conf_;
 	bool starting_;
 	bool sending_;
+	std::chrono::system_clock::time_point last_tick_;
+	JmyReconnectInfo reconn_info_;
+
 	JmyNetTool tool_;
 	void* unused_data_;
-	bool use_send_list_;
-	JmySessionBufferList send_buff_list_;
-	std::chrono::system_clock::time_point last_tick_;
 
 	friend class JmyTcpConnectorMgr;
 };
