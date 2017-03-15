@@ -36,6 +36,7 @@ struct JmyId2MsgHandler {
 
 struct JmyAckMsgInfo {
 	int session_id;
+	void* session_param;
 	unsigned short ack_count;
 	unsigned short curr_id;
 };
@@ -44,6 +45,7 @@ typedef int (*jmy_ack_handler)(JmyAckMsgInfo*);
 
 struct JmyHeartbeatMsgInfo {
 	int session_id;
+	void* session_param;
 };
 
 typedef int (*jmy_heartbeat_handler)(JmyHeartbeatMsgInfo*);

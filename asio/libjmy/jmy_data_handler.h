@@ -16,8 +16,6 @@ public:
 	JmyDataHandler();
 	~JmyDataHandler();
 	bool registerMsgHandle(JmyId2MsgHandler id2handler);
-	bool registerAckHandle(jmy_ack_handler handler);
-	bool registerHeartbeatHandle(jmy_heartbeat_handler handler);
 	bool loadMsgHandle(const JmyId2MsgHandler id2handlers[], int size);
 	// return messages count
 	int processData(JmySessionBuffer& recv_buff, int session_id, void* param);
@@ -39,14 +37,14 @@ public:
 private:
 	int processOne(JmySessionBuffer& session_buffer, unsigned int offset, JmyPacketUnpackData& data, int session_id, void* param);
 	int processMsg(JmyMsgInfo*);
+	int processAck(JmyAckMsgInfo*);
+	int processHeartbeat(JmyHeartbeatMsgInfo*);
 
 private:
 	std::unordered_map<int, jmy_msg_handler> msg_handler_map_;
 	JmyPacketUnpackData unpack_data_;
 	JmyAckMsgInfo ack_info_;
 	JmyHeartbeatMsgInfo heartbeat_info_;
-	jmy_ack_handler ack_handler_;
-	jmy_heartbeat_handler heartbeat_handler_;
 };
 
 template <class SessionBuffer>

@@ -18,20 +18,6 @@ bool JmyDataHandler::registerMsgHandle(JmyId2MsgHandler id2handler)
 	return true;
 }
 
-bool JmyDataHandler::registerAckHandle(jmy_ack_handler handler)
-{
-	if (handler == NULL) return false;
-	ack_handler_ = handler;
-	return true;
-}
-
-bool JmyDataHandler::registerHeartbeatHandle(jmy_heartbeat_handler handler)
-{
-	if (handler == NULL) return false;
-	heartbeat_handler_ = handler;
-	return true;
-}
-
 bool JmyDataHandler::loadMsgHandle(const JmyId2MsgHandler id2handlers[], int size)
 {
 	if (!id2handlers || size == 0)
@@ -45,7 +31,11 @@ bool JmyDataHandler::loadMsgHandle(const JmyId2MsgHandler id2handlers[], int siz
 	return true;
 }
 
-int JmyDataHandler::processOne(JmySessionBuffer& session_buffer, unsigned int offset, JmyPacketUnpackData& data, int session_id, void* param)
+int JmyDataHandler::processOne(
+		JmySessionBuffer& session_buffer,
+		unsigned int offset,
+		JmyPacketUnpackData& data,
+		int session_id, void* param)
 {
 	const char* buff = session_buffer.getReadBuff();
 	unsigned int read_len = session_buffer.getReadLen();
@@ -69,7 +59,6 @@ int JmyDataHandler::processOne(JmySessionBuffer& session_buffer, unsigned int of
 			if (can_read_len < unpack_data_.data) {
 				session_buffer.moveDataToFront();
 			}
-			//LibJmyLogInfo("can_read_len: %d, next message len: %d", can_read_len, unpack_data_.data);
 			return 0;
 		}
 
@@ -78,19 +67,18 @@ int JmyDataHandler::processOne(JmySessionBuffer& session_buffer, unsigned int of
 	}
 	// ack
 	else if (data.type == JmyPacketAck) {
-		if (ack_handler_) {
-			ack_info_.session_id = session_id;
-			ack_info_.ack_count = (unsigned short)data.data;
-			ack_info_.curr_id = (unsigned short)(int)(long)data.param;
-			ack_handler_(&ack_info_);
-		}
+		ack_info_.session_id = session_id;
+		ack_info_.session_param = param;
+		ack_info_.ack_count = (unsigned short)data.data;
+		ack_info_.curr_id = (unsigned short)(int)(long)data.param;
+		if (processAck(&ack_info_) < 0)
+			return -1;
 	}
 	// heart beat
 	else if (data.type == JmyPacketHeartbeat) {
-		if (heartbeat_handler_) {
-			heartbeat_info_.session_id = session_id;
-			heartbeat_handler_(&heartbeat_info_);
-		}
+		heartbeat_info_.session_id = session_id;
+		if (processHeartbeat(&heartbeat_info_) < 0)
+			return -1;
 	}
 	// other invalid packet
 	else {
@@ -115,7 +103,9 @@ int JmyDataHandler::processData(JmySessionBuffer& recv_buffer, int session_id, v
 			break;
 		}
 		nhandled += res;
-		count += 1;
+		if (unpack_data_.type == JmyPacketUserData) {
+			count += 1;
+		}
 		if (len - nhandled == 0) {
 			recv_buffer.readLen(nhandled);
 			break;
@@ -292,4 +282,38 @@ int JmyDataHandler::processMsg(JmyMsgInfo* info)
 	if (it->second(info) < 0)
 		return -1;
 	return info->len;
+}
+
+int JmyDataHandler::processAck(JmyAckMsgInfo* info)
+{
+	if (!info) return -1;
+	JmySessionInfo sinfo;
+	jmy_id_to_session_info(info->session_id, sinfo);
+	if (sinfo.type == SESSION_TYPE_AGENT) {
+		JmyTcpSessionMgr* mgr = (JmyTcpSessionMgr*)info->session_param;
+		JmyTcpSession* session = mgr->getSessionById(sinfo.session_id);
+		if (!session) {
+			LibJmyLogError("not found session(%d)", sinfo.session_id);
+			return -1;
+		}
+		// get send buff
+	} else if (sinfo.type == SESSION_TYPE_CONNECTOR) {
+		JmyTcpConnectorMgr* mgr = (JmyTcpConnectorMgr*)info->session_param;
+		if (!mgr) return -1;
+		JmyTcpConnector* connector = mgr->get(sinfo.session_id);
+		if (!connector) {
+			LibJmyLogError("not found connector(%d)", sinfo.session_id);
+			return -1;
+		}
+		// get send buff
+	} else {
+		LibJmyLogError("invalid session type %d", sinfo.type);
+		return -1;
+	}
+	return 0;
+}
+
+int processHeartbeat(JmyHeartbeatMsgInfo*)
+{
+	return 0;
 }
