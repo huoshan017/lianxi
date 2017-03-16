@@ -76,9 +76,9 @@ int JmyDataHandler::processConn(char* buf, unsigned char len, int session_id, vo
 	else if (unpack_data_.type == JmyPacketAckReconnect) {
 		ack_reconn_info_.session_id = session_id;
 		ack_reconn_info_.session_param = param;
-		ack_reconn_info_.info.conn_id = unpack_data_.data;
-		ack_reconn_info_.info.session_str = (char*)unpack_data_.param;
-		ack_reconn_info_.info.session_str_len = AckReconnSessionLen;
+		ack_reconn_info_.new_info.conn_id = unpack_data_.data;
+		ack_reconn_info_.new_info.session_str = (char*)unpack_data_.param;
+		ack_reconn_info_.new_info.session_str_len = AckReconnSessionLen;
 		if (handleAckReconn(&ack_reconn_info_) < 0) {
 			LibJmyLogError("handle ack reconn failed");
 			return -1;
@@ -437,7 +437,21 @@ int JmyDataHandler::handleAckConn(JmyAckConnMsgInfo* info)
 // JmyTcpSession use
 int JmyDataHandler::handleReconn(JmyReconnMsgInfo* info)
 {
-	return 0;
+	JmySessionInfo si;
+	if (!jmy_id_to_session_info(info->session_id, si)) {
+		LibJmyLogError("session_id(%d) to session_info failed", info->session_id);
+		return -1;
+	}
+
+	if (si.type != SESSION_TYPE_AGENT) {
+		LibJmyLogError("session type must be SESSION_TYPE_AGENT(%d), not %d",
+				SESSION_TYPE_AGENT, si.type);
+		return -1;
+	}
+
+	JmyTcpSessionMgr* mgr = (JmyTcpSessionMgr*)info->session_param;
+	JmyTcpSession* session = mgr->getSessionById(si.session_id);
+	return session->checkReconn(&info->info);
 }
 
 // JmyTcpConnector use

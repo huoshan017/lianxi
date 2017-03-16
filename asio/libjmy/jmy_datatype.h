@@ -46,23 +46,15 @@ struct JmyAckMsgInfo {
 };
 
 // heartbeat info
-struct JmyHeartbeatInfo {
-};
-
 struct JmyHeartbeatMsgInfo {
 	int session_id;
 	void* session_param;
-	JmyHeartbeatInfo info;
 };
 
 // conn info 
-struct JmyConnInfo {
-};
-
 struct JmyConnMsgInfo {
 	int session_id;
 	void* session_param;
-	JmyConnInfo info;
 };
 
 // ack conn info
@@ -79,29 +71,17 @@ struct JmyAckConnMsgInfo {
 };
 
 // reconn info
-struct JmyReconnInfo {
-	unsigned int conn_id;
-	char* session_str;
-	unsigned char session_str_len;
-};
-
 struct JmyReconnMsgInfo {
 	int session_id;
 	void* session_param;
-	JmyReconnInfo info;
+	JmyAckConnInfo info;
 };
 
 // ack reconn info
-struct JmyAckReconnInfo {
-	unsigned int conn_id;
-	char* session_str;
-	unsigned char session_str_len;
-};
-
 struct JmyAckReconnMsgInfo {
 	int session_id;
 	void* session_param;
-	JmyAckReconnInfo info;
+	JmyAckConnInfo new_info;
 };
 
 // configure for reconnect
@@ -175,10 +155,11 @@ enum JmyBufferDropCondition {
 	DropConditionCount,
 };
 
-struct JmyReconnectInfo {
-	unsigned short ack_send_msg_count; // use for send buffer
-	unsigned short ack_recv_msg_count; // use for recv buffer
-	unsigned int curr_ack_send_id;
-	unsigned int curr_ack_recv_id;
-	//JmyReconnectInfo() : ack_send_msg_count(0), ack_recv_msg_count(0), curr_ack_send_id(0), curr_ack_recv_id(0) {}
+struct JmyTotalReconnInfo {
+	//unsigned short ack_send_msg_count; // use for send buffer
+	//unsigned short ack_recv_msg_count; // use for recv buffer
+	//unsigned int curr_ack_send_id;
+	//unsigned int curr_ack_recv_id;
+	JmyAckConnInfo conn_info;			// connect need info
+	JmyAckInfo recv_info, send_info;	// transfer data need info
 };

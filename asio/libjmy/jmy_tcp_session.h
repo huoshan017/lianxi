@@ -30,16 +30,20 @@ public:
 
 	int send(int msg_id, const char* data, unsigned int len);
 	int sendAck(JmyAckInfo*);
-	int sendHeartbeat(JmyHeartbeatInfo*);
+	int sendHeartbeat();
+	void checkAck(JmyAckInfo& info);
+
 	int sendAckConn(JmyAckConnInfo*);
-	int sendAckReconn(JmyReconnInfo*);
+	int sendAckReconn(JmyAckConnInfo*);
+
+	int checkReconn(JmyAckConnInfo*);
 
 	ip::tcp::socket& getSock() { return sock_; }
 	int getId() const { return id_; }
 	void* getUnusedData() const { return unused_data_; }
 	void setUnusedData(void* data) { unused_data_ = data; }
 
-	void checkAck(JmyAckInfo& info);
+	void setAckConnInfo(JmyAckConnInfo& info) { total_reconn_info_.conn_info = info; }
 
 private:
 	int handle_recv();
@@ -55,7 +59,7 @@ private:
 	JmySessionBufferList send_buff_list_;				// send buffer list
 	bool use_send_list_;								// is use send buffer list
 	bool sending_;										// is sending data
-	JmyReconnectInfo reconn_info_;						// hold reconn info
+	JmyTotalReconnInfo total_reconn_info_;				// hold total reconn info
 	void* unused_data_;									// extra data when need to use
 };
 

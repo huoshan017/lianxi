@@ -7,7 +7,7 @@
 
 JmyTcpSession::JmyTcpSession(io_service& service) : id_(0), sock_(service), use_send_list_(false), sending_(false), unused_data_(NULL)
 {
-	std::memset(&reconn_info_, 0, sizeof(reconn_info_));
+	std::memset(&total_reconn_info_, 0, sizeof(total_reconn_info_));
 }
 
 JmyTcpSession::~JmyTcpSession()
@@ -120,9 +120,8 @@ int JmyTcpSession::sendAck(JmyAckInfo* info)
 	return res;
 }
 
-int JmyTcpSession::sendHeartbeat(JmyHeartbeatInfo* info)
+int JmyTcpSession::sendHeartbeat()
 {
-	(void)info;
 	int res = 0;
 	if (use_send_list_) {
 		res = handler_->writeHeartbeat(&send_buff_list_);
@@ -136,6 +135,7 @@ int JmyTcpSession::sendHeartbeat(JmyHeartbeatInfo* info)
 	return res;
 }
 	
+// send to JmyTcpConnector or client
 int JmyTcpSession::sendAckConn(JmyAckConnInfo* info)
 {
 	conn_send_buff_.reset();
@@ -147,7 +147,8 @@ int JmyTcpSession::sendAckConn(JmyAckConnInfo* info)
 	return res;
 }
 
-int JmyTcpSession::sendAckReconn(JmyReconnInfo* info)
+// send to JmyTcpConnector or client
+int JmyTcpSession::sendAckReconn(JmyAckConnInfo* info)
 {
 	conn_send_buff_.reset();
 	int res = handler_->writeAckReconn(&conn_send_buff_, info->conn_id, info->session_str);
@@ -156,6 +157,20 @@ int JmyTcpSession::sendAckReconn(JmyReconnInfo* info)
 		return -1;
 	}
 	return res;
+}
+
+int JmyTcpSession::checkReconn(JmyAckConnInfo* info)
+{
+	if (info->conn_id != total_reconn_info_.conn_info.conn_id ||
+		info->session_str_len != total_reconn_info_.conn_info.session_str_len ||
+		std::memcmp(info->session_str, total_reconn_info_.conn_info.session_str, info->session_str_len) != 0)  {
+		LibJmyLogError("verify conn failed, conn_id(%d, %d) session_str(%s, %s)",
+				info->conn_id, total_reconn_info_.conn_info.conn_id,
+				info->session_str, total_reconn_info_.conn_info.session_str);
+		return -1;
+	}
+
+	return 0;
 }
 
 int JmyTcpSession::handle_send()
@@ -172,7 +187,6 @@ int JmyTcpSession::handle_send()
 				int res = send_buff_list_.readLen(bytes_transferred);
 				if (res > 0) {
 					// confirm send msg count
-					reconn_info_.ack_send_msg_count += res;
 				}
 			} else {
 				sock_.close();
@@ -202,7 +216,7 @@ int JmyTcpSession::handle_send()
 void JmyTcpSession::checkAck(JmyAckInfo& info)
 {
 	if (!use_send_list_) return;
-	if (reconn_info_.ack_send_msg_count - info.ack_count == 0) {
+	if (total_reconn_info_.send_info.ack_count - info.ack_count == 0) {
 		send_buff_list_.dropUsed(info.ack_count);
 		return;
 	}

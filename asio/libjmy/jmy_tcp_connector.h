@@ -46,7 +46,7 @@ public:
 	void* getUnusedData() const { return unused_data_; }
 	void setUnusedData(void* data) { unused_data_ = data; }
 
-	void setAckConnInfo(JmyAckConnInfo& info) { ack_conn_info_ = info; }
+	void setAckConnInfo(JmyAckConnInfo& info) { total_reconn_info_.conn_info = info; }
 
 private:
 	int handle_send();
@@ -66,8 +66,7 @@ private:
 	bool starting_;
 	bool sending_;
 	std::chrono::system_clock::time_point last_tick_;
-	JmyReconnectInfo reconn_info_;
-	JmyAckConnInfo ack_conn_info_;						// hold ack conn info recv from remote
+	JmyTotalReconnInfo total_reconn_info_;
 
 	JmyNetTool tool_;
 	void* unused_data_;
