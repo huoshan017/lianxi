@@ -465,26 +465,27 @@ unsigned int JmySessionBufferList::getReadLen()
 	return read_len;
 }
 
-bool JmySessionBufferList::readLen(unsigned int len)
+int JmySessionBufferList::readLen(unsigned int len)
 {
 	if (using_list_.size() == 0)
-		return false;
+		return 0;
 
 	buffer& b = using_list_.front();
 	if (!b.read(len))
-		return false;
+		return 0;
 
 	if (b.is_read_out()) {
 		using_list_.pop_front();
-		if (drop_cond_.noCond()) {
-			b.destroy();
-		}
-		else {
+		//if (drop_cond_.noCond()) {
+		//	b.destroy();
+		//}
+		//else {
 			used_list_.push_back(std::move(b));
-		}
+		//}
+		return 1;
 	}
 	//LibJmyLogInfo("using_list size(%u), used_list size(%u)", using_list_.size(), used_list_.size());
-	return true;
+	return 0;
 }
 
 void JmySessionBufferList::dropUsed(unsigned int len)

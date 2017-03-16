@@ -1,5 +1,6 @@
 #include "jmy_tcp_connector.h"
 #include "jmy_log.h"
+#include "jmy_const.h"
 #include <thread>
 
 JmyTcpConnector::JmyTcpConnector(io_service& service, JmyTcpConnectorMgr& mgr) :
@@ -104,16 +105,16 @@ int JmyTcpConnector::check_reconn_info_for_recv(unsigned short recv_count)
 {
 	JmyReconnectConfig& conf = conf_.common.reconn_conf;
 	// ack count add recv count beyond the id scope
-	if (reconn_info_.ack_recv_msg_count + recv_count > conf.range.max-conf.range.min+1) {
+	if (reconn_info_.ack_recv_msg_count + recv_count > JMY_ACK_START_ID-JMY_ACK_END_ID+1) {
 		LibJmyLogError("received msg count %d is great to max id %d",
-				reconn_info_.ack_recv_msg_count + recv_count, conf.range.max-conf.range.min);
+				reconn_info_.ack_recv_msg_count + recv_count, JMY_ACK_END_ID-JMY_ACK_START_ID);
 		return -1;
 	}
 
 	unsigned short curr_id = reconn_info_.curr_ack_recv_id;
 	// curr recv id rotate
-	if (curr_id + recv_count > conf.range.max)
-		curr_id = curr_id + recv_count - conf.range.max + conf.range.min;
+	if (curr_id + recv_count > JMY_ACK_END_ID)
+		curr_id = curr_id + recv_count - JMY_ACK_END_ID + JMY_ACK_START_ID;
 
 	// receive count reached ack count limit
 	if (reconn_info_.ack_recv_msg_count + recv_count >= conf.ack_recv_count) {

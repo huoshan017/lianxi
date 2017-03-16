@@ -34,27 +34,78 @@ struct JmyId2MsgHandler {
 	jmy_msg_handler handler;
 };
 
-struct JmyAckMsgInfo {
-	int session_id;
-	void* session_param;
+struct JmyAckInfo {
 	unsigned short ack_count;
 	unsigned short curr_id;
 };
 
-typedef int (*jmy_ack_handler)(JmyAckMsgInfo*);
+struct JmyAckMsgInfo {
+	int session_id;
+	void* session_param;
+	JmyAckInfo ack_info;
+};
+
+// heartbeat info
+struct JmyHeartbeatInfo {
+};
 
 struct JmyHeartbeatMsgInfo {
 	int session_id;
 	void* session_param;
+	JmyHeartbeatInfo info;
 };
 
-typedef int (*jmy_heartbeat_handler)(JmyHeartbeatMsgInfo*);
+// conn info 
+struct JmyConnInfo {
+};
+
+struct JmyConnMsgInfo {
+	int session_id;
+	void* session_param;
+	JmyConnInfo info;
+};
+
+// ack conn info
+struct JmyAckConnInfo {
+	unsigned int conn_id;
+	char* session_str;
+	unsigned char session_str_len;
+};
+
+struct JmyAckConnMsgInfo {
+	int session_id;
+	void* session_param;
+	JmyAckConnInfo info;
+};
+
+// reconn info
+struct JmyReconnInfo {
+	unsigned int conn_id;
+	char* session_str;
+	unsigned char session_str_len;
+};
+
+struct JmyReconnMsgInfo {
+	int session_id;
+	void* session_param;
+	JmyReconnInfo info;
+};
+
+// ack reconn info
+struct JmyAckReconnInfo {
+	unsigned int conn_id;
+	char* session_str;
+	unsigned char session_str_len;
+};
+
+struct JmyAckReconnMsgInfo {
+	int session_id;
+	void* session_param;
+	JmyAckReconnInfo info;
+};
 
 // configure for reconnect
 struct JmyReconnectConfig {
-	struct id_range {
-		unsigned short min, max;
-	} range;
 	unsigned short max_cached_send_count;	// if the size of send messages great to the value, that is meant network has problem
 	unsigned short ack_recv_count;			// acknowlege the count of receiving messages
 	//JmyReconnectConfig() : max_cached_send_count(0), ack_recv_count(0) {}

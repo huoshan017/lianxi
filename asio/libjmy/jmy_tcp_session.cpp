@@ -3,9 +3,11 @@
 #include "jmy_log.h"
 #include <thread>
 #include <chrono>
+#include <memory>
 
-JmyTcpSession::JmyTcpSession(io_service& service) : id_(0), sock_(service), sending_(false), unused_data_(NULL), use_send_list_(false)
+JmyTcpSession::JmyTcpSession(io_service& service) : id_(0), sock_(service), use_send_list_(false), sending_(false), unused_data_(NULL)
 {
+	std::memset(&reconn_info_, 0, sizeof(reconn_info_));
 }
 
 JmyTcpSession::~JmyTcpSession()
@@ -90,13 +92,70 @@ int JmyTcpSession::handle_recv()
 
 int JmyTcpSession::send(int msg_id, const char* data, unsigned int len)
 {
-	int res = handler_->writeData(&send_buff_, msg_id, data, len);
+	int res = 0;
+	if (use_send_list_) {
+		res = handler_->writeData(&send_buff_list_, msg_id, data, len);
+	} else {
+		res = handler_->writeData(&send_buff_, msg_id, data, len);
+	}
 	if (res < 0) {
 		LibJmyLogError("write data length(%d) failed", len);
 		return -1;
 	}
-	//LibJmyLogDebug("JmyTcpSession::send session %d write length %d of data to send buffer: %s", getId(), res, data);
 	return len;
+}
+
+int JmyTcpSession::sendAck(JmyAckInfo* info)
+{
+	int res = 0;
+	if (use_send_list_) {
+		res = handler_->writeAck(&send_buff_list_, info->ack_count, info->curr_id);
+	} else {
+		res = handler_->writeAck(&send_buff_, info->ack_count, info->curr_id);
+	}
+	if (res < 0) {
+		LibJmyLogError("write ack failed");
+		return -1;
+	}
+	return res;
+}
+
+int JmyTcpSession::sendHeartbeat(JmyHeartbeatInfo* info)
+{
+	(void)info;
+	int res = 0;
+	if (use_send_list_) {
+		res = handler_->writeHeartbeat(&send_buff_list_);
+	} else {
+		res = handler_->writeHeartbeat(&send_buff_);
+	}
+	if (res < 0) {
+		LibJmyLogError("write heart beat failed");
+		return -1;
+	}
+	return res;
+}
+	
+int JmyTcpSession::sendAckConn(JmyAckConnInfo* info)
+{
+	conn_send_buff_.reset();
+	int res = handler_->writeAckConn(&conn_send_buff_, info->conn_id, info->session_str);
+	if (res < 0) {
+		LibJmyLogError("write ack conn failed");
+		return -1;
+	}
+	return res;
+}
+
+int JmyTcpSession::sendAckReconn(JmyReconnInfo* info)
+{
+	conn_send_buff_.reset();
+	int res = handler_->writeAckReconn(&conn_send_buff_, info->conn_id, info->session_str);
+	if (res < 0) {
+		LibJmyLogError("write ack reconn failed");
+		return -1;
+	}
+	return res;
 }
 
 int JmyTcpSession::handle_send()
@@ -110,7 +169,11 @@ int JmyTcpSession::handle_send()
 	if (use_send_list_) {
 		sock_.async_write_some(boost::asio::buffer(send_buff_list_.getReadBuff(), send_buff_list_.getReadLen()), [this](const boost::system::error_code& err, size_t bytes_transferred){
 			if (!err) {
-				send_buff_list_.readLen(bytes_transferred);
+				int res = send_buff_list_.readLen(bytes_transferred);
+				if (res > 0) {
+					// confirm send msg count
+					reconn_info_.ack_send_msg_count += res;
+				}
 			} else {
 				sock_.close();
 				session_mgr_->freeSessionById(getId());
@@ -134,6 +197,15 @@ int JmyTcpSession::handle_send()
 	}
 	sending_ = true;
 	return 1;
+}
+
+void JmyTcpSession::checkAck(JmyAckInfo& info)
+{
+	if (!use_send_list_) return;
+	if (reconn_info_.ack_send_msg_count - info.ack_count == 0) {
+		send_buff_list_.dropUsed(info.ack_count);
+		return;
+	}
 }
 
 int JmyTcpSession::run()

@@ -27,12 +27,19 @@ public:
 	void reset();
 	void start();
 	int run();
+
 	int send(int msg_id, const char* data, unsigned int len);
+	int sendAck(JmyAckInfo*);
+	int sendHeartbeat(JmyHeartbeatInfo*);
+	int sendAckConn(JmyAckConnInfo*);
+	int sendAckReconn(JmyReconnInfo*);
 
 	ip::tcp::socket& getSock() { return sock_; }
 	int getId() const { return id_; }
 	void* getUnusedData() const { return unused_data_; }
 	void setUnusedData(void* data) { unused_data_ = data; }
+
+	void checkAck(JmyAckInfo& info);
 
 private:
 	int handle_recv();
@@ -41,14 +48,15 @@ private:
 private:
 	int id_;
 	ip::tcp::socket sock_;
-	std::shared_ptr<JmyTcpSessionMgr> session_mgr_;
-	std::shared_ptr<JmyDataHandler> handler_;
-	JmyDoubleSessionBuffer recv_buff_;
-	JmyDoubleSessionBuffer send_buff_;
-	JmySessionBufferList send_buff_list_;
-	bool sending_;
-	void* unused_data_;
-	bool use_send_list_;
+	std::shared_ptr<JmyTcpSessionMgr> session_mgr_;		// session manager shared pointer
+	std::shared_ptr<JmyDataHandler> handler_;			// data handler
+	JmySimpleBuffer conn_send_buff_, conn_recv_buff_;	// conn buffer
+	JmyDoubleSessionBuffer recv_buff_, send_buff_;		// data buffer
+	JmySessionBufferList send_buff_list_;				// send buffer list
+	bool use_send_list_;								// is use send buffer list
+	bool sending_;										// is sending data
+	JmyReconnectInfo reconn_info_;						// hold reconn info
+	void* unused_data_;									// extra data when need to use
 };
 
 class JmyTcpSessionMgr : public std::enable_shared_from_this<JmyTcpSessionMgr>

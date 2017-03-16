@@ -16,6 +16,32 @@ enum SessionBufferType {
 	SESSION_BUFFER_TYPE_SEND,
 };
 
+class JmySimpleBuffer {
+public:
+	JmySimpleBuffer(): write_offset_(0) {
+	}
+	~JmySimpleBuffer() { }
+	void reset() { write_offset_ = 0; }
+	char* getReadBuff() { return buff_; }
+	unsigned int getReadLen() { return write_offset_; }
+	bool writeData(const char* data, unsigned int len) {
+		if (write_offset_ > 0) {
+			LibJmyLogError("not write data because of not reset");
+			return false;
+		}
+		if (len > sizeof(buff_)) {
+			LibJmyLogError("data len %d too long", len);
+			return false;
+		}
+		std::memcpy(buff_, data, len);
+		return true;
+	}
+	
+private:
+	char buff_[64];
+	unsigned char write_offset_;
+};
+
 struct JmyData;
 
 class JmySessionBuffer
@@ -132,7 +158,7 @@ public:
 	bool writeData(JmyData* datas, int count);
 	const char* getReadBuff();
 	unsigned int getReadLen();
-	bool readLen(unsigned int len);
+	int readLen(unsigned int len);
 	void dropUsed(unsigned int len = 0);
 	unsigned int getUsingSize() const { return using_list_.size(); }
 	unsigned int getUsedSize() const { return used_list_.size(); }

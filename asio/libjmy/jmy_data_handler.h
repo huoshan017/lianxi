@@ -17,6 +17,10 @@ public:
 	~JmyDataHandler();
 	bool registerMsgHandle(JmyId2MsgHandler id2handler);
 	bool loadMsgHandle(const JmyId2MsgHandler id2handlers[], int size);
+
+	// conn
+	int processConn(char* buf, unsigned char len, int session_id, void* param);
+
 	// return messages count
 	int processData(JmySessionBuffer& recv_buff, int session_id, void* param);
 	int processData(JmySessionBuffer& recv_buff, int session_id, std::shared_ptr<JmyTcpSessionMgr> session_mgr);
@@ -28,6 +32,14 @@ public:
 	int writeData(JmySessionBufferList* buffer_list, int msg_id, const char* data, unsigned int len);
 
 	template <class SessionBuffer>
+	int writeConn(SessionBuffer* buffer);
+	template <class SessionBuffer>
+	int writeAckConn(SessionBuffer* buffer, unsigned int id, char* session/*, unsigned char session_len*/);
+	template <class SessionBuffer>
+	int writeReconn(SessionBuffer* buffer, unsigned int id, char* session/*, unsigned char session_len*/);
+	template <class SessionBuffer>
+	int writeAckReconn(SessionBuffer* buffer, unsigned int id, char* session/*, unsigned char session_len*/);
+	template <class SessionBuffer>
 	int writeData(SessionBuffer* buffer, int msg_id, const char* data, unsigned int len);
 	template <class SessionBuffer>
 	int writeAck(SessionBuffer* buffer, unsigned short msg_count, unsigned short curr_id);
@@ -35,17 +47,89 @@ public:
 	int writeHeartbeat(SessionBuffer* buffer);
 
 private:
-	int processOne(JmySessionBuffer& session_buffer, unsigned int offset, JmyPacketUnpackData& data, int session_id, void* param);
-	int processMsg(JmyMsgInfo*);
-	int processAck(JmyAckMsgInfo*);
-	int processHeartbeat(JmyHeartbeatMsgInfo*);
+	int handleConn(JmyConnMsgInfo*);
+	int handleAckConn(JmyAckConnMsgInfo*);
+	int handleReconn(JmyReconnMsgInfo*);
+	int handleAckReconn(JmyAckReconnMsgInfo*);
+	int handleOne(JmySessionBuffer& session_buffer, unsigned int offset, JmyPacketUnpackData& data, int session_id, void* param);
+	int handleMsg(JmyMsgInfo*);
+	int handleAck(JmyAckMsgInfo*);
+	int handleHeartbeat(JmyHeartbeatMsgInfo*);
 
 private:
 	std::unordered_map<int, jmy_msg_handler> msg_handler_map_;
 	JmyPacketUnpackData unpack_data_;
 	JmyAckMsgInfo ack_info_;
 	JmyHeartbeatMsgInfo heartbeat_info_;
+	JmyConnMsgInfo conn_info_;
+	JmyAckConnMsgInfo ack_conn_info_;
+	JmyReconnMsgInfo reconn_info_;
+	JmyAckReconnMsgInfo ack_reconn_info_;
 };
+
+template <class SessionBuffer>
+int JmyDataHandler::writeConn(SessionBuffer* buffer)
+{
+	char temp[PacketConnLen];
+	int res = jmy_net_proto_pack_connect(temp, sizeof(temp));
+	if (res < 0) {
+		LibJmyLogError("pack conn failed");
+		return -1;
+	}
+	if (!buffer->writeData(temp, res)) {
+		LibJmyLogError("write conn failed");
+		return -1;
+	}
+	return 0;
+}
+
+template <class SessionBuffer>
+int JmyDataHandler::writeAckConn(SessionBuffer* buffer, unsigned int id, char* session/*, unsigned char session_len*/)
+{
+	char temp[PacketAckConnLen];
+	int res = jmy_net_proto_pack_ack_connect(temp, sizeof(temp), id, session);
+	if (res < 0) {
+		LibJmyLogError("pack ack conn failed");
+		return -1;
+	}
+	if (!buffer->writeData(temp, res)) {
+		LibJmyLogError("write ack conn failed");
+		return -1;
+	}
+	return res;
+}
+
+template <class SessionBuffer>
+int JmyDataHandler::writeReconn(SessionBuffer* buffer, unsigned int id, char* session/*, unsigned char session_len*/)
+{
+	char temp[PacketReconnLen];
+	int res = jmy_net_proto_pack_reconnect(temp, sizeof(temp), id, session);
+	if (res < 0) {
+		LibJmyLogError("pack reconn failed");
+		return -1;
+	}
+	if (!buffer->writeData(temp, res)) {
+		LibJmyLogError("write reconn failed");
+		return -1;
+	}
+	return res;
+}
+
+template <class SessionBuffer>
+int JmyDataHandler::writeAckReconn(SessionBuffer* buffer, unsigned int id, char* session/*, unsigned char session_len*/)
+{
+	char temp[PacketAckReconnLen];
+	int res = jmy_net_proto_pack_ack_reconnect(temp, sizeof(temp), id, session);
+	if (res < 0) {
+		LibJmyLogError("pack ack reconn failed");
+		return -1;
+	}
+	if (!buffer->writeData(temp, res)) {
+		LibJmyLogError("pack ack reconn failed");
+		return -1;
+	}
+	return res;
+}
 
 template <class SessionBuffer>
 int JmyDataHandler::writeData(SessionBuffer* buffer, int msg_id, const char* data, unsigned int len)
@@ -72,16 +156,16 @@ int JmyDataHandler::writeData(SessionBuffer* buffer, int msg_id, const char* dat
 }
 
 template <class SessionBuffer>
-int JmyDataHandler::writeAck(SessionBuffer* buffer, unsigned short msg_count, unsigned short curr_id)
+int JmyDataHandler::writeAck(SessionBuffer* buffer, unsigned short ack_count, unsigned short curr_id)
 {
 	char buf[8];
-	int res = jmy_net_proto_pack_ack(buf, sizeof(buf), msg_count, curr_id);
+	int res = jmy_net_proto_pack_ack(buf, sizeof(buf), ack_count, curr_id);
 	if (res < 0) {
-		LibJmyLogError("pack ack(msg_count:%d) failed", msg_count);
+		LibJmyLogError("pack ack(msg_count:%d) failed", ack_count);
 		return -1;
 	}
 	if (!buffer->writeData(buf, res)) {
-		LibJmyLogError("write ack failed!!! msg_count(%d)", msg_count);
+		LibJmyLogError("write ack failed!!! msg_count(%d)", ack_count);
 		return -1;
 	}
 	return 0;

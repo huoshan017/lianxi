@@ -46,6 +46,8 @@ public:
 	void* getUnusedData() const { return unused_data_; }
 	void setUnusedData(void* data) { unused_data_ = data; }
 
+	void setAckConnInfo(JmyAckConnInfo& info) { ack_conn_info_ = info; }
+
 private:
 	int handle_send();
 	int check_reconn_info_for_recv(unsigned short recv_count);
@@ -56,8 +58,7 @@ private:
 	ip::tcp::socket sock_;
 	ip::tcp::endpoint ep_;
 	JmyConnectorState state_;
-	JmySessionBuffer recv_buff_;
-	JmySessionBuffer send_buff_;
+	JmySessionBuffer recv_buff_, send_buff_;
 	JmySessionBufferList send_buff_list_;
 	bool use_send_list_;
 	JmyDataHandler handler_;
@@ -66,6 +67,7 @@ private:
 	bool sending_;
 	std::chrono::system_clock::time_point last_tick_;
 	JmyReconnectInfo reconn_info_;
+	JmyAckConnInfo ack_conn_info_;						// hold ack conn info recv from remote
 
 	JmyNetTool tool_;
 	void* unused_data_;
