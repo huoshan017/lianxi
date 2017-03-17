@@ -32,19 +32,18 @@ public:
 	int sendAck(JmyAckInfo*);
 	int sendHeartbeat();
 	void checkAck(JmyAckInfo& info);
-
-	int sendAckConn(JmyAckConnInfo*);
-	int sendAckReconn(JmyAckConnInfo*);
-
-	int checkReconn(JmyAckConnInfo*);
-
+#if USE_CONN_PROTO
+	int sendConnRes(JmyConnResInfo*);
+	int sendReconnRes(JmyConnResInfo*);
+	int checkReconn(JmyConnResInfo*);
+#endif
 	ip::tcp::socket& getSock() { return sock_; }
 	int getId() const { return id_; }
 	void* getUnusedData() const { return unused_data_; }
 	void setUnusedData(void* data) { unused_data_ = data; }
-
-	void setAckConnInfo(JmyAckConnInfo& info) { total_reconn_info_.conn_info = info; }
-
+#if USE_CONN_PROTO
+	void setConnResInfo(JmyConnResInfo& info) { total_reconn_info_.conn_info = info; }
+#endif
 private:
 	int handle_recv();
 	int handle_send();

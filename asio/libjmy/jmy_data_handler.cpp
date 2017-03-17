@@ -31,6 +31,7 @@ bool JmyDataHandler::loadMsgHandle(const JmyId2MsgHandler id2handlers[], int siz
 	return true;
 }
 
+#if USE_CONN_PROTO
 int JmyDataHandler::processConn(char* buf, unsigned char len, int session_id, void* param)
 {
 	int r = jmy_net_proto_unpack_data_head(buf, len, unpack_data_, session_id, param);
@@ -48,14 +49,14 @@ int JmyDataHandler::processConn(char* buf, unsigned char len, int session_id, vo
 			return -1;
 		}
 	}
-	// ack conn
-	else if (unpack_data_.type == JmyPacketAckConnect) {
-		ack_conn_info_.session_id = session_id;
-		ack_conn_info_.session_param = param;
-		ack_conn_info_.info.conn_id = unpack_data_.data;
-		ack_conn_info_.info.session_str = (char*)unpack_data_.param;
-		ack_conn_info_.info.session_str_len = AckReconnSessionLen;
-		if (handleAckConn(&ack_conn_info_) < 0) {
+	// conn res
+	else if (unpack_data_.type == JmyPacketConnectResult) {
+		conn_res_info_.session_id = session_id;
+		conn_res_info_.session_param = param;
+		conn_res_info_.info.conn_id = unpack_data_.data;
+		conn_res_info_.info.session_str = (char*)unpack_data_.param;
+		conn_res_info_.info.session_str_len = ConnResSessionLen;
+		if (handleConnRes(&conn_res_info_) < 0) {
 			LibJmyLogError("handle ack conn failed");
 			return -1;
 		}
@@ -66,20 +67,20 @@ int JmyDataHandler::processConn(char* buf, unsigned char len, int session_id, vo
 		reconn_info_.session_param = param;
 		reconn_info_.info.conn_id = unpack_data_.data;
 		reconn_info_.info.session_str = (char*)unpack_data_.param;
-		reconn_info_.info.session_str_len = AckReconnSessionLen;
+		reconn_info_.info.session_str_len = ConnResSessionLen;
 		if (handleReconn(&reconn_info_) < 0) {
 			LibJmyLogError("handle reconn failed");
 			return -1;
 		}
 	}
-	// ack reconn
-	else if (unpack_data_.type == JmyPacketAckReconnect) {
-		ack_reconn_info_.session_id = session_id;
-		ack_reconn_info_.session_param = param;
-		ack_reconn_info_.new_info.conn_id = unpack_data_.data;
-		ack_reconn_info_.new_info.session_str = (char*)unpack_data_.param;
-		ack_reconn_info_.new_info.session_str_len = AckReconnSessionLen;
-		if (handleAckReconn(&ack_reconn_info_) < 0) {
+	// reconn res
+	else if (unpack_data_.type == JmyPacketReconnectResult) {
+		reconn_res_info_.session_id = session_id;
+		reconn_res_info_.session_param = param;
+		reconn_res_info_.new_info.conn_id = unpack_data_.data;
+		reconn_res_info_.new_info.session_str = (char*)unpack_data_.param;
+		reconn_res_info_.new_info.session_str_len = ConnResSessionLen;
+		if (handleReconnRes(&reconn_res_info_) < 0) {
 			LibJmyLogError("handle ack reconn failed");
 			return -1;
 		}
@@ -87,6 +88,7 @@ int JmyDataHandler::processConn(char* buf, unsigned char len, int session_id, vo
 	
 	return r;
 }
+#endif
 
 int JmyDataHandler::processData(JmySessionBuffer& recv_buffer, int session_id, void* param)
 {
@@ -126,66 +128,14 @@ int JmyDataHandler::processData(JmySessionBuffer& recv_buffer, int connector_id,
 	return processData(recv_buffer, connector_id, (void*)mgr);
 }
 
-int JmyDataHandler::processData(JmyDoubleSessionBuffer& recv_buffer, int session_id, std::shared_ptr<JmyTcpSessionMgr> session_mgr)
+int JmyDataHandler::processData(JmyDoubleSessionBuffer& recv_buffer, int session_id, void* param)
 {
-#if 0
-		// not enough length get head
-		if (len-nhandled < 2) {
-			recv_buffer->readLen(nhandled);
-			recv_buffer->moveDataToFront();
-			break;
-		}
-
-		// data length not include head length, data_len+2 is the whole data len
-		unsigned int data_len = ((buff[nhandled]<<8)&0xff00) + (buff[nhandled+1]&0xff);
-		// current buffer not enough to hold next message data, switch to large buffer
-		if (!recv_buffer->isLarge() && data_len+2 > recv_buffer->getTotalLen()) {
-			if (!recv_buffer->switchToLarge()) {
-				LibJmyLogError("current buffer size(%d) not enough to hold next message data(%d), and cant malloc new large buffer", recv_buffer->getTotalLen(), data_len);
-				return -1;
-			}
-			if (data_len+2 > recv_buffer->getTotalLen()) {
-				LibJmyLogDebug("next message data size(%d) is too large than max buffer size(%d)", data_len, recv_buffer->getTotalLen()-2);
-				return -1;
-			}
-			break;
-		}
-
-		// next message length small than normal buffer size, switch to normal buffer
-		if (recv_buffer->isLarge() && data_len+2 <= recv_buffer->getTotalLen()) {
-			if (!recv_buffer->backToNormal()) {
-				LibJmyLogError("back to normal buffer failed");
-				return -1;
-			}
-		}
-
-		// left length not whole data length
-		if (len-nhandled < data_len+2) {
-			// (can write_len + can read len - nhandled) is not enough to hold next message
-			if (recv_buffer->getWriteLen()+len-nhandled < data_len) {
-				recv_buffer->moveDataToFront();
-			}
-			recv_buffer->readLen(nhandled);
-			break;
-		}
-
-		// msg id
-		int msg_id = ((buff[nhandled+2]<<8)&0xff00) + (buff[nhandled+3]&0xff);
-		msg_info_.msg_id = msg_id;
-		msg_info_.data = buff+nhandled+2+2;
-		msg_info_.len = data_len - 2;
-		msg_info_.session_id = session_id;
-		msg_info_.param = (void*)(session_mgr.get());
-		int res = processMsg(&msg_info_); 
-		if (res < 0) return res;
-		nhandled += (data_len+2);
-#endif
 	JmySessionBuffer& buff = recv_buffer.getSessionBuffer();
 	unsigned int len = recv_buffer.getReadLen();
 	int nhandled = 0;
 	int count = 0;
 	while (true) {
-		int res = handleOne(buff, nhandled, unpack_data_, session_id, (void*)session_mgr.get());
+		int res = handleOne(buff, nhandled, unpack_data_, session_id, param);
 		if (res < 0) {
 			return -1;
 		}
@@ -291,7 +241,7 @@ int JmyDataHandler::handleAck(JmyAckMsgInfo* info)
 	if (!info) return -1;
 	JmySessionInfo sinfo;
 	jmy_id_to_session_info(info->session_id, sinfo);
-	if (sinfo.type == SESSION_TYPE_AGENT) {
+	if (sinfo.type == JMY_CONN_TYPE_PASSIVE) {
 		JmyTcpSessionMgr* mgr = (JmyTcpSessionMgr*)info->session_param;
 		JmyTcpSession* session = mgr->getSessionById(sinfo.session_id);
 		if (!session) {
@@ -299,7 +249,7 @@ int JmyDataHandler::handleAck(JmyAckMsgInfo* info)
 			return -1;
 		}
 		// get send buff
-	} else if (sinfo.type == SESSION_TYPE_CONNECTOR) {
+	} else if (sinfo.type == JMY_CONN_TYPE_ACTIVE) {
 		JmyTcpConnectorMgr* mgr = (JmyTcpConnectorMgr*)info->session_param;
 		if (!mgr) return -1;
 		JmyTcpConnector* connector = mgr->get(sinfo.session_id);
@@ -376,6 +326,7 @@ int JmyDataHandler::handleOne(
 	return r;
 }
 
+#if USE_CONN_PROTO
 // JmyTcpSession use
 int JmyDataHandler::handleConn(JmyConnMsgInfo* info)
 {
@@ -387,10 +338,12 @@ int JmyDataHandler::handleConn(JmyConnMsgInfo* info)
 	}
 	JmySessionInfo si;
 	if (!jmy_id_to_session_info(info->session_id, si)) {
+		ConnIdSessionMgr->removeById(id);
 		LibJmyLogError("session_id(%d) to session_info failed", info->session_id);
 		return -1;
 	}
 	if (si.type != SESSION_TYPE_AGENT) {
+		ConnIdSessionMgr->removeById(id);
 		LibJmyLogError("session type must SESSION_TYPE_AGENT(%d), not %d", SESSION_TYPE_AGENT, si.type);
 		return -1;
 	}
@@ -398,19 +351,20 @@ int JmyDataHandler::handleConn(JmyConnMsgInfo* info)
 	JmyTcpSessionMgr* mgr = (JmyTcpSessionMgr*)info->session_param;
 	JmyTcpSession* session =  mgr->getSessionById(si.session_id);
 	if (!session) {
+		ConnIdSessionMgr->removeById(id);
 		LibJmyLogError("session(%d) is not found", si.session_id);
 		return -1;
 	}
 
-	JmyAckConnInfo ack_conn;
+	JmyConnResInfo ack_conn;
 	ack_conn.conn_id = id;
 	ack_conn.session_str = session_str;
-	ack_conn.session_str_len = AckReconnSessionLen;
-	return session->sendAckConn(&ack_conn);
+	ack_conn.session_str_len = ConnResSessionLen;
+	return session->sendConnRes(&ack_conn);
 }
 
 // JmyTcpConnector use
-int JmyDataHandler::handleAckConn(JmyAckConnMsgInfo* info)
+int JmyDataHandler::handleConnRes(JmyConnResMsgInfo* info)
 {
 	JmySessionInfo si;
 	if (!jmy_id_to_session_info(info->session_id, si)) {
@@ -429,7 +383,7 @@ int JmyDataHandler::handleAckConn(JmyAckConnMsgInfo* info)
 		return -1;
 	}
 	
-	connector->setAckConnInfo(info->info);
+	connector->setConnResInfo(info->info);
 	
 	return 0;
 }
@@ -455,7 +409,8 @@ int JmyDataHandler::handleReconn(JmyReconnMsgInfo* info)
 }
 
 // JmyTcpConnector use
-int JmyDataHandler::handleAckReconn(JmyAckReconnMsgInfo* info)
+int JmyDataHandler::handleReconnRes(JmyReconnResMsgInfo* info)
 {
 	return 0;
 }
+#endif

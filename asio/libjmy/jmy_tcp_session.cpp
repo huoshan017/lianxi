@@ -86,7 +86,7 @@ void JmyTcpSession::start()
 
 int JmyTcpSession::handle_recv()
 {
-	int nread = handler_->processData(recv_buff_, getId(), session_mgr_);	
+	int nread = handler_->processData(recv_buff_, getId(), (void*)session_mgr_.get());	
 	return nread;
 }
 
@@ -134,12 +134,13 @@ int JmyTcpSession::sendHeartbeat()
 	}
 	return res;
 }
-	
+
+#if USE_CONN_PROTO
 // send to JmyTcpConnector or client
-int JmyTcpSession::sendAckConn(JmyAckConnInfo* info)
+int JmyTcpSession::sendConnRes(JmyConnResInfo* info)
 {
 	conn_send_buff_.reset();
-	int res = handler_->writeAckConn(&conn_send_buff_, info->conn_id, info->session_str);
+	int res = handler_->writeConnRes(&conn_send_buff_, info->conn_id, info->session_str);
 	if (res < 0) {
 		LibJmyLogError("write ack conn failed");
 		return -1;
@@ -148,10 +149,10 @@ int JmyTcpSession::sendAckConn(JmyAckConnInfo* info)
 }
 
 // send to JmyTcpConnector or client
-int JmyTcpSession::sendAckReconn(JmyAckConnInfo* info)
+int JmyTcpSession::sendReconnRes(JmyConnResInfo* info)
 {
 	conn_send_buff_.reset();
-	int res = handler_->writeAckReconn(&conn_send_buff_, info->conn_id, info->session_str);
+	int res = handler_->writeReconnRes(&conn_send_buff_, info->conn_id, info->session_str);
 	if (res < 0) {
 		LibJmyLogError("write ack reconn failed");
 		return -1;
@@ -159,7 +160,7 @@ int JmyTcpSession::sendAckReconn(JmyAckConnInfo* info)
 	return res;
 }
 
-int JmyTcpSession::checkReconn(JmyAckConnInfo* info)
+int JmyTcpSession::checkReconn(JmyConnResInfo* info)
 {
 	if (info->conn_id != total_reconn_info_.conn_info.conn_id ||
 		info->session_str_len != total_reconn_info_.conn_info.session_str_len ||
@@ -172,6 +173,7 @@ int JmyTcpSession::checkReconn(JmyAckConnInfo* info)
 
 	return 0;
 }
+#endif
 
 int JmyTcpSession::handle_send()
 {

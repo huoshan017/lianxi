@@ -105,19 +105,19 @@ int JmyTcpConnector::check_reconn_info_for_recv(unsigned short recv_count)
 {
 	JmyReconnectConfig& conf = conf_.common.reconn_conf;
 	// ack count add recv count beyond the id scope
-	if (reconn_info_.ack_recv_msg_count + recv_count > JMY_ACK_START_ID-JMY_ACK_END_ID+1) {
+	if (total_reconn_info_.recv_info.ack_count + recv_count > JMY_ACK_START_ID-JMY_ACK_END_ID+1) {
 		LibJmyLogError("received msg count %d is great to max id %d",
-				reconn_info_.ack_recv_msg_count + recv_count, JMY_ACK_END_ID-JMY_ACK_START_ID);
+				total_reconn_info_.recv_info.ack_count + recv_count, JMY_ACK_END_ID-JMY_ACK_START_ID);
 		return -1;
 	}
 
-	unsigned short curr_id = reconn_info_.curr_ack_recv_id;
+	unsigned short curr_id = total_reconn_info_.recv_info.curr_id;
 	// curr recv id rotate
 	if (curr_id + recv_count > JMY_ACK_END_ID)
 		curr_id = curr_id + recv_count - JMY_ACK_END_ID + JMY_ACK_START_ID;
 
 	// receive count reached ack count limit
-	if (reconn_info_.ack_recv_msg_count + recv_count >= conf.ack_recv_count) {
+	if (total_reconn_info_.recv_info.ack_count + recv_count >= conf.ack_recv_count) {
 		if (!use_send_list_) {
 			int res = handler_.writeAck(&send_buff_, recv_count, curr_id);
 			if (res < 0) {
@@ -131,10 +131,7 @@ int JmyTcpConnector::check_reconn_info_for_recv(unsigned short recv_count)
 				return -1;
 			}
 		}
-		reconn_info_.ack_recv_msg_count = 0;
-		reconn_info_.curr_ack_recv_id = curr_id;
 	} else {
-		reconn_info_.ack_recv_msg_count += recv_count;
 	}
 	return 0;
 }
@@ -192,7 +189,7 @@ void JmyTcpConnector::start()
 }
 
 int JmyTcpConnector::send(int msg_id, const char* data, unsigned int len)
-		{
+{
 	if (state_ != CONNECTOR_STATE_CONNECTED) return -1;
 	if (!use_send_list_) {
 		int res = handler_.writeData(send_buff_, msg_id, data, len);

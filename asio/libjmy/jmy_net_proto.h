@@ -8,23 +8,29 @@
 #include "jmy_singleton.hpp"
 #include "jmy_log.h"
 
+#define USE_CONN_PROTO 0
+
 enum JmyPacketType {
-	JmyPacketConnect		= 0,
-	JmyPacketAckConnect		= 1,
-	JmyPacketReconnect		= 2,
-	JmyPacketAckReconnect	= 3,
-	JmyPacketUserData		= 4,
-	JmyPacketAck			= 5,
-	JmyPacketHeartbeat		= 6,
+#if USE_CONN_PROTO
+	JmyPacketConnect			= 0,
+	JmyPacketConnectResult		= 1,
+	JmyPacketReconnect			= 2,
+	JmyPacketReconnectResult	= 3,
+#endif
+	JmyPacketUserData			= 4,
+	JmyPacketAck				= 5,
+	JmyPacketHeartbeat			= 6,
 };
 
+#if USE_CONN_PROTO
 enum JmyConnType {
 	JmyConnTypeNormal = 0,
 	JmyConnTypeReconn = 1,
 };
 
-enum { AckReconnIdLen = 4, };
-enum { AckReconnSessionLen = 16, };
+enum { ConnResIdLen = 4, };
+enum { ConnResSessionLen = 16, };
+#endif
 
 enum JmyPacketUnpackResult {
 	JmyPacketUnpackNoError				= 0,
@@ -33,10 +39,12 @@ enum JmyPacketUnpackResult {
 	JmyPacketUnpackMsgLenInvalid		= 3,
 };
 
+#if USE_CONN_PROTO
 enum { PacketConnLen = 1, };
-enum { PacketAckConnLen = 1+AckReconnIdLen+AckReconnSessionLen, };
-enum { PacketReconnLen = 1+AckReconnIdLen+AckReconnSessionLen, };
-enum { PacketAckReconnLen = 1+AckReconnIdLen+AckReconnSessionLen, };
+enum { PacketConnResLen = 1+ConnResIdLen+ConnResSessionLen, };
+enum { PacketReconnLen = 1+ConnResIdLen+ConnResSessionLen, };
+enum { PacketReconnResLen = 1+ConnResIdLen+ConnResSessionLen, };
+#endif
 enum { PacketUserDataHeadLen = 1+2+2, };
 enum { PacketAckLen = 1+2+2, };
 enum { PacketHeartbeatLen = 1+4, };
@@ -51,26 +59,27 @@ struct JmyPacketUnpackData {
 	}
 };
 
-
+#if USE_CONN_PROTO
 /**
  * pack connect
  */
 int jmy_net_proto_pack_connect(char* buf, unsigned char len/*, unsigned char connect_type*/);
 
 /**
- * pack ack connect
+ * pack connect result
  */
-int jmy_net_proto_pack_ack_connect(char* buf, unsigned char len, unsigned int id, char session[AckReconnSessionLen]);
+int jmy_net_proto_pack_connect_result(char* buf, unsigned char len, unsigned int id, char session[ConnResSessionLen]);
 
 /**
  * pack reconnect
  */
-int jmy_net_proto_pack_reconnect(char* buf, unsigned char len, unsigned int id, char session[AckReconnSessionLen]);
+int jmy_net_proto_pack_reconnect(char* buf, unsigned char len, unsigned int id, char session[ConnResSessionLen]);
 
 /**
- * pack ack reconnect
+ * pack reconnect result
  */
-int jmy_net_proto_pack_ack_reconnect(char* buf, unsigned char len, unsigned int id, char session[AckReconnSessionLen]);
+int jmy_net_proto_pack_reconnect_result(char* buf, unsigned char len, unsigned int id, char session[ConnResSessionLen]);
+#endif
 
 /**
  * pack use data
@@ -104,6 +113,7 @@ int jmy_session_info_to_id(const JmySessionInfo& info);
 unsigned short jmy_ack_id_add(unsigned short curr_id, unsigned short increment);
 unsigned short jmy_ack_id_diff(unsigned short self_id, unsigned short ack_id);
 
+#if USE_CONN_PROTO
 /**
  * connection id and session manager
  */
@@ -124,3 +134,4 @@ private:
 };
 
 #define ConnIdSessionMgr (JmyConnIdAndSessionMgr::getInstance())
+#endif

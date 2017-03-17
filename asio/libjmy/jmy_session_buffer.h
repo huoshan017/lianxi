@@ -266,3 +266,4 @@ private:
 	unsigned int curr_count_;
 	JmyBufferDropConditionData drop_cond_;
 };
+

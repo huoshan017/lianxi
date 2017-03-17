@@ -45,9 +45,9 @@ public:
 	int getId() const { return conf_.conn_id; }
 	void* getUnusedData() const { return unused_data_; }
 	void setUnusedData(void* data) { unused_data_ = data; }
-
-	void setAckConnInfo(JmyAckConnInfo& info) { total_reconn_info_.conn_info = info; }
-
+#if USE_CONN_PROTO
+	void setConnResInfo(JmyConnResInfo& info) { total_reconn_info_.conn_info = info; }
+#endif
 private:
 	int handle_send();
 	int check_reconn_info_for_recv(unsigned short recv_count);

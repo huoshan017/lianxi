@@ -7,7 +7,7 @@
 #define PACK_INT16_TO_BUFF(id, buff) ({ \
 			buff[0] = (id>>8) & 0xff; \
 			buff[1] = id & 0xff; \
-			return 2; \
+			2; \
 		})
 
 #define PACK_INT32_TO_BUFF(id, buff) ({ \
@@ -15,38 +15,40 @@
 			buff[1] = (id>>16) & 0xff; \
 			buff[2] = (id>>8) & 0xff; \
 			buff[3] = id & 0xff; \
-			return 4; \
+			4; \
 		})
 
+#if USE_CONN_PROTO
 int jmy_net_proto_pack_connect(char* buf, unsigned char len/*, JmyConnType connect_type*/) {
 	if (!buf || len < PacketConnLen) return -1;
 	buf[0] = (char)JmyPacketConnect;
 	return PacketConnLen;
 }
 
-int jmy_net_proto_pack_ack_connect(char* buf, unsigned char len, /*JmyConnType connect_type, */unsigned int id, char session[AckReconnSessionLen]) {
-	if (!buf || len < PacketAckConnLen) return -1;
-	buf[0] = (char)JmyPacketAckConnect;
+int jmy_net_proto_pack_connect_result(char* buf, unsigned char len, /*JmyConnType connect_type, */unsigned int id, char session[ConnResSessionLen]) {
+	if (!buf || len < PacketConnResLen) return -1;
+	buf[0] = (char)JmyPacketConnectResult;
 	unsigned char offset = PACK_INT32_TO_BUFF(id, (buf+1));
-	std::memcpy(buf+1+offset, session, AckReconnSessionLen);
-	return PacketAckConnLen;
+	std::memcpy(buf+1+offset, session, ConnResSessionLen);
+	return PacketConnResLen;
 }
 
-int jmy_net_proto_pack_reconnect(char* buf, unsigned char len, unsigned int id, char session[AckReconnSessionLen]) {
+int jmy_net_proto_pack_reconnect(char* buf, unsigned char len, unsigned int id, char session[ConnResSessionLen]) {
 	if (!buf || len < PacketReconnLen) return -1;
 	buf[0] = (char)JmyPacketReconnect;
 	unsigned char offset = PACK_INT32_TO_BUFF(id, (buf+1));
-	std::memcpy(buf+1+offset, session, AckReconnSessionLen);
+	std::memcpy(buf+1+offset, session, ConnResSessionLen);
 	return PacketReconnLen;
 }
 
-int jmy_net_proto_pack_ack_reconnect(char* buf, unsigned char len, unsigned int id, char session[AckReconnSessionLen]) {
-	if (!buf || len < PacketAckReconnLen) return -1;
-	buf[0] = (char)JmyPacketAckReconnect;
+int jmy_net_proto_pack_reconnect_result(char* buf, unsigned char len, unsigned int id, char session[ConnResSessionLen]) {
+	if (!buf || len < PacketReconnResLen) return -1;
+	buf[0] = (char)JmyPacketReconnectResult;
 	unsigned char offset = PACK_INT32_TO_BUFF(id, (buf+1));
-	std::memcpy(buf+1+offset, session, AckReconnSessionLen);
-	return PacketAckReconnLen;
+	std::memcpy(buf+1+offset, session, ConnResSessionLen);
+	return PacketReconnResLen;
 }
+#endif
 
 int jmy_net_proto_pack_msgid(char* buf, unsigned char len, int msgid, unsigned short data_len) {
 	if (!buf || len < PacketUserDataHeadLen) return -1;
@@ -87,21 +89,22 @@ int jmy_net_proto_unpack_data_head(const char* buf, unsigned int len, JmyPacketU
 	int handled = 0;
 	data.type = (JmyPacketType)buf[0];
 	switch (data.type) {
+#if USE_CONN_PROTO
 	case JmyPacketConnect:
 		{
 			if (len < PacketConnLen) return 0;
 			handled = PacketConnLen;
 		}
 		break;
-	case JmyPacketAckConnect:
+	case JmyPacketConnectResult:
 		{
-			if (len < PacketAckConnLen) return 0;
+			if (len < PacketConnResLen) return 0;
 			// id
 			data.data = (int)((buf[1]<<8)&0xff00 + buf[2]&0xff);
 			// session
-			char* session = (char*)jmy_mem_malloc(AckReconnSessionLen);
-			std::memcpy(session, (void*)(buf+2), AckReconnSessionLen);
-			handled = PacketAckConnLen;
+			char* session = (char*)jmy_mem_malloc(ConnResSessionLen);
+			std::memcpy(session, (void*)(buf+2), ConnResSessionLen);
+			handled = PacketConnResLen;
 		}
 		break;
 	case JmyPacketReconnect:
@@ -110,22 +113,23 @@ int jmy_net_proto_unpack_data_head(const char* buf, unsigned int len, JmyPacketU
 			// id
 			data.data = (int)((buf[1]<<8)&0xff00 + buf[2]&0xff);
 			// session
-			char* session = (char*)jmy_mem_malloc(AckReconnSessionLen);
-			std::memcpy(session, (void*)(buf+2), AckReconnSessionLen);
+			char* session = (char*)jmy_mem_malloc(ConnResSessionLen);
+			std::memcpy(session, (void*)(buf+2), ConnResSessionLen);
 			handled = PacketReconnLen;
 		}
 		break;
-	case JmyPacketAckReconnect:
+	case JmyPacketReconnectResult:
 		{
-			if (len < PacketAckReconnLen) return 0;
+			if (len < PacketReconnResLen) return 0;
 			// id
 			data.data = (int)((buf[1]<<8)&0xff00 + buf[2]&0xff);
 			// session
-			char* session = (char*)jmy_mem_malloc(AckReconnSessionLen);
-			std::memcpy(session, (void*)(buf+2), AckReconnSessionLen);
-			handled = PacketAckReconnLen;
+			char* session = (char*)jmy_mem_malloc(ConnResSessionLen);
+			std::memcpy(session, (void*)(buf+2), ConnResSessionLen);
+			handled = PacketReconnResLen;
 		}
 		break;
+#endif
 	case JmyPacketUserData:
 		{
 			// head not enough
@@ -194,7 +198,7 @@ int jmy_net_proto_unpack_data_head(const char* buf, unsigned int len, JmyPacketU
 
 bool jmy_id_to_session_info(int session_id, JmySessionInfo& info)
 {
-	info.type = (JmySessionType)((session_id>>24) & 0xff);
+	info.type = (JmyConnType)((session_id>>24) & 0xff);
 	info.session_id = session_id & 0xffffff;
 	return true;
 }
@@ -214,6 +218,7 @@ unsigned short jmy_ack_id_add(unsigned short curr_id, unsigned short increment)
 	return curr_id;
 }
 
+#if USE_CONN_PROTO
 // JmyConnIdAndSessionMgr
 JmyConnIdAndSessionMgr::JmyConnIdAndSessionMgr() : curr_id_(0)
 {
@@ -237,11 +242,10 @@ bool JmyConnIdAndSessionMgr::newIdAndSession(unsigned int& id, char*& session)
 		curr_id_ = 1;
 	}
 	// generate session string
-	std::random_device rd;
-	std::mt19937 gen(rd);
+	std::default_random_engine gen;
 	std::uniform_int_distribution<> dis(0, sizeof(cs));
-	session = (char*)jmy_mem_malloc(AckReconnSessionLen);
-	for (int i=0; i<AckReconnSessionLen; ++i) {
+	session = (char*)jmy_mem_malloc(ConnResSessionLen);
+	for (int i=0; i<ConnResSessionLen; ++i) {
 		session[i] = dis(gen);
 	}
 	id = curr_id_;
@@ -254,7 +258,9 @@ bool JmyConnIdAndSessionMgr::removeById(unsigned int id)
 	std::unordered_map<unsigned int, char*>::iterator it = id2sessions_.find(id);
 	if (it == id2sessions_.end())
 		return false;
+	if (it->second)
+		jmy_mem_free(it->second);
 	id2sessions_.erase(id);
 	return true;
 }
-
+#endif
