@@ -1,5 +1,7 @@
 #pragma once
 
+#if USE_CONNECTOR_AND_SESSION
+
 #include <unordered_map>
 #include <set>
 #include <mutex>
@@ -133,3 +135,4 @@ private:
 	JmyMultiConnectorsConfig conf_;
 	JmyTcpConnectorMgr mgr_;
 };
+#endif

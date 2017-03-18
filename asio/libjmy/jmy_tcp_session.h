@@ -1,5 +1,6 @@
 #pragma once
 
+#if USE_CONNECTOR_AND_SESSION
 #include <list>
 #include <unordered_map>
 #include <boost/asio.hpp>
@@ -85,4 +86,4 @@ private:
 	int curr_id_;
 	int max_session_size_;
 };
-
+#endif

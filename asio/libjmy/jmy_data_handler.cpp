@@ -41,7 +41,7 @@ int JmyDataHandler::processConn(char* buf, unsigned char len, int session_id, vo
 	}
 
 	// conn
-	if (unpack_data_.type == JmyPacketConnect) {
+	if (unpack_data_.type == JMY_PACKET_CONNECT) {
 		conn_info_.session_id = session_id;
 		conn_info_.session_param = param;
 		if (handleConn(&conn_info_) < 0) {
@@ -50,7 +50,7 @@ int JmyDataHandler::processConn(char* buf, unsigned char len, int session_id, vo
 		}
 	}
 	// conn res
-	else if (unpack_data_.type == JmyPacketConnectResult) {
+	else if (unpack_data_.type == JMY_PACKET_CONNECT_RESULT) {
 		conn_res_info_.session_id = session_id;
 		conn_res_info_.session_param = param;
 		conn_res_info_.info.conn_id = unpack_data_.data;
@@ -62,7 +62,7 @@ int JmyDataHandler::processConn(char* buf, unsigned char len, int session_id, vo
 		}
 	}
 	// reconn
-	else if (unpack_data_.type == JmyPacketReconnect) {
+	else if (unpack_data_.type == JMY_PACKET_RECONNECT) {
 		reconn_info_.session_id = session_id;
 		reconn_info_.session_param = param;
 		reconn_info_.info.conn_id = unpack_data_.data;
@@ -74,7 +74,7 @@ int JmyDataHandler::processConn(char* buf, unsigned char len, int session_id, vo
 		}
 	}
 	// reconn res
-	else if (unpack_data_.type == JmyPacketReconnectResult) {
+	else if (unpack_data_.type == JMY_PACKET_RECONNECT_RESULT) {
 		reconn_res_info_.session_id = session_id;
 		reconn_res_info_.session_param = param;
 		reconn_res_info_.new_info.conn_id = unpack_data_.data;
@@ -107,7 +107,7 @@ int JmyDataHandler::processData(JmySessionBuffer& recv_buffer, int session_id, v
 		}
 		nhandled += res;
 		// must user data packet
-		if (unpack_data_.type == JmyPacketUserData) {
+		if (unpack_data_.type == JMY_PACKET_USER_DATA) {
 			count += 1;
 		}
 		if (len - nhandled == 0) {
@@ -118,6 +118,7 @@ int JmyDataHandler::processData(JmySessionBuffer& recv_buffer, int session_id, v
 	return count;
 }
 
+#if USE_CONNECTOR_AND_SESSION
 int JmyDataHandler::processData(JmySessionBuffer& recv_buffer, int session_id, std::shared_ptr<JmyTcpSessionMgr> session_mgr)
 {
 	return processData(recv_buffer, session_id, (void*)session_mgr.get());
@@ -127,6 +128,7 @@ int JmyDataHandler::processData(JmySessionBuffer& recv_buffer, int connector_id,
 {
 	return processData(recv_buffer, connector_id, (void*)mgr);
 }
+#endif
 
 int JmyDataHandler::processData(JmyDoubleSessionBuffer& recv_buffer, int session_id, void* param)
 {
@@ -177,7 +179,7 @@ int JmyDataHandler::writeData(JmySessionBuffer& send_buffer, int msg_id, const c
 	if (!data || !len)
 		return 0;
 
-	if (!send_buffer.checkWriteLen(len+PacketUserDataHeadLen)) {
+	if (!send_buffer.checkWriteLen(len + JMY_PACKET_LEN_USER_DATA_HEAD)) {
 		LibJmyLogError("data length(%d) is not enough to write", len);
 		return -1;
 	}
@@ -189,14 +191,14 @@ int JmyDataHandler::writeData(JmyDoubleSessionBuffer* send_buffer, int msg_id, c
 	if (!send_buffer || !data || !len)
 		return 0;
 
-	if (!send_buffer->checkWriteLen(len+PacketUserDataHeadLen)) {
+	if (!send_buffer->checkWriteLen(len + JMY_PACKET_LEN_USER_DATA_HEAD)) {
 		bool too_large = true;
 		if (!send_buffer->isLarge()) {
 			if (!send_buffer->switchToLarge()) {
 				LibJmyLogError("switch to large buffer failed");
 				return -1;
 			}
-			if (send_buffer->checkWriteLen(len+PacketUserDataHeadLen)) {
+			if (send_buffer->checkWriteLen(len + JMY_PACKET_LEN_USER_DATA_HEAD)) {
 				too_large = false;
 			}
 		}
@@ -206,7 +208,7 @@ int JmyDataHandler::writeData(JmyDoubleSessionBuffer* send_buffer, int msg_id, c
 		}
 	}
 	// check if length of data is small than normal buffer, switch to normal buffer
-	if (send_buffer->isLarge() && send_buffer->getNormalLen() >= len+PacketUserDataHeadLen)  {
+	if (send_buffer->isLarge() && send_buffer->getNormalLen() >= len + JMY_PACKET_LEN_USER_DATA_HEAD)  {
 		if (!send_buffer->backToNormal()) {
 			LibJmyLogError("back to normal buffer failed");
 			return -1;
@@ -239,6 +241,7 @@ int JmyDataHandler::handleMsg(JmyMsgInfo* info)
 int JmyDataHandler::handleAck(JmyAckMsgInfo* info)
 {
 	if (!info) return -1;
+#if USE_CONNECTOR_AND_SESSION
 	JmySessionInfo sinfo;
 	jmy_id_to_session_info(info->session_id, sinfo);
 	if (sinfo.type == JMY_CONN_TYPE_PASSIVE) {
@@ -262,11 +265,28 @@ int JmyDataHandler::handleAck(JmyAckMsgInfo* info)
 		LibJmyLogError("invalid session type %d", sinfo.type);
 		return -1;
 	}
+#else
+	
+#endif
+	
 	return 0;
 }
 
-int JmyDataHandler::handleHeartbeat(JmyHeartbeatMsgInfo*)
+int JmyDataHandler::handleHeartbeat(JmyHeartbeatMsgInfo* info)
 {
+	if (!info) return -1;
+	return 0;
+}
+
+int JmyDataHandler::handleDisconnect(JmyDisconnectMsgInfo* info)
+{
+	if (!info) return -1;
+	return 0;
+}
+
+int JmyDataHandler::handleDisconnectAck(JmyDisconnectAckMsgInfo* info)
+{
+	if (!info) return -1;
 	return 0;
 }
 
@@ -280,18 +300,18 @@ int JmyDataHandler::handleOne(
 	unsigned int read_len = session_buffer.getReadLen();
 	int r = jmy_net_proto_unpack_data_head(buff+offset, read_len-offset, data, session_id, param);
 	if (r < 0) {
-		if (data.type == JmyPacketUserData && data.result == JmyPacketUnpackMsgLenInvalid) {
+		if (data.type == JMY_PACKET_USER_DATA && data.result == JMY_UNPACK_RESULT_MSG_LEN_INVALID) {
 			LibJmyLogError("data len(%d) is invalid", data.data);
 		}
 		return -1;
 	}
 
 	// user data
-	if (data.type == JmyPacketUserData) {
-		if (data.result == JmyPacketUnpackDataNotEnough) {
+	if (data.type == JMY_PACKET_USER_DATA) {
+		if (data.result == JMY_UNPACK_RESULT_DATA_NOT_ENOUGH) {
 			session_buffer.moveDataToFront();
 			return 0;
-		} else if (data.result == JmyPacketUnpackUserDataNotEnough) {
+		} else if (data.result == JMY_UNPACK_RESULT_USER_DATA_NOT_ENOUGH) {
 			unsigned int write_len = session_buffer.getWriteLen();
 			int can_read_len = (int)(write_len + read_len - offset); 
 			// (can write_len + can read len - nhandled) is not enough to hold next message
@@ -305,7 +325,7 @@ int JmyDataHandler::handleOne(
 		if (res < 0) return res;
 	}
 	// ack
-	else if (data.type == JmyPacketAck) {
+	else if (data.type == JMY_PACKET_ACK) {
 		ack_info_.session_id = session_id;
 		ack_info_.session_param = param;
 		ack_info_.ack_info.ack_count = (unsigned short)data.data;
@@ -314,9 +334,24 @@ int JmyDataHandler::handleOne(
 			return -1;
 	}
 	// heart beat
-	else if (data.type == JmyPacketHeartbeat) {
+	else if (data.type == JMY_PACKET_HEARTBEAT) {
 		heartbeat_info_.session_id = session_id;
+		heartbeat_info_.session_param = param;
 		if (handleHeartbeat(&heartbeat_info_) < 0)
+			return -1;
+	}
+	// disconnect
+	else if (data.type == JMY_PACKET_DISCONNECT) {
+		disconn_info_.session_id = session_id;
+		disconn_info_.session_param = param;
+		if (handleDisconnect(&disconn_info_) < 0)
+			return -1;
+	}
+	// disconnect ack
+	else if (data.type == JMY_PACKET_DISCONNECT_ACK) {
+		disconn_ack_info_.session_id = session_id;
+		disconn_ack_info_.session_param = param;
+		if (handleDisconnectAck(&disconn_ack_info_) < 0)
 			return -1;
 	}
 	// other invalid packet
@@ -342,9 +377,9 @@ int JmyDataHandler::handleConn(JmyConnMsgInfo* info)
 		LibJmyLogError("session_id(%d) to session_info failed", info->session_id);
 		return -1;
 	}
-	if (si.type != SESSION_TYPE_AGENT) {
+	if (si.type != JMY_CONN_TYPE_PASSIVE) {
 		ConnIdSessionMgr->removeById(id);
-		LibJmyLogError("session type must SESSION_TYPE_AGENT(%d), not %d", SESSION_TYPE_AGENT, si.type);
+		LibJmyLogError("session type must JMY_CONN_TYPE_PASSIVE(%d), not %d", JMY_CONN_TYPE_PASSIVE, si.type);
 		return -1;
 	}
 
@@ -371,8 +406,8 @@ int JmyDataHandler::handleConnRes(JmyConnResMsgInfo* info)
 		LibJmyLogError("session_id(%d) to session_info failed", info->session_id);
 		return -1;
 	}
-	if (si.type != SESSION_TYPE_CONNECTOR) {
-		LibJmyLogError("session type must be SESSION_TYPE_CONNECTOR(%d), not %d", SESSION_TYPE_CONNECTOR, si.type);
+	if (si.type != JMY_CONN_TYPE_ACTIVE) {
+		LibJmyLogError("session type must be JMY_CONN_TYPE_ACTIVE(%d), not %d", JMY_CONN_TYPE_ACTIVE, si.type);
 		return -1;
 	}
 
@@ -397,9 +432,9 @@ int JmyDataHandler::handleReconn(JmyReconnMsgInfo* info)
 		return -1;
 	}
 
-	if (si.type != SESSION_TYPE_AGENT) {
-		LibJmyLogError("session type must be SESSION_TYPE_AGENT(%d), not %d",
-				SESSION_TYPE_AGENT, si.type);
+	if (si.type != JMY_CONN_TYPE_PASSIVE) {
+		LibJmyLogError("session type must be JMY_CONN_TYPE_PASSIVE(%d), not %d",
+				JMY_CONN_TYPE_PASSIVE, si.type);
 		return -1;
 	}
 

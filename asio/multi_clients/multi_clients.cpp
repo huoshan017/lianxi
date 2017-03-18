@@ -18,6 +18,7 @@ struct conn_data {
 	conn_data(int index, bool send_failed) : index_(index), send_failed_(send_failed) {}
 };
 
+#if USE_CONNECTOR_AND_SESSION
 static bool check_connected(JmyTcpMultiConnectors& connectors, int connector_id)
 {
 	JmyConnectorState state = connectors.getState(connector_id);
@@ -94,6 +95,8 @@ static void connectors_run(io_service* service, int client_count)
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	} 
 }
+#else
+#endif
 
 int main(int argc, char* argv[])
 {
@@ -131,7 +134,10 @@ int main(int argc, char* argv[])
 #endif
 		if (per_count <= 0)
 			break;
+#if USE_CONNECTOR_AND_SESSION
 		ths.create_thread(std::bind(connectors_run, &service, per_count));
+#else
+#endif
 		ClientLogInfo("thread run %d clients", per_count);
 	}
 	ths.join_all();

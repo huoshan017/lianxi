@@ -11,7 +11,11 @@ static JmyId2MsgHandler s_test_handlers[] = {
 };
 
 static JmyServerConfig test_config = {
+#if USE_CONNECTOR_AND_SESSION
 	{ 1024, 1024, 1024, 1024, true, { 100, 10 } },
+#else
+	{ { 2048, 2048, 0, 0, false, true} , { 100, 20 }, true },
+#endif
 	s_test_handlers,
 	sizeof(s_test_handlers)/sizeof(s_test_handlers[0]),
 	1024*10

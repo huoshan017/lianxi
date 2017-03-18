@@ -1,5 +1,6 @@
 #include "jmy_connection_buffer.h"
 #include "jmy_mem.h"
+#include "jmy_log.h"
 
 JmyConnectionBufferMgr::JmyConnectionBufferMgr() : max_size_(0), conn_buff_vec_(nullptr)
 {
@@ -7,17 +8,17 @@ JmyConnectionBufferMgr::JmyConnectionBufferMgr() : max_size_(0), conn_buff_vec_(
 
 JmyConnectionBufferMgr::~JmyConnectionBufferMgr()
 {
+	clear();
 }
 
 bool JmyConnectionBufferMgr::init(int max_size)
 {
-	free_queue_.reverse(max_size);
 	conn_buff_vec_ = (std::shared_ptr<JmyConnectionBuffer>*)jmy_mem_malloc(sizeof(std::shared_ptr<JmyConnectionBuffer>)*max_size);
 	for (int i=0; i<max_size; ++i) {
 		conn_buff_vec_[i] = std::make_shared<JmyConnectionBuffer>();
 		conn_buff_vec_[i]->id = i+1;
-		conn_buff_vec_[i]->is_used = false;
-		free_queue_.push(conn_buff_vec_[i]);
+		conn_buff_vec_[i]->state = JMY_CONN_BUFFER_STATE_IDLE;
+		free_queue_.push_back(conn_buff_vec_[i]);
 	}
 	max_size_ = max_size;
 	return true;
@@ -26,14 +27,14 @@ bool JmyConnectionBufferMgr::init(int max_size)
 void JmyConnectionBufferMgr::clear()
 {
 	free_queue_.clear();
-	int i = 0;
-	for (; i<max_size_; ++i) {
-	}
+	suspend_map_.clear();
 }
 
 bool JmyConnectionBufferMgr::getOneBuffer(std::shared_ptr<JmyConnectionBuffer>& buffer)
 {
-	return free_queue_.pop(buffer);
+	if (free_queue_.size() == 0) return false;
+	buffer = free_queue_.front();
+	return true;
 }
 
 bool JmyConnectionBufferMgr::getBuffer(int id, std::shared_ptr<JmyConnectionBuffer>& buffer)
@@ -45,10 +46,40 @@ bool JmyConnectionBufferMgr::getBuffer(int id, std::shared_ptr<JmyConnectionBuff
 
 bool JmyConnectionBufferMgr::freeBuffer(int id)
 {
+	if (id >= max_size_-1) return false;
+	conn_buff_vec_[id].reset();
 	return true;
 }
 
-bool JmyConnectionBufferMgr::restoreBuffer(std::shared_ptr<JmyConnectionBuffer> buffer)
+void JmyConnectionBufferMgr::restoreBuffer(std::shared_ptr<JmyConnectionBuffer> buffer)
 {
-	return free_queue_.push(buffer);
+	buffer->state = JMY_CONN_BUFFER_STATE_IDLE;
+	free_queue_.push_back(buffer);
+}
+
+bool JmyConnectionBufferMgr::suspendBuffer(std::shared_ptr<JmyConnectionBuffer> buffer)
+{
+	if (buffer->state == JMY_CONN_BUFFER_STATE_SUSPEND) {
+		LibJmyLogWarn("connection buffer(%d) already state(%d), cant suspend", buffer->id, buffer->state);
+		return false;
+	}
+	buffer->state = JMY_CONN_BUFFER_STATE_SUSPEND;
+	suspend_map_.insert(make_pair(buffer->id, buffer));
+	return true;
+}
+
+bool JmyConnectionBufferMgr::getSuspendBuffer(int id, std::shared_ptr<JmyConnectionBuffer>& buffer)
+{
+	std::unordered_map<int, std::shared_ptr<JmyConnectionBuffer> >::iterator it = suspend_map_.find(id);
+	if (it == suspend_map_.end()) return false;
+	buffer = it->second;
+	return true;
+}
+
+bool JmyConnectionBufferMgr::restoreSuspendBuffer(int id)
+{
+	std::unordered_map<int, std::shared_ptr<JmyConnectionBuffer> >::iterator it = suspend_map_.find(id);
+	if (it == suspend_map_.end()) return false;
+	restoreBuffer(it->second);
+	return true;
 }

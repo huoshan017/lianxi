@@ -5,6 +5,8 @@
 #include <cstring>
 #include "jmy_const.h"
 
+#define USE_CONNECTOR_AND_SESSION 0
+
 struct JmyData {
 	const char* data;
 	unsigned int len;
@@ -51,6 +53,16 @@ struct JmyHeartbeatMsgInfo {
 	void* session_param;
 };
 
+struct JmyDisconnectMsgInfo {
+	int session_id;
+	void* session_param;
+};
+
+struct JmyDisconnectAckMsgInfo {
+	int session_id;
+	void* session_param;
+};
+
 #if USE_CONN_PROTO
 // connect result to hold conn_id and session_str
 struct JmyConnResInfo {
@@ -85,12 +97,30 @@ struct JmyReconnResMsgInfo {
 };
 #endif
 
+// buffer config
+struct JmyBufferConfig {
+	unsigned int recv_buff_size;
+	unsigned int send_buff_size;
+	unsigned int recv_buff_list_size;
+	unsigned int send_buff_list_size;
+	bool use_recv_buff_list;
+	bool use_send_buff_list;
+};
+
 // configure for reconnect
 struct JmyReconnectConfig {
 	unsigned short max_cached_send_count;	// if the size of send messages great to the value, that is meant network has problem
 	unsigned short ack_recv_count;			// acknowlege the count of receiving messages
 };
 
+// connection configure
+struct JmyConnectionConfig {
+	JmyBufferConfig buff_conf;
+	JmyReconnectConfig reconn_conf;
+	bool no_delay;
+};
+
+#if USE_CONNECTOR_AND_SESSION
 // configure for session
 struct JmySessionConfig {
 	unsigned int recv_buff_min;
@@ -99,14 +129,6 @@ struct JmySessionConfig {
 	unsigned int send_buff_max;
 	bool use_send_list;
 	JmyReconnectConfig reconn_conf;
-};
-
-// configure for server
-struct JmyServerConfig {
-	JmySessionConfig session_conf;
-	JmyId2MsgHandler* handlers;
-	int nhandlers;
-	unsigned int max_conn;
 };
 
 // configure for common connector
@@ -134,6 +156,27 @@ struct JmyConnectorConfig {
 	void assign(JmyMultiConnectorsConfig& conf) {
 		common = conf.common;
 	}
+};
+#endif
+
+// configure for client
+struct JmyClientConfig {
+	JmyConnectionConfig conn_conf;
+	JmyId2MsgHandler* handlers;
+	int nhandlers;
+	bool connect_start;
+};
+
+// configure for server
+struct JmyServerConfig {
+#if USE_CONNECTOR_AND_SESSION
+	JmySessionConfig session_conf;
+#else
+	JmyConnectionConfig conn_conf;
+#endif
+	JmyId2MsgHandler* handlers;
+	int nhandlers;
+	unsigned int max_conn;
 };
 
 struct JmyTotalReconnInfo {

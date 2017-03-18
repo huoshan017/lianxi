@@ -25,8 +25,10 @@ public:
 
 	// return messages count
 	int processData(JmySessionBuffer& recv_buff, int session_id, void* param);
+#if USE_CONNECTOR_AND_SESSION
 	int processData(JmySessionBuffer& recv_buff, int session_id, std::shared_ptr<JmyTcpSessionMgr> session_mgr);
 	int processData(JmySessionBuffer& recv_buff, int connector_id, JmyTcpConnectorMgr* mgr);
+#endif
 	int processData(JmyDoubleSessionBuffer& recv_buffer, int session_id, void* param);
 	// return write bytes count
 	int writeData(JmySessionBuffer& buffer, int msg_id, const char* data, unsigned int len);
@@ -49,6 +51,10 @@ public:
 	int writeAck(SessionBuffer* buffer, unsigned short msg_count, unsigned short curr_id);
 	template <class SessionBuffer>
 	int writeHeartbeat(SessionBuffer* buffer);
+	template <class SessionBuffer>
+	int writeDisconnect(SessionBuffer* buffer);
+	template <class SessionBuffer>
+	int writeDisconnectAck(SessionBuffer* buffer);
 
 private:
 #if USE_CONN_PROTO
@@ -62,12 +68,16 @@ private:
 	int handleMsg(JmyMsgInfo*);
 	int handleAck(JmyAckMsgInfo*);
 	int handleHeartbeat(JmyHeartbeatMsgInfo*);
+	int handleDisconnect(JmyDisconnectMsgInfo*);
+	int handleDisconnectAck(JmyDisconnectAckMsgInfo*);
 
 private:
 	std::unordered_map<int, jmy_msg_handler> msg_handler_map_;
 	JmyPacketUnpackData unpack_data_;
 	JmyAckMsgInfo ack_info_;
 	JmyHeartbeatMsgInfo heartbeat_info_;
+	JmyDisconnectMsgInfo disconn_info_;
+	JmyDisconnectAckMsgInfo disconn_ack_info_;
 #if USE_CONN_PROTO
 	JmyConnMsgInfo conn_info_;
 	JmyConnResMsgInfo conn_res_info_;
@@ -80,7 +90,7 @@ private:
 template <class SessionBuffer>
 int JmyDataHandler::writeConn(SessionBuffer* buffer)
 {
-	char temp[PacketConnLen];
+	char temp[JMY_PACKET_LEN_CONN];
 	int res = jmy_net_proto_pack_connect(temp, sizeof(temp));
 	if (res < 0) {
 		LibJmyLogError("pack conn failed");
@@ -96,7 +106,7 @@ int JmyDataHandler::writeConn(SessionBuffer* buffer)
 template <class SessionBuffer>
 int JmyDataHandler::writeConnRes(SessionBuffer* buffer, unsigned int id, char* session/*, unsigned char session_len*/)
 {
-	char temp[PacketConnResLen];
+	char temp[JMY_PACKET_LEN_CONN_RES];
 	int res = jmy_net_proto_pack_connect_result(temp, sizeof(temp), id, session);
 	if (res < 0) {
 		LibJmyLogError("pack ack conn failed");
@@ -112,7 +122,7 @@ int JmyDataHandler::writeConnRes(SessionBuffer* buffer, unsigned int id, char* s
 template <class SessionBuffer>
 int JmyDataHandler::writeReconn(SessionBuffer* buffer, unsigned int id, char* session/*, unsigned char session_len*/)
 {
-	char temp[PacketReconnLen];
+	char temp[JMY_PACKET_LEN_RECONN];
 	int res = jmy_net_proto_pack_reconnect(temp, sizeof(temp), id, session);
 	if (res < 0) {
 		LibJmyLogError("pack reconn failed");
@@ -128,7 +138,7 @@ int JmyDataHandler::writeReconn(SessionBuffer* buffer, unsigned int id, char* se
 template <class SessionBuffer>
 int JmyDataHandler::writeReconnRes(SessionBuffer* buffer, unsigned int id, char* session/*, unsigned char session_len*/)
 {
-	char temp[PacketReconnResLen];
+	char temp[JMY_PACKET_LEN_RECONN_RES];
 	int res = jmy_net_proto_pack_reconnect_result(temp, sizeof(temp), id, session);
 	if (res < 0) {
 		LibJmyLogError("pack ack reconn failed");
@@ -145,7 +155,7 @@ int JmyDataHandler::writeReconnRes(SessionBuffer* buffer, unsigned int id, char*
 template <class SessionBuffer>
 int JmyDataHandler::writeData(SessionBuffer* buffer, int msg_id, const char* data, unsigned int len)
 {
-	char head_buf[16];
+	char head_buf[JMY_PACKET_LEN_USER_DATA_HEAD];
 	int res = jmy_net_proto_pack_msgid(head_buf, sizeof(head_buf), msg_id, len);
 	if (res < 0) {
 		LibJmyLogError("pack msgid(%d) failed", msg_id);
@@ -169,7 +179,7 @@ int JmyDataHandler::writeData(SessionBuffer* buffer, int msg_id, const char* dat
 template <class SessionBuffer>
 int JmyDataHandler::writeAck(SessionBuffer* buffer, unsigned short ack_count, unsigned short curr_id)
 {
-	char buf[8];
+	char buf[JMY_PACKET_LEN_ACK];
 	int res = jmy_net_proto_pack_ack(buf, sizeof(buf), ack_count, curr_id);
 	if (res < 0) {
 		LibJmyLogError("pack ack(msg_count:%d) failed", ack_count);
@@ -185,14 +195,46 @@ int JmyDataHandler::writeAck(SessionBuffer* buffer, unsigned short ack_count, un
 template <class SessionBuffer>
 int JmyDataHandler::writeHeartbeat(SessionBuffer* buffer)
 {
-	char buf[8];
+	char buf[JMY_PACKET_LEN_HEARTBEAT];
 	int res = jmy_net_proto_pack_heartbeat(buf, sizeof(buf));
 	if (res < 0) {
 		LibJmyLogError("pack heart beat failed");
 		return -1;
 	}
 	if (!buffer->writeData(buf, sizeof(buf))) {
-		LibJmyLogWarn("write heart beat failed");
+		LibJmyLogError("write heart beat failed");
+		return -1;
+	}
+	return 0;
+}
+
+template <class SessionBuffer>
+int JmyDataHandler::writeDisconnect(SessionBuffer* buffer)
+{
+	char buf[JMY_PACKET_LEN_DISCONNECT];
+	int res = jmy_net_proto_pack_disconnect(buf, sizeof(buf));
+	if (res < 0) {
+		LibJmyLogError("pack disconnect failed");
+		return -1;
+	}
+	if (!buffer->writeData(buf, sizeof(buf))) {
+		LibJmyLogError("write disconnect failed");
+		return -1;
+	}
+	return 0;
+}
+
+template <class SessionBuffer>
+int JmyDataHandler::writeDisconnectAck(SessionBuffer* buffer)
+{
+	char buf[JMY_PACKET_LEN_DISCONNECT_ACK];
+	int res = jmy_net_proto_pack_disconnect_ack(buf, sizeof(buf));
+	if (res < 0) {
+		LibJmyLogError("pack disconnect ack failed");
+		return -1;
+	}
+	if (!buffer->writeData(buf, sizeof(buf))) {
+		LibJmyLogError("write disconnect ack failed");
 		return -1;
 	}
 	return 0;

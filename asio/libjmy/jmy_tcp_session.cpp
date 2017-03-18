@@ -1,3 +1,4 @@
+#if USE_CONNECTOR_AND_SESSION
 #include "jmy_tcp_session.h"
 #include "jmy_data_handler.h"
 #include "jmy_log.h"
@@ -336,3 +337,4 @@ int JmyTcpSessionMgr::run()
 	}
 	return 0;
 }
+#endif

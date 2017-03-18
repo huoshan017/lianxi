@@ -1,6 +1,7 @@
 #include "jmy_session_buffer.h"
 #include "jmy_session_buffer_pool.h"
 #include "jmy_datatype.h"
+#include "jmy_mem.h"
 #include "jmy_log.h"
 #include <cassert>
 #include <memory.h>
@@ -28,7 +29,7 @@ JmySessionBuffer::~JmySessionBuffer()
 bool JmySessionBuffer::init(unsigned int size, SessionBufferType type)
 {
 	destroy();
-	buff_ = new char[size];
+	buff_ = (char*)jmy_mem_malloc(size);
 	len_ = size;
 	type_ = type;
 	proxy_ = false;
@@ -48,7 +49,7 @@ bool JmySessionBuffer::init(char* buff, unsigned int size, SessionBufferType typ
 void JmySessionBuffer::destroy()
 {
 	if (!proxy_ && buff_) {
-		delete [] buff_;
+		jmy_mem_free(buff_);
 	}
 	buff_ = NULL;
 	len_ = 0;
@@ -183,6 +184,14 @@ JmyDoubleSessionBuffer::JmyDoubleSessionBuffer() : use_large_(false)
 JmyDoubleSessionBuffer::~JmyDoubleSessionBuffer()
 {
 	destroy();
+}
+
+bool JmyDoubleSessionBuffer::init(unsigned int size, SessionBufferType type)
+{
+	assert(size > 0);
+	if (!buff_.init(size, type))
+		return false;
+	return true;
 }
 
 bool JmyDoubleSessionBuffer::init(std::shared_ptr<JmySessionBufferPool> pool, SessionBufferType type)

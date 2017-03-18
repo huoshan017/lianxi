@@ -3,6 +3,7 @@
 #include "jmy_const.h"
 #include <thread>
 
+#if USE_CONNECTOR_AND_SESSION
 JmyTcpConnector::JmyTcpConnector(io_service& service, JmyTcpConnectorMgr& mgr) :
 	mgr_(mgr),
 	sock_(service),
@@ -590,3 +591,4 @@ int JmyTcpMultiConnectors::runInturn()
 	}
 	return c;
 }
+#endif

@@ -11,51 +11,54 @@
 #define USE_CONN_PROTO 0
 
 enum JmyPacketType {
+	JMY_PACKET_NONE				= 0,
 #if USE_CONN_PROTO
-	JmyPacketConnect			= 0,
-	JmyPacketConnectResult		= 1,
-	JmyPacketReconnect			= 2,
-	JmyPacketReconnectResult	= 3,
+	JMY_PACKET_CONNECT			= 1,
+	JMY_PACKET_CONNECT_RESULT	= 2,
+	JMY_PACKET_RECONNECT		= 3,
+	JMY_PACKET_RECONNECT_RESULT	= 4,
 #endif
-	JmyPacketUserData			= 4,
-	JmyPacketAck				= 5,
-	JmyPacketHeartbeat			= 6,
+	JMY_PACKET_USER_DATA		= 5,
+	JMY_PACKET_ACK				= 6,
+	JMY_PACKET_HEARTBEAT		= 7,
+	JMY_PACKET_DISCONNECT		= 8,
+	JMY_PACKET_DISCONNECT_ACK	= 9,
 };
 
 #if USE_CONN_PROTO
-enum JmyConnType {
-	JmyConnTypeNormal = 0,
-	JmyConnTypeReconn = 1,
-};
-
-enum { ConnResIdLen = 4, };
-enum { ConnResSessionLen = 16, };
+enum { JMY_CONN_LEN_RES_ID		= 4, };
+enum { JMY_CONN_LEN_RES_SESSION = 16, };
 #endif
 
-enum JmyPacketUnpackResult {
-	JmyPacketUnpackNoError				= 0,
-	JmyPacketUnpackDataNotEnough		= 1,
-	JmyPacketUnpackUserDataNotEnough	= 2,
-	JmyPacketUnpackMsgLenInvalid		= 3,
+enum JmyUnpackResultType {
+	JMY_UNPACK_RESULT_NO_ERROR				= 0,
+	JMY_UNPACK_RESULT_DATA_NOT_ENOUGH		= 1,
+	JMY_UNPACK_RESULT_USER_DATA_NOT_ENOUGH	= 2,
+	JMY_UNPACK_RESULT_MSG_LEN_INVALID		= 3,
 };
 
 #if USE_CONN_PROTO
-enum { PacketConnLen = 1, };
-enum { PacketConnResLen = 1+ConnResIdLen+ConnResSessionLen, };
-enum { PacketReconnLen = 1+ConnResIdLen+ConnResSessionLen, };
-enum { PacketReconnResLen = 1+ConnResIdLen+ConnResSessionLen, };
+enum { JMY_PACKET_LEN_CONN				= 1, };
+enum { JMY_PACKET_LEN_CONN_RES			= 1 + JMY_CONN_LEN_RES_ID + JMY_CONN_LEN_RES_SESSION, };
+enum { JMY_PACKET_LEN_RECONN			= 1 + JMY_CONN_LEN_RES_ID + JMY_CONN_LEN_RES_SESSION, };
+enum { JMY_PACKET_LEN_RECONN_RES		= 1 + JMY_CONN_LEN_RES_ID + JMY_CONN_LEN_RES_SESSION, };
 #endif
-enum { PacketUserDataHeadLen = 1+2+2, };
-enum { PacketAckLen = 1+2+2, };
-enum { PacketHeartbeatLen = 1+4, };
+enum { JMY_PACKET_LEN_DISCONNECT		= 1, };
+enum { JMY_PACKET_LEN_DISCONNECT_ACK	= 1, };
+enum { JMY_PACKET_LEN_USER_DATA_HEAD	= 1+2+2, };
+enum { JMY_PACKET_LEN_ACK				= 1+2+2, };
+enum { JMY_PACKET_LEN_HEARTBEAT			= 1+4, };
+
+// active close default timeout
+enum { JMY_ACTIVE_CLOSE_CONNECTION_TIMEOUT = 30, };
 
 struct JmyPacketUnpackData {
 	JmyPacketType type;
 	void* param;
 	int data;
-	JmyPacketUnpackResult result;
+	JmyUnpackResultType result;
 	JmyMsgInfo msg_info;
-	JmyPacketUnpackData() : type(JmyPacketUserData), param(nullptr), data(0), result(JmyPacketUnpackNoError) {
+	JmyPacketUnpackData() : type(JMY_PACKET_NONE), param(nullptr), data(0), result(JMY_UNPACK_RESULT_NO_ERROR) {
 	}
 };
 
@@ -63,23 +66,33 @@ struct JmyPacketUnpackData {
 /**
  * pack connect
  */
-int jmy_net_proto_pack_connect(char* buf, unsigned char len/*, unsigned char connect_type*/);
+int jmy_net_proto_pack_connect(char* buf, unsigned char len);
 
 /**
  * pack connect result
  */
-int jmy_net_proto_pack_connect_result(char* buf, unsigned char len, unsigned int id, char session[ConnResSessionLen]);
+int jmy_net_proto_pack_connect_result(char* buf, unsigned char len, unsigned int id, char session[JMY_CONN_LEN_RES_SESSION]);
 
 /**
  * pack reconnect
  */
-int jmy_net_proto_pack_reconnect(char* buf, unsigned char len, unsigned int id, char session[ConnResSessionLen]);
+int jmy_net_proto_pack_reconnect(char* buf, unsigned char len, unsigned int id, char session[JMY_CONN_LEN_RES_SESSION]);
 
 /**
  * pack reconnect result
  */
-int jmy_net_proto_pack_reconnect_result(char* buf, unsigned char len, unsigned int id, char session[ConnResSessionLen]);
+int jmy_net_proto_pack_reconnect_result(char* buf, unsigned char len, unsigned int id, char session[JMY_CONN_LEN_RES_SESSION]);
 #endif
+
+/**
+ * pack disconnect
+ */
+int jmy_net_proto_pack_disconnect(char* buf, unsigned char len);
+
+/**
+ * pack disconnect ack
+ */
+int jmy_net_proto_pack_disconnect_ack(char* buf, unsigned char len);
 
 /**
  * pack use data

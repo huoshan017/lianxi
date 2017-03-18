@@ -2,10 +2,14 @@
 
 #include <thread>
 #include <boost/asio.hpp>
+#if USE_CONNECTOR_AND_SESSION
 #include "jmy_tcp_session.h"
+#endif
 #include "jmy_session_buffer_pool.h"
 #include "jmy_data_handler.h"
 #include "jmy_datatype.h"
+#include "jmy_tcp_connection.h"
+#include "jmy_util.h"
 
 using namespace boost::asio;
 
@@ -40,9 +44,15 @@ private:
 #endif
 	std::shared_ptr<ip::tcp::acceptor> acceptor_;
 	std::shared_ptr<JmyDataHandler> handler_;
+#if USE_CONNECTOR_AND_SESSION
 	std::shared_ptr<JmyTcpSessionMgr> session_mgr_;
-	std::shared_ptr<JmySessionBufferPool> session_buff_pool_;
 	JmyTcpSession curr_session_;
+#else
+	std::shared_ptr<JmyTcpConnectionMgr> conn_mgr_;
+	JmyIdGenerator<int> id_gene_;
+	JmyTcpConnection curr_conn_;
+#endif
+	std::shared_ptr<JmySessionBufferPool> session_buff_pool_;
 	JmyServerConfig conf_;
 	bool inited_;
 };

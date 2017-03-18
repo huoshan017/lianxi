@@ -1,4 +1,5 @@
 #include "jmy_tcp_connection.h"
+#include "jmy_mem.h"
 #include "jmy_log.h"
 #include <thread>
 
@@ -15,8 +16,12 @@ JmyTcpConnection::~JmyTcpConnection()
 
 void JmyTcpConnection::close()
 {
+	if (state_ != JMY_CONN_STATE_CONNECTED)
+		return;
+	state_ = JMY_CONN_STATE_DISCONNECTING;
+	active_close_start_ = std::chrono::system_clock::now();
+	if (sendDisconnect() < 0) return;
 	sending_data_ = false;
-	sock_.close();
 }
 
 void JmyTcpConnection::destroy()
@@ -94,14 +99,7 @@ void JmyTcpConnection::start()
 			}
 			LibJmyLogDebug("received %d data", bytes_transferred);
 
-			{
-				// data process
-				int count = handler_->processData(buffer_->recv_buff, id_, unused_data_);
-				if (count < 0) {
-					LibJmyLogError("handle_read failed");
-					return;
-				}
-			}
+			handle_recv();
 
 			start();
 		} else {
@@ -110,12 +108,12 @@ void JmyTcpConnection::start()
 
 			}
 			close();
-			state_ = JMY_CONN_STATE_DISCONNECTING;
+			state_ = JMY_CONN_STATE_DISCONNECTED;
 			LibJmyLogError("read some data failed, err: %d", err.value());
 		}
 	});
 
-	if (conn_type_ == JMY_CONN_TYPE_PASSIVE) {
+	if (conn_type_ == JMY_CONN_TYPE_PASSIVE && state_ != JMY_CONN_STATE_CONNECTED) {
 		state_ = JMY_CONN_STATE_CONNECTED;
 	}
 }
@@ -139,11 +137,6 @@ int JmyTcpConnection::send(int msg_id, const char* data, unsigned int len)
 		}
 	}
 	return len;	
-}
-
-int JmyTcpConnection::run()
-{
-	return handle_send();
 }
 
 int JmyTcpConnection::sendAck(JmyAckInfo* info)
@@ -184,9 +177,72 @@ int JmyTcpConnection::sendHeartbeat()
 	return 0;
 }
 
-int JmyTcpConnection::handle_recv()
+int JmyTcpConnection::sendDisconnect()
+{
+	if (!buffer_->use_send_list) {
+		if (handler_->writeDisconnect(&buffer_->send_buff) < 0) {
+			LibJmyLogError("write disconnect failed");
+			return -1;
+		}
+	} else {
+		if (handler_->writeDisconnect(&buffer_->send_buff_list) < 0) {
+			LibJmyLogError("write disconnect failed");
+			return -1;
+		}
+	}
+	return 0;
+}
+
+int JmyTcpConnection::sendDisconnectAck()
+{
+	if (!buffer_->use_send_list) {
+		if (handler_->writeDisconnectAck(&buffer_->send_buff) < 0) {
+			LibJmyLogError("write disconnect ack failed");
+			return -1;
+		}
+	} else {
+		if (handler_->writeDisconnectAck(&buffer_->send_buff_list) < 0) {
+			LibJmyLogError("write disconnect ack failed");
+			return -1;
+		}
+	}
+	return 0;
+}
+
+int JmyTcpConnection::handleAck()
 {
 	return 0;
+}
+
+int JmyTcpConnection::handleHeartbeat()
+{
+	return 0;
+}
+
+int JmyTcpConnection::handleDisconnect()
+{
+	sendDisconnectAck();
+	return 0;
+}
+
+int JmyTcpConnection::handleDisconnectAck()
+{
+	if (state_ != JMY_CONN_STATE_DISCONNECTING)
+		return 0;
+
+	sock_.close();
+	return 1;
+}
+
+int JmyTcpConnection::handle_recv()
+{
+	// data process
+	int count = handler_->processData(buffer_->recv_buff, id_, unused_data_);
+	if (count < 0) {
+		LibJmyLogError("handle_recv failed");
+		return -1;
+	}
+	return count;
 }
 
 int JmyTcpConnection::handle_send()
@@ -198,7 +254,6 @@ int JmyTcpConnection::handle_send()
 	read_len = buffer_->use_send_list ? buffer_->send_buff_list.getReadLen() : buffer_->send_buff.getReadLen();
 
 	if (read_len == 0) {
-		LibJmyLogDebug("read len is 0");
 		return 0;
 	}
 
@@ -206,7 +261,9 @@ int JmyTcpConnection::handle_send()
 		return 0;
 
 	if (!buffer_->use_send_list) {
-		sock_.async_write_some(boost::asio::buffer(buffer_->send_buff.getReadBuff(), buffer_->send_buff.getReadLen()), [this](const boost::system::error_code& err, size_t bytes_transferred) {
+		sock_.async_write_some(
+				boost::asio::buffer(buffer_->send_buff.getReadBuff(), buffer_->send_buff.getReadLen()),
+				[this](const boost::system::error_code& err, size_t bytes_transferred) {
 			if (!err) {
 				if (bytes_transferred > 0) {
 					if (!buffer_->send_buff.readLen(bytes_transferred)) {
@@ -224,7 +281,9 @@ int JmyTcpConnection::handle_send()
 			sending_data_ = false;
 		});
 	} else {
-		sock_.async_write_some(boost::asio::buffer(buffer_->send_buff_list.getReadBuff(), buffer_->send_buff_list.getReadLen()), [this](const boost::system::error_code& err, size_t bytes_transferred) {
+		sock_.async_write_some(
+				boost::asio::buffer(buffer_->send_buff_list.getReadBuff(), buffer_->send_buff_list.getReadLen()),
+				[this](const boost::system::error_code& err, size_t bytes_transferred) {
 			if (!err) {
 				if (bytes_transferred > 0) {
 					if (!buffer_->send_buff_list.readLen(bytes_transferred)) {
@@ -244,4 +303,110 @@ int JmyTcpConnection::handle_send()
 	}
 	sending_data_ = true;
 	return 1;
+}
+
+int JmyTcpConnection::run()
+{
+	if (state_ == JMY_CONN_STATE_DISCONNECTING) {
+		std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+		if (std::chrono::duration_cast<std::chrono::seconds>(now-active_close_start_).count() >= JMY_ACTIVE_CLOSE_CONNECTION_TIMEOUT) {
+			sock_.close();
+			state_ = JMY_CONN_STATE_DISCONNECTED;
+		}
+	}
+	if (state_ != JMY_CONN_STATE_CONNECTED)
+		return -1;
+
+	return handle_send();
+}
+
+/**
+ * JmyTcpConnectionMgr
+ */
+JmyTcpConnectionMgr::JmyTcpConnectionMgr()
+{
+}
+
+JmyTcpConnectionMgr::~JmyTcpConnectionMgr()
+{
+	clear();
+}
+
+void JmyTcpConnectionMgr::clear()
+{
+	JmyTcpConnection* conn = nullptr;
+	std::list<JmyTcpConnection*>::iterator it = free_list_.begin();
+	for (; it!=free_list_.end(); ++it) {
+		conn = *it;
+		if (conn) {
+			jmy_mem_free(conn);
+		}
+	}
+	free_list_.clear();
+	std::unordered_map<int, JmyTcpConnection*>::iterator uit = used_map_.begin();
+	for (; uit!=used_map_.end(); ++uit) {
+		conn = *it;
+		if (conn) {
+			jmy_mem_free(conn);
+		}
+	}
+	used_map_.clear();
+}
+
+void JmyTcpConnectionMgr::init(int size)
+{
+	int i = 0;
+	for (; i<size; ++i) {
+		free_list_.push_back((JmyTcpConnection*)jmy_mem_malloc<JmyTcpConnection>());
+	}
+	size_ = size;
+}
+
+JmyTcpConnection* JmyTcpConnectionMgr::getFree(int id)
+{
+	std::unordered_map<int, JmyTcpConnection*>::iterator it = used_map_.find(id);
+	if (it != used_map_.end()) {
+		LibJmyLogWarn("id(%d) is used", id);
+		return nullptr;
+	}
+
+	if (free_list_.size() == 0) {
+		LibJmyLogWarn("no free connection to get");
+		return nullptr;
+	}
+
+	JmyTcpConnection* conn = free_list_.front();
+	conn->setId(id);
+	free_list_.pop_front();
+	used_map_.insert(std::make_pair(id, conn));
+	return conn;
+}
+
+JmyTcpConnection* JmyTcpConnectionMgr::get(int id)
+{
+	std::unordered_map<int, JmyTcpConnection*>::iterator it = used_map_.find(id);
+	if (it == used_map_.end()) return nullptr;
+	return it->second;
+}
+
+bool JmyTcpConnectionMgr::free(JmyTcpConnection* conn)
+{
+	if (!conn) return false;
+	std::unordered_map<int, JmyTcpConnection*>::iterator it = used_map_.find(conn->getId());
+	if (it == used_map_.end()) return false;
+	used_map_.erase(conn->getId());
+	free_list_.push_back(conn);
+	return true;
+}
+
+int JmyTcpConnectionMgr::usedRun()
+{
+	for (auto c: used_map_) {
+		if (!c.second) continue;
+		if (c.second->isDisconnect()) {
+			free(c.second);
+		}
+		c.second->run();
+	}
+	return 0;
 }

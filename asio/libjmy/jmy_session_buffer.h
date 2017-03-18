@@ -57,6 +57,7 @@ public:
 	bool assign(const JmySessionBuffer& buffer);
 	void destroy();
 	void clear();
+	void reset();
 
 	bool isInited() const { return (buff_ && len_ > 0)?true:false; }
 	char* getBuff() const { return buff_; }
@@ -90,8 +91,10 @@ public:
 	JmyDoubleSessionBuffer();
 	~JmyDoubleSessionBuffer();
 	bool init(std::shared_ptr<JmySessionBufferPool> pool, SessionBufferType type);
+	bool init(unsigned int size, SessionBufferType type);
 	void destroy();
 	void clear();
+	void reset();
 
 	unsigned int getNormalLen() const;
 	unsigned int getLargeLen() const;

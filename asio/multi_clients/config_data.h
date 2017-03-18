@@ -10,6 +10,9 @@ static JmyId2MsgHandler s_test_handlers[] = {
 	{ 1, TestMsgHandler::process_one }
 };
 
+#if USE_CONNECTOR_AND_SESSION
 static JmyMultiConnectorsConfig test_connector_config = {
 	{ 1024, 1024, s_test_handlers, sizeof(s_test_handlers)/sizeof(s_test_handlers), true, true, true, { 100, 10 } }, 1000,
 };
+#else
+#endif
