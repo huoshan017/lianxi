@@ -401,12 +401,24 @@ bool JmyTcpConnectionMgr::free(JmyTcpConnection* conn)
 
 int JmyTcpConnectionMgr::usedRun()
 {
-	for (auto c: used_map_) {
-		if (!c.second) continue;
-		if (c.second->isDisconnect()) {
-			free(c.second);
+	auto it = used_map_.begin();
+	for (; it!=used_map_.end(); ) {
+		auto tmp_it = it;
+		tmp_it++;
+		bool del = false;
+		if (!it->second) {
+			del = true;
 		}
-		c.second->run();
+		else if (it->second->isDisconnect()) {
+			free(it->second);
+			del = true;
+		}
+		if (del) {
+			used_map_.erase(it);
+			it = tmp_it;
+			continue;
+		}
+		it->second->run();
 	}
 	return 0;
 }
