@@ -174,7 +174,7 @@ int JmyTcpServer::accept_new()
 	conn->setBuffer(buffer);
 	conn->start();
 	ip::tcp::endpoint ep = conn->getSock().remote_endpoint();
-	LibJmyLogInfo("new connection(%d:%d) start", conn->getId(), ep.address().to_string().c_str(), ep.port());
+	LibJmyLogInfo("new connection(%d, %s:%d) start", conn->getId(), ep.address().to_string().c_str(), ep.port());
 #endif
 	return 0;
 }
