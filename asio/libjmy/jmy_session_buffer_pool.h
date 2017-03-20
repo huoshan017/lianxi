@@ -1,6 +1,7 @@
 #pragma once
 
 #include "jmy_singleton.hpp"
+#include "jmy_mem.h"
 #include <list>
 #include <unordered_set>
 

@@ -12,6 +12,7 @@ class TestMsgHandler
 {
 public:
 	static int process_one(JmyMsgInfo*);
+	static int process_two(JmyMsgInfo*);
 
 private:
 #if USE_CONNECTOR_AND_SESSION

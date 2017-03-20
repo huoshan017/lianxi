@@ -32,6 +32,7 @@ public:
 
 private:
 	int do_accept();
+	int accept_new();
 #if USE_THREAD
 	int do_loop();
 #endif
@@ -48,11 +49,12 @@ private:
 	std::shared_ptr<JmyTcpSessionMgr> session_mgr_;
 	JmyTcpSession curr_session_;
 #else
-	std::shared_ptr<JmyTcpConnectionMgr> conn_mgr_;
+	JmyTcpConnectionMgr conn_mgr_;
+	JmyConnectionBufferMgr buffer_mgr_;
 	JmyIdGenerator<int> id_gene_;
 	JmyTcpConnection curr_conn_;
 #endif
-	std::shared_ptr<JmySessionBufferPool> session_buff_pool_;
+	std::shared_ptr<JmySessionBufferPool> buff_pool_;
 	JmyServerConfig conf_;
 	bool inited_;
 };

@@ -27,11 +27,16 @@ int TestMsgHandler::process_one(JmyMsgInfo* info)
 		return 0;
 	}
 #else
+	JmyTcpConnectionMgr* mgr = (JmyTcpConnectionMgr*)info->param;
+	JmyTcpConnection* conn = mgr->get(cid);
+	if (!conn) {
+		ClientLogError("get connection(%d) failed", cid);
+		return 0;
+	}
 #endif
 
 	int s = sizeof(s_send_data)/sizeof(s_send_data[0]);
 	
-#if USE_CONNECTOR_AND_SESSION
 	long index = (long)conn->getUnusedData();
 	if (std::memcmp(data, s_send_data[index], len) != 0) {
 		ClientLogWarn("get data from msg(%s) compared from s_send_data[%d] (%s) is different", data, index, s_send_data[index]);
@@ -43,7 +48,11 @@ int TestMsgHandler::process_one(JmyMsgInfo* info)
 		index = 0;
 	}
 	conn->setUnusedData((void*)index);
-#else
-#endif
 	return len;
+}
+
+int TestMsgHandler::process_two(JmyMsgInfo* info)
+{
+	if (!info) return -1;
+	return 0;
 }

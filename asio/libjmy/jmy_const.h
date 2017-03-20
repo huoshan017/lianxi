@@ -4,8 +4,9 @@ enum { JMY_ACK_START_ID = 1, };
 enum { JMY_ACK_END_ID = 60000, };
 
 enum JmyConnType {
-	JMY_CONN_TYPE_ACTIVE	= 0,
-	JMY_CONN_TYPE_PASSIVE	= 1,
+	JMY_CONN_TYPE_NONE		= 0,
+	JMY_CONN_TYPE_ACTIVE	= 1,
+	JMY_CONN_TYPE_PASSIVE	= 2,
 };
 
 enum JmyConnState {

@@ -117,6 +117,8 @@ struct JmyReconnectConfig {
 struct JmyConnectionConfig {
 	JmyBufferConfig buff_conf;
 	JmyReconnectConfig reconn_conf;
+	JmyId2MsgHandler* handlers;
+	int nhandlers;
 	bool no_delay;
 };
 
@@ -157,15 +159,15 @@ struct JmyConnectorConfig {
 		common = conf.common;
 	}
 };
-#endif
-
-// configure for client
-struct JmyClientConfig {
+#else
+// configure for clients
+struct JmyClientsConfig {
 	JmyConnectionConfig conn_conf;
-	JmyId2MsgHandler* handlers;
-	int nhandlers;
-	bool connect_start;
+	char* conn_ip;
+	short conn_port;
+	unsigned int max_conn;
 };
+#endif
 
 // configure for server
 struct JmyServerConfig {
@@ -174,8 +176,8 @@ struct JmyServerConfig {
 #else
 	JmyConnectionConfig conn_conf;
 #endif
-	JmyId2MsgHandler* handlers;
-	int nhandlers;
+	char* listen_ip;
+	short listen_port;
 	unsigned int max_conn;
 };
 

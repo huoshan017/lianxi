@@ -33,9 +33,9 @@ int main(int argc, char* argv[])
 	}
 	
 #if INIT_PORT
-	if (!server.start()) {
+	if (server.start() < 0) {
 #else
-	if (!server.listenStart(LISTEN_PORT)) {
+	if (server.listenStart(LISTEN_PORT) < 0) {
 #endif	
 		return -1;
 	}

@@ -3,8 +3,8 @@
 #include "jmy_log.h"
 #include <thread>
 
-JmyTcpConnection::JmyTcpConnection(io_service& service, JmyConnType conn_type)
-	: id_(0), sock_(service), conn_type_(conn_type), state_(JMY_CONN_STATE_NOT_USE), sending_data_(false), unused_data_(nullptr)
+JmyTcpConnection::JmyTcpConnection(io_service& service, JmyTcpConnectionMgr& mgr, JmyConnType conn_type)
+	: id_(0), sock_(service), mgr_(mgr), conn_type_(conn_type), state_(JMY_CONN_STATE_NOT_USE), sending_data_(false), unused_data_(nullptr)
 {
 	std::memset(&total_reconn_info_, 0, sizeof(total_reconn_info_));
 }
@@ -59,20 +59,27 @@ void JmyTcpConnection::asynConnect(const char* ip, short port)
 	state_ = JMY_CONN_STATE_CONNECTING;
 }
 
-void JmyTcpConnection::connect(const char* ip, short port)
+bool JmyTcpConnection::connect(const char* ip, short port)
 {
 	if (conn_type_ != JMY_CONN_TYPE_ACTIVE) {
 		LibJmyLogWarn("connection type is not active");
-		return;
+		return false;
 	}
 	if (state_ == JMY_CONN_STATE_CONNECTED) {
 		LibJmyLogInfo("connection already connected");
-		return;
+		return false;
 	}
 	const ip::tcp::endpoint ep(ip::address::from_string(ip), port);
-	sock_.connect(ep);
+	try {
+		sock_.connect(ep);
+	}
+	catch (std::exception& e) {
+		LibJmyLogError("connect %s:%d failed, error(%s)", ip, port, e.what());
+		return false;
+	}
 	ep_ = ep;
 	state_ = JMY_CONN_STATE_CONNECTED;
+	return true;
 }
 
 void JmyTcpConnection::start()
@@ -83,7 +90,7 @@ void JmyTcpConnection::start()
 	}
 
 	if (!handler_.get() || !buffer_.get()) {
-		LibJmyLogError("handler or buffer not set");
+		LibJmyLogError("handler(0x%x) or buffer(0x%x) not set", handler_.get(), buffer_.get());
 		return;
 	}
 
@@ -237,7 +244,7 @@ int JmyTcpConnection::handleDisconnectAck()
 int JmyTcpConnection::handle_recv()
 {
 	// data process
-	int count = handler_->processData(buffer_->recv_buff, id_, unused_data_);
+	int count = handler_->processData(buffer_->recv_buff, id_, &mgr_);
 	if (count < 0) {
 		LibJmyLogError("handle_recv failed");
 		return -1;
@@ -323,7 +330,7 @@ int JmyTcpConnection::run()
 /**
  * JmyTcpConnectionMgr
  */
-JmyTcpConnectionMgr::JmyTcpConnectionMgr()
+JmyTcpConnectionMgr::JmyTcpConnectionMgr(io_service& service) : service_(service)
 {
 }
 
@@ -345,7 +352,7 @@ void JmyTcpConnectionMgr::clear()
 	free_list_.clear();
 	std::unordered_map<int, JmyTcpConnection*>::iterator uit = used_map_.begin();
 	for (; uit!=used_map_.end(); ++uit) {
-		conn = *it;
+		conn = uit->second;
 		if (conn) {
 			jmy_mem_free(conn);
 		}
@@ -353,13 +360,15 @@ void JmyTcpConnectionMgr::clear()
 	used_map_.clear();
 }
 
-void JmyTcpConnectionMgr::init(int size)
+void JmyTcpConnectionMgr::init(int size, JmyConnType conn_type)
 {
 	int i = 0;
 	for (; i<size; ++i) {
-		free_list_.push_back((JmyTcpConnection*)jmy_mem_malloc<JmyTcpConnection>());
+		JmyTcpConnection* conn = jmy_mem_malloc<JmyTcpConnection>(service_, *this, conn_type);
+		free_list_.push_back(conn);
 	}
 	size_ = size;
+	LibJmyLogDebug("connection manager init size(%d)", size);
 }
 
 JmyTcpConnection* JmyTcpConnectionMgr::getFree(int id)

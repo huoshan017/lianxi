@@ -4,7 +4,12 @@
 #include <thread>
 #include <chrono>
 #include <iostream>
-#include "../libjmy/jmy.h"
+#if USE_CONNECTOR_AND_SESSION
+#include "../libjmy/jmy_tcp_connector.h"
+#include "../libjmy/jmy_tcp_session.h"
+#else
+#include "../libjmy/jmy_tcp_clients.h"
+#endif
 #include "const_data.h"
 #include "util.h"
 
@@ -19,59 +24,102 @@ struct conn_data {
 };
 
 #if USE_CONNECTOR_AND_SESSION
-static bool check_connected(JmyTcpMultiConnectors& connectors, int connector_id)
-{
-	JmyConnectorState state = connectors.getState(connector_id);
-	if (state == CONNECTOR_STATE_CONNECTED) {
+static bool check_connected(JmyTcpMultiConnectors& connectors, int connector_id) {
+	JmyConnState state = connectors.getState(connector_id);
+#else
+static bool check_connected(JmyTcpClients& clients, int conn_id) {
+	JmyConnState state = clients.getState(conn_id);
+#endif
+	if (state == JMY_CONN_STATE_CONNECTED) {
 		return true;
 	}
 	return false;
 }
 
+#if USE_CONNECTOR_AND_SESSION
 static void connectors_run(io_service* service, int client_count)
+#else
+static void clients_run(io_service* service, int client_count)
+#endif
 {
+#if USE_CONNECTOR_AND_SESSION
 	JmyTcpMultiConnectors connectors(*service, client_count);
 	ClientLogInfo("use_send_list(%d)", test_connector_config.common.use_send_list);
 	if (!connectors.loadConfig(test_connector_config)) {
 		ClientLogError("connector load config failed");
 		return;
 	}
+#else
+	JmyTcpClients clients(*service, client_count);
+	if (!clients.loadConfig(test_clients_config)) {
+		ClientLogError("clients load config failed");
+		return;
+	}
+	ClientLogInfo("client load config");
+#endif
 	
+	ClientLogInfo("client count %d, ready to start");
 	std::map<int, conn_data> conns;
 	for (int i=0; i<client_count; ++i) {
+#if USE_CONNECTOR_AND_SESSION
 		JmyTcpConnector* conn = connectors.start("127.0.0.1", 10000);
+#else
+		JmyTcpConnection* conn = clients.start();
+#endif
 		if (!conn) {
+#if USE_CONNECTOR_AND_SESSION
 			ClientLogError("connector(index:%d) start failed", i);
+#else
+			ClientLogError("connection(index:%d) start failed", i);
+#endif
 			return;
 		}
+#if USE_CONNECTOR_AND_SESSION
 		ClientLogInfo("connector(%d) start, state %d", conn->getId(), conn->getState());
+#else
+		ClientLogInfo("client(%d) start, state %d", conn->getId(), conn->getConnState());
+#endif
 		conns.insert(std::make_pair(conn->getId(), conn_data(0, false)));
 	}
 
-	JmyConnectorState state = CONNECTOR_STATE_NOT_CONNECT;
+	JmyConnState state = JMY_CONN_STATE_NOT_USE;
 	uint64_t count = 0;
 	int s = sizeof(s_send_data)/sizeof(s_send_data[0]);
 	while (true) {
 		std::map<int, conn_data>::iterator it = conns.begin();
 		for (; it!=conns.end(); ++it) {
 			int cid = it->first;
-#if 1
-			if (state == CONNECTOR_STATE_NOT_CONNECT) {
+			if (state == JMY_CONN_STATE_NOT_CONNECT) {
+#if USE_CONNECTOR_AND_SESSION
 				if (!check_connected(connectors, cid)) {
+#else
+				if (!check_connected(clients, cid)) {
+#endif
 					std::this_thread::sleep_for(std::chrono::milliseconds(100));
 					continue;
 				}
-				state = CONNECTOR_STATE_CONNECTED;
+				state = JMY_CONN_STATE_CONNECTED;
 			}
-#endif
 			if (!it->second.send_failed_) {
+#if USE_CONNECTOR_AND_SESSION
 				state = connectors.getState(cid);
-				if (state != CONNECTOR_STATE_CONNECTED) {
+#else
+				state = clients.getState(cid);
+#endif
+				if (state != JMY_CONN_STATE_CONNECTED) {
+#if USE_CONNECTOR_AND_SESSION
 					ClientLogInfo("connector(%d) is not connected, state(%d)", cid, state);
+#else
+					ClientLogInfo("client(%d) is not connected, state(%d)", cid, state);
+#endif
 					break;
 				}
 				int index = it->second.index_;
+#if USE_CONNECTOR_AND_SESSION
 				if (connectors.send(cid, 1, s_send_data[index], std::strlen(s_send_data[index])) < 0) {
+#else
+				if (clients.send(cid, 1, s_send_data[index], std::strlen(s_send_data[index])) < 0) {
+#endif
 					ClientLogWarn("connector send failed");
 					it->second.send_failed_ = true;
 					std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -84,7 +132,12 @@ static void connectors_run(io_service* service, int client_count)
 				ClientLogDebug("connector(%d) send the %d str(%s) count %d", cid, index, s_send_data[index], count++);
 			}
 		}
+
+#if USE_CONNECTOR_AND_SESSION
 		if (connectors.runInturn() < 0) {
+#else
+		if (clients.runInturn() < 0) {
+#endif
 			ClientLogDebug("connector run failed");
 			break;
 		}
@@ -95,8 +148,6 @@ static void connectors_run(io_service* service, int client_count)
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	} 
 }
-#else
-#endif
 
 int main(int argc, char* argv[])
 {
@@ -119,6 +170,10 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
+	ClientLogDebug("s_test_handlers size(%d)   s_test_handlers[0] size(%d)   len(%d)",
+			sizeof(s_test_handlers), sizeof(s_test_handlers[0]), sizeof(s_test_handlers)/sizeof(s_test_handlers[0]));
+	ClientLogDebug("print test_clients_config nhandlers %d", test_clients_config.conn_conf.nhandlers);
+
 	(void)argv;
 	io_service service;
 	int client_count = (std::atoi(argv[1]));
@@ -137,6 +192,7 @@ int main(int argc, char* argv[])
 #if USE_CONNECTOR_AND_SESSION
 		ths.create_thread(std::bind(connectors_run, &service, per_count));
 #else
+		ths.create_thread(std::bind(clients_run, &service, per_count));
 #endif
 		ClientLogInfo("thread run %d clients", per_count);
 	}

@@ -24,8 +24,10 @@ bool JmyDataHandler::registerMsgHandle(JmyId2MsgHandler id2handler)
 
 bool JmyDataHandler::loadMsgHandle(const JmyId2MsgHandler id2handlers[], int size)
 {
-	if (!id2handlers || size == 0)
+	if (!id2handlers || size == 0) {
+		LibJmyLogError("id2handlers(0x%x), size(%d)", id2handlers, size);
 		return false;
+	}
 
 	int i = 0;
 	for (; i<size; ++i) {

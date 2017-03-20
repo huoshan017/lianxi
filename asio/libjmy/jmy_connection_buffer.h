@@ -48,7 +48,7 @@ public:
 	JmyConnectionBufferMgr();
 	~JmyConnectionBufferMgr();
 
-	bool init(int max_size);
+	bool init(int max_size, std::shared_ptr<JmySessionBufferPool> buff_pool);
 	void clear();
 
 	bool getOneBuffer(std::shared_ptr<JmyConnectionBuffer>& buffer);
@@ -64,4 +64,5 @@ private:
 	std::shared_ptr<JmyConnectionBuffer>* conn_buff_vec_;
 	std::list<std::shared_ptr<JmyConnectionBuffer> > free_queue_;
 	std::unordered_map<int, std::shared_ptr<JmyConnectionBuffer> > suspend_map_;
+	std::shared_ptr<JmySessionBufferPool> buff_pool_;
 };
