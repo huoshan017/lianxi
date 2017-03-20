@@ -141,6 +141,7 @@ int JmyTcpServer::do_accept()
 				}
 				JmyTcpConnection* conn = conn_mgr_->getFree(id);
 				conn->getSock() = std::move(curr_conn_.getSock());
+				conn->getSock().set_option(ip::tcp::no_delay(true));
 				conn->start();
 				ip::tcp::endpoint ep = conn->getSock().remote_endpoint();
 				LibJmyLogInfo("new connection %(%s:%d) start", conn->getId(), ep.address().to_string().c_str(), ep.port());
@@ -165,6 +166,8 @@ int JmyTcpServer::run()
 	if (session_mgr_->run() < 0)
 		return -1;
 #else
+	if (conn_mgr_->usedRun() < 0)
+		return -1;
 #endif
 
 #if !USE_THREAD

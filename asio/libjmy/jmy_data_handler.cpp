@@ -1,6 +1,10 @@
 #include "jmy_data_handler.h"
+#if USE_CONNECTOR_AND_SESSION
 #include "jmy_tcp_session.h"
 #include "jmy_tcp_connector.h"
+#else
+#include "jmy_tcp_connection.h"
+#endif
 
 JmyDataHandler::JmyDataHandler()
 {
@@ -266,9 +270,13 @@ int JmyDataHandler::handleAck(JmyAckMsgInfo* info)
 		return -1;
 	}
 #else
-	
+	JmyTcpConnectionMgr* mgr = (JmyTcpConnectionMgr*)info->session_param;
+	JmyTcpConnection* conn = mgr->get(info->session_id);
+	if (!conn) {
+		LibJmyLogError("not found connection(%d)", info->session_id);
+		return -1;
+	}
 #endif
-	
 	return 0;
 }
 
