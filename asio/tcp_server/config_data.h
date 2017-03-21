@@ -16,7 +16,7 @@ static JmyServerConfig test_config = {
 #else
 	{
 		{ 2048, 2048, 0, 0, false, true} ,
-		{ 100, 20 },
+		{ 100, 10 },
 		s_test_handlers,
 		sizeof(s_test_handlers)/sizeof(s_test_handlers[0]),
 		true

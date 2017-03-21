@@ -171,7 +171,9 @@ int JmyDataHandler::processData(JmyDoubleSessionBuffer& recv_buffer, int session
 			}
 		}
 		nhandled += res;
-		count += 1;
+		if (unpack_data_.type == JMY_PACKET_USER_DATA) {
+			count += 1;
+		}
 		if (len - nhandled == 0) {
 			buff.readLen(nhandled);
 			break;

@@ -35,6 +35,7 @@ bool JmyConnectionBufferMgr::getOneBuffer(std::shared_ptr<JmyConnectionBuffer>& 
 {
 	if (free_queue_.size() == 0) return false;
 	buffer = free_queue_.front();
+	buffer->state = JMY_CONN_BUFFER_STATE_USING;
 	free_queue_.pop_front();
 	return true;
 }

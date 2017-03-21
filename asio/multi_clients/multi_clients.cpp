@@ -188,5 +188,4 @@ int main(int argc, char* argv[])
 	}
 	ths.join_all();
 	return 0;
-	jj
 }

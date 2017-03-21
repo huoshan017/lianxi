@@ -179,6 +179,7 @@ int JmyDataHandler::writeData(SessionBuffer* buffer, int msg_id, const char* dat
 template <class SessionBuffer>
 int JmyDataHandler::writeAck(SessionBuffer* buffer, unsigned short ack_count, unsigned short curr_id)
 {
+	LibJmyLogInfo("ack_count(%d), curr_id(%d)", ack_count, curr_id);
 	char buf[JMY_PACKET_LEN_ACK];
 	int res = jmy_net_proto_pack_ack(buf, sizeof(buf), ack_count, curr_id);
 	if (res < 0) {

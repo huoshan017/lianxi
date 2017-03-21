@@ -18,7 +18,7 @@ static JmyMultiConnectorsConfig test_connector_config = {
 #else
 static JmyClientsConfig test_clients_config = {
 	{
-		{ 1024, 1024, 0, 0, false, false },
+		{ 1024, 1024, 0, 0, false, true },
 		{ 100, 10 },
 		s_test_handlers,
 		(sizeof(s_test_handlers)/sizeof(s_test_handlers[0])),

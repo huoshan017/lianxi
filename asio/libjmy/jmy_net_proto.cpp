@@ -199,6 +199,7 @@ int jmy_net_proto_unpack_data_head(const char* buf, unsigned int len, JmyPacketU
 			// curr id
 			data.param = (void*)(long)((buf[3]<<8)&0xff00 + buf[4]&0xff);	
 			handled = 1+2+2;
+			LibJmyLogInfo("unpack ack data(ack_count:%d, curr_id:%d)", (int)data.data, (int)(long)data.param);
 		}
 		break;
 	case JMY_PACKET_HEARTBEAT:

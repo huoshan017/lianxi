@@ -219,6 +219,21 @@ int JmyTcpConnection::sendDisconnectAck()
 
 int JmyTcpConnection::handleAck(JmyAckInfo* info)
 {
+	LibJmyLogInfo("handleAck, info->ack_count(%d)", info->ack_count);
+	if (info->ack_count > 0) {
+		if (buffer_->use_send_list) {
+			if (buffer_->send_buff_list.getUsedSize() < info->ack_count) {
+				LibJmyLogError("send_buff_list used size(%d) not enough to ack acount(%d)",
+						buffer_->send_buff_list.getUsedSize(), info->ack_count);
+				return -1;
+			}
+			buffer_->send_buff_list.dropUsed(info->ack_count);
+			total_reconn_info_.send_count -= info->ack_count;
+		} else {
+			// todo
+			LibJmyLogInfo("to do later");
+		}
+	}
 	return 0;
 }
 
@@ -229,8 +244,7 @@ int JmyTcpConnection::handleHeartbeat()
 
 int JmyTcpConnection::handleDisconnect()
 {
-	sendDisconnectAck();
-	return 0;
+	return sendDisconnectAck();
 }
 
 int JmyTcpConnection::handleDisconnectAck()
@@ -261,6 +275,7 @@ int JmyTcpConnection::handle_recv()
 			return -1;
 		}
 		total_reconn_info_.recv_count = 0;
+		LibJmyLogInfo("handled %d data, to ack", ack_info.ack_count);
 	} else {
 		total_reconn_info_.recv_count += count;
 	}
