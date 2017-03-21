@@ -18,9 +18,10 @@ void JmyTcpConnection::close()
 {
 	if (state_ != JMY_CONN_STATE_CONNECTED)
 		return;
-	state_ = JMY_CONN_STATE_DISCONNECTING;
-	active_close_start_ = std::chrono::system_clock::now();
+
 	if (sendDisconnect() < 0) return;
+	active_close_start_ = std::chrono::system_clock::now();
+	state_ = JMY_CONN_STATE_DISCONNECTING;
 	sending_data_ = false;
 }
 
@@ -216,7 +217,7 @@ int JmyTcpConnection::sendDisconnectAck()
 	return 0;
 }
 
-int JmyTcpConnection::handleAck()
+int JmyTcpConnection::handleAck(JmyAckInfo* info)
 {
 	return 0;
 }
@@ -238,6 +239,7 @@ int JmyTcpConnection::handleDisconnectAck()
 		return 0;
 
 	sock_.close();
+	state_ = JMY_CONN_STATE_DISCONNECTED;
 	return 1;
 }
 
@@ -248,6 +250,19 @@ int JmyTcpConnection::handle_recv()
 	if (count < 0) {
 		LibJmyLogError("handle_recv failed");
 		return -1;
+	}
+
+	// ack recv data count
+	if (total_reconn_info_.recv_count + count >= mgr_.getConf().reconn_conf.ack_recv_count) {
+		JmyAckInfo ack_info;
+		ack_info.ack_count = total_reconn_info_.recv_count + count;
+		if (this->sendAck(&ack_info) < 0) {
+			LibJmyLogError("send ack failed");
+			return -1;
+		}
+		total_reconn_info_.recv_count = 0;
+	} else {
+		total_reconn_info_.recv_count += count;
 	}
 	return count;
 }
@@ -278,11 +293,11 @@ int JmyTcpConnection::handle_send()
 						return;
 					}
 				}
-				LibJmyLogInfo("connector(%d) send %d bytes", getId(), bytes_transferred);
+				LibJmyLogInfo("connection(%d) send %d bytes", getId(), bytes_transferred);
 			} else {
 				close();
 				state_ = JMY_CONN_STATE_DISCONNECTED;
-				LibJmyLogError("connector(%d) async_write_some error: %d", id_, err.value());
+				LibJmyLogError("connection(%d) async_write_some error: %d", id_, err.value());
 				return;
 			}
 			sending_data_ = false;
@@ -293,18 +308,24 @@ int JmyTcpConnection::handle_send()
 				[this](const boost::system::error_code& err, size_t bytes_transferred) {
 			if (!err) {
 				if (bytes_transferred > 0) {
-					if (!buffer_->send_buff_list.readLen(bytes_transferred)) {
-						LibJmyLogError("send buff list read lne %d failed", bytes_transferred);
-						return;
+					if (buffer_->send_buff_list.readLen(bytes_transferred) > 0) {
+						// check send data count
+						if (total_reconn_info_.send_count+1 >= mgr_.getConf().reconn_conf.max_cached_send_count) {
+							close();
+							state_ = JMY_CONN_STATE_DISCONNECTED;
+							LibJmyLogError("cached send buffer count is max");
+							return;
+						}
+						total_reconn_info_.send_count += 1;
 					}
 				}
-				LibJmyLogDebug("connector(%d) send %d bytes", getId(), bytes_transferred);
+				LibJmyLogDebug("connection(%d) send %d bytes", getId(), bytes_transferred);
 			} else {
 				close();
 				state_ = JMY_CONN_STATE_DISCONNECTED;
-				LibJmyLogError("connector(%d) async_write_some error: %d", id_, err.value());
+				LibJmyLogError("connection(%d) async_write_some error: %d", id_, err.value());
 				return;
-			}	
+			}
 			sending_data_ = false;
 		});
 	}
@@ -330,7 +351,8 @@ int JmyTcpConnection::run()
 /**
  * JmyTcpConnectionMgr
  */
-JmyTcpConnectionMgr::JmyTcpConnectionMgr(io_service& service) : service_(service)
+JmyTcpConnectionMgr::JmyTcpConnectionMgr(io_service& service)
+	: service_(service)
 {
 }
 
@@ -360,7 +382,7 @@ void JmyTcpConnectionMgr::clear()
 	used_map_.clear();
 }
 
-void JmyTcpConnectionMgr::init(int size, JmyConnType conn_type)
+void JmyTcpConnectionMgr::init(int size, JmyConnType conn_type, const JmyConnectionConfig& conf)
 {
 	int i = 0;
 	for (; i<size; ++i) {
@@ -368,6 +390,7 @@ void JmyTcpConnectionMgr::init(int size, JmyConnType conn_type)
 		free_list_.push_back(conn);
 	}
 	size_ = size;
+	conf_ = conf;
 	LibJmyLogDebug("connection manager init size(%d)", size);
 }
 
@@ -400,9 +423,13 @@ JmyTcpConnection* JmyTcpConnectionMgr::get(int id)
 
 bool JmyTcpConnectionMgr::free(JmyTcpConnection* conn)
 {
-	if (!conn) return false;
+	if (!conn)
+		return false;
+
 	std::unordered_map<int, JmyTcpConnection*>::iterator it = used_map_.find(conn->getId());
-	if (it == used_map_.end()) return false;
+	if (it == used_map_.end())
+		return false;
+
 	used_map_.erase(conn->getId());
 	free_list_.push_back(conn);
 	return true;
@@ -410,24 +437,27 @@ bool JmyTcpConnectionMgr::free(JmyTcpConnection* conn)
 
 int JmyTcpConnectionMgr::usedRun()
 {
-	auto it = used_map_.begin();
+	int n = 0;
+	std::unordered_map<int, JmyTcpConnection*>::iterator it, tmp_it;
+	it = used_map_.begin();
 	for (; it!=used_map_.end(); ) {
-		auto tmp_it = it;
+		tmp_it = it;
 		tmp_it++;
 		bool del = false;
 		if (!it->second) {
 			del = true;
 		}
 		else if (it->second->isDisconnect()) {
-			free(it->second);
 			del = true;
 		}
 		if (del) {
-			used_map_.erase(it);
+			free(it->second);
 			it = tmp_it;
 			continue;
 		}
-		it->second->run();
+		if (it->second->run() >= 0)
+			n += 1;
+		it = tmp_it;
 	}
-	return 0;
+	return n;
 }

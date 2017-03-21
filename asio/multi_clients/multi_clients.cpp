@@ -55,10 +55,8 @@ static void clients_run(io_service* service, int client_count)
 		ClientLogError("clients load config failed");
 		return;
 	}
-	ClientLogInfo("client load config");
 #endif
 	
-	ClientLogInfo("client count %d, ready to start");
 	std::map<int, conn_data> conns;
 	for (int i=0; i<client_count; ++i) {
 #if USE_CONNECTOR_AND_SESSION
@@ -107,11 +105,7 @@ static void clients_run(io_service* service, int client_count)
 				state = clients.getState(cid);
 #endif
 				if (state != JMY_CONN_STATE_CONNECTED) {
-#if USE_CONNECTOR_AND_SESSION
-					ClientLogInfo("connector(%d) is not connected, state(%d)", cid, state);
-#else
 					ClientLogInfo("client(%d) is not connected, state(%d)", cid, state);
-#endif
 					break;
 				}
 				int index = it->second.index_;
@@ -170,10 +164,6 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-	ClientLogDebug("s_test_handlers size(%d)   s_test_handlers[0] size(%d)   len(%d)",
-			sizeof(s_test_handlers), sizeof(s_test_handlers[0]), sizeof(s_test_handlers)/sizeof(s_test_handlers[0]));
-	ClientLogDebug("print test_clients_config nhandlers %d", test_clients_config.conn_conf.nhandlers);
-
 	(void)argv;
 	io_service service;
 	int client_count = (std::atoi(argv[1]));
@@ -198,4 +188,5 @@ int main(int argc, char* argv[])
 	}
 	ths.join_all();
 	return 0;
+	jj
 }

@@ -52,7 +52,7 @@ bool JmyTcpServer::loadConfig(const JmyServerConfig& conf)
 #if USE_CONNECTOR_AND_SESSION
 	res = session_mgr_->init(conf.max_conn, service_);
 #else
-	conn_mgr_.init(conf.max_conn, JMY_CONN_TYPE_PASSIVE);
+	conn_mgr_.init(conf.max_conn, JMY_CONN_TYPE_PASSIVE, conf.conn_conf);
 #endif
 	// use send list
 #if USE_CONNECTOR_AND_SESSION
@@ -129,7 +129,7 @@ int JmyTcpServer::do_accept()
 				if (ec.value()==boost::system::errc::operation_canceled || ec.value()==boost::system::errc::operation_in_progress) {
 					LibJmyLogError("error code(%d)", ec.value());
 				} else {
-					LibJmyLogError("async_accept error: %d", ec.value());
+					LibJmyLogError("async_accept error: %s", ec.value());
 					return;	
 				}
 			} else {
@@ -170,7 +170,7 @@ int JmyTcpServer::accept_new()
 		LibJmyLogError("get free buffer failed");
 		return -1;
 	}
-	buffer->init(conf_.conn_conf.buff_conf);
+	buffer->init(conf_.conn_conf.buff_conf, buff_pool_);
 	conn->setBuffer(buffer);
 	conn->start();
 	ip::tcp::endpoint ep = conn->getSock().remote_endpoint();

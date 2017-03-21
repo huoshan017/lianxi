@@ -278,6 +278,11 @@ int JmyDataHandler::handleAck(JmyAckMsgInfo* info)
 		LibJmyLogError("not found connection(%d)", info->session_id);
 		return -1;
 	}
+	ack_info_.ack_info.ack_count = info->ack_info.ack_count;
+	if (conn->handleAck(&ack_info_.ack_info) < 0) {
+		LibJmyLogError("handle ack(ack_count:%d) failed", info->ack_info.ack_count);
+		return -1;
+	}
 #endif
 	return 0;
 }

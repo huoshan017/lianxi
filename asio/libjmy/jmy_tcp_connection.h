@@ -37,15 +37,16 @@ public:
 	void* getUnusedData() const { return unused_data_; }
 	void setUnusedData(void* data) { unused_data_ = data; }
 
+	int handleAck(JmyAckInfo*);
+	int handleHeartbeat();
+	int handleDisconnect();
+	int handleDisconnectAck();
+
 protected:
 	int sendAck(JmyAckInfo*);
 	int sendHeartbeat();
 	int sendDisconnect();
 	int sendDisconnectAck();
-	int handleAck();
-	int handleHeartbeat();
-	int handleDisconnect();
-	int handleDisconnectAck();
 	int handle_recv();
 	int handle_send();
 
@@ -70,14 +71,17 @@ public:
 	JmyTcpConnectionMgr(io_service& service);
 	~JmyTcpConnectionMgr();
 	void clear();
-	void init(int size, JmyConnType conn_type);
+	void init(int conn_size, JmyConnType conn_type, const JmyConnectionConfig& conf);
 	JmyTcpConnection* getFree(int id);
 	JmyTcpConnection* get(int id);
 	bool free(JmyTcpConnection* conn);
 	int usedRun();
 
+	const JmyConnectionConfig& getConf() const { return conf_; }
+
 private:
 	io_service& service_;
+	JmyConnectionConfig conf_;
 	JmyConnectionBufferMgr buffer_mgr_;
 	std::unordered_map<int, JmyTcpConnection*> used_map_;
 	std::list<JmyTcpConnection*> free_list_;

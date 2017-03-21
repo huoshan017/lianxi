@@ -29,6 +29,6 @@ int TestMsgHandler::process_one(JmyMsgInfo* info)
 	}
 	conn->send(1, data, len);
 #endif
-	ServerLogDebug("processed count ", count_++);
+	ServerLogDebug("processed count %d", count_++);
 	return len;
 }

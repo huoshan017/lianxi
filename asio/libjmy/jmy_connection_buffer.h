@@ -19,14 +19,18 @@ struct JmyConnectionBuffer {
 	JmySessionBufferList recv_buff_list;				// recv buffer list
 	bool use_send_list;
 	bool use_recv_list;
-	void init(const JmyBufferConfig& config) {
+	void init(const JmyBufferConfig& config, std::shared_ptr<JmySessionBufferPool> pool) {
 		use_send_list = config.use_send_buff_list;
 		use_recv_list = config.use_recv_buff_list;
 		if (!use_send_list) {
-			send_buff.init(config.send_buff_size, SESSION_BUFFER_TYPE_SEND);
+			send_buff.init(pool, SESSION_BUFFER_TYPE_SEND);
+		} else {
+			send_buff_list.init(0, 0);
 		}
 		if (!use_recv_list) {
-			recv_buff.init(config.recv_buff_size, SESSION_BUFFER_TYPE_RECV);
+			recv_buff.init(pool, SESSION_BUFFER_TYPE_RECV);
+		} else {
+			recv_buff_list.init(0, 0);
 		}
 	}
 	void destroy() {

@@ -42,14 +42,14 @@ bool JmyTcpClients::loadConfig(const JmyClientsConfig& conf)
 		return false;
 	}
 
-	mgr_.init(conf.max_conn, JMY_CONN_TYPE_ACTIVE);
+	mgr_.init(conf.max_conn, JMY_CONN_TYPE_ACTIVE, conf.conn_conf);
 
 	if (!handler_->loadMsgHandle(conf.conn_conf.handlers, conf.conn_conf.nhandlers)) {
 		LibJmyLogError("load msg handler failed");		
 		return false;
 	}
 
-	if (!buff_pool_->init(conf.max_conn,
+	if (!buff_pool_->init(2*conf.max_conn,
 			conf.conn_conf.buff_conf.send_buff_size,
 			conf.conn_conf.buff_conf.send_buff_size,
 			conf.conn_conf.buff_conf.recv_buff_size,
@@ -87,7 +87,7 @@ JmyTcpConnection* JmyTcpClients::start()
 			LibJmyLogError("get free buffer failed");
 			return nullptr;
 		}
-		buffer->init(conf_.conn_conf.buff_conf);
+		buffer->init(conf_.conn_conf.buff_conf, buff_pool_);
 		conn->setBuffer(buffer);
 		conn->setDataHandler(handler_);
 		LibJmyLogInfo("connection id = %d", id);
@@ -171,8 +171,8 @@ int JmyTcpClients::startInturn(int count)
 	return c;
 }
 
-struct connector_send {
-	connector_send(JmyTcpConnectionMgr& mgr, int msg_id, const char* data, unsigned int len)
+struct connection_send {
+	connection_send(JmyTcpConnectionMgr& mgr, int msg_id, const char* data, unsigned int len)
 		: mgr_(mgr),  msg_id_(msg_id), data_(data), len_(len), count_(0)
 	{
 	}
@@ -194,7 +194,7 @@ private:
 
 int JmyTcpClients::sendInturn(int msg_id, const char* data, unsigned int len)
 {
-	connector_send cs(mgr_, msg_id, data, len);
+	connection_send cs(mgr_, msg_id, data, len);
 	std::for_each(used_ids_.begin(), used_ids_.end(), cs);
 	return cs.get_count();
 }

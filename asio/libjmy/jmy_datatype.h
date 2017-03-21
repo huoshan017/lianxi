@@ -185,5 +185,5 @@ struct JmyTotalReconnInfo {
 #if USE_CONN_PROTO
 	JmyConnResInfo conn_info;		// connect need info
 #endif
-	JmyAckInfo recv_info, send_info;	// transfer data need info
+	unsigned short send_count, recv_count;
 };
