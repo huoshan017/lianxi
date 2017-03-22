@@ -320,7 +320,7 @@ int JmyTcpConnection::handle_send()
 		sock_.async_write_some(
 				boost::asio::buffer(buffer_->send_buff_list.getReadBuff(), buffer_->send_buff_list.getReadLen()),
 				[this](const boost::system::error_code& err, size_t bytes_transferred) {
-			if (!err) {
+			if (err) {
 				close();
 				state_ = JMY_CONN_STATE_DISCONNECTED;
 				LibJmyLogError("connection(%d) async_write_some error: %d", id_, err.value());
@@ -339,7 +339,7 @@ int JmyTcpConnection::handle_send()
 					}
 					total_reconn_info_.send_count += 1;
 					LibJmyLogInfo("send list count %d", total_reconn_info_.send_count);
-					//handle_send();
+					handle_send();
 				}
 			}
 			LibJmyLogDebug("connection(%d) send %d bytes", getId(), bytes_transferred);
