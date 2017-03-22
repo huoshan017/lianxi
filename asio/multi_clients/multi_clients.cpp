@@ -167,7 +167,7 @@ int main(int argc, char* argv[])
 	(void)argv;
 	io_service service;
 	int client_count = (std::atoi(argv[1]));
-	const int thread_count = 2;
+	const int thread_count = 1;
 	boost::thread_group ths;
 	for (int i=0; i<thread_count; ++i) {
 		int per_count = 0;

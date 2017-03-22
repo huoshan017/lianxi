@@ -337,7 +337,7 @@ int JmyTcpConnection::handle_send()
 						return;
 					}
 					total_reconn_info_.send_count += 1;
-					LibJmyLogInfo("send list count %d", total_reconn_info_.send_count);
+					//LibJmyLogInfo("send list count %d", total_reconn_info_.send_count);
 					handle_send();
 				}
 			}
