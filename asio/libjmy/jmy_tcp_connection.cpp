@@ -316,7 +316,6 @@ int JmyTcpConnection::handle_send()
 			sending_data_ = false;
 		});
 	} else {
-		LibJmyLogInfo("async_write_some, read_len(%u)", read_len);
 		sock_.async_write_some(
 				boost::asio::buffer(buffer_->send_buff_list.getReadBuff(), buffer_->send_buff_list.getReadLen()),
 				[this](const boost::system::error_code& err, size_t bytes_transferred) {
