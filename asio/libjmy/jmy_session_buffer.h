@@ -187,7 +187,7 @@ private:
 			b.data_ = NULL;
 			return *this;
 		}
-		~buffer() { destroy(); }
+		~buffer() { /*destroy();*/ }
 		bool init(const char* data, unsigned int len) {
 			if (!data || !len) return false;
 			if (data_ && len_!=len) {

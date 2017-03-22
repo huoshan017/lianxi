@@ -118,7 +118,7 @@ int jmy_net_proto_unpack_data_head(const char* buf, unsigned int len, JmyPacketU
 				return 0;
 			}
 			// id
-			data.data = (int)((buf[1]<<8)&0xff00 + buf[2]&0xff);
+			data.data = (int)(((buf[1]<<8)&0xff00) + (buf[2]&0xff));
 			// session
 			char* session = (char*)jmy_mem_malloc(JMY_CONN_LEN_RES_SESSION);
 			std::memcpy(session, (void*)(buf+2), JMY_CONN_LEN_RES_SESSION);
@@ -132,7 +132,7 @@ int jmy_net_proto_unpack_data_head(const char* buf, unsigned int len, JmyPacketU
 				return 0;
 			}
 			// id
-			data.data = (int)((buf[1]<<8)&0xff00 + buf[2]&0xff);
+			data.data = (int)(((buf[1]<<8)&0xff00) + (buf[2]&0xff));
 			// session
 			char* session = (char*)jmy_mem_malloc(JMY_CONN_LEN_RES_SESSION);
 			std::memcpy(session, (void*)(buf+2), JMY_CONN_LEN_RES_SESSION);
@@ -146,7 +146,7 @@ int jmy_net_proto_unpack_data_head(const char* buf, unsigned int len, JmyPacketU
 				return 0;
 			}
 			// id
-			data.data = (int)((buf[1]<<8)&0xff00 + buf[2]&0xff);
+			data.data = (int)(((buf[1]<<8)&0xff00) + (buf[2]&0xff));
 			// session
 			char* session = (char*)jmy_mem_malloc(JMY_CONN_LEN_RES_SESSION);
 			std::memcpy(session, (void*)(buf+2), JMY_CONN_LEN_RES_SESSION);
@@ -167,7 +167,7 @@ int jmy_net_proto_unpack_data_head(const char* buf, unsigned int len, JmyPacketU
 			if (data_len < 2) {
 				data.data = data_len;
 				data.result = JMY_UNPACK_RESULT_MSG_LEN_INVALID;
-				LibJmyLogInfo("message data len field length(%d) invalid", data_len);
+				LibJmyLogError("message data len field length(%d) invalid", data_len);
 				return -1;
 			}
 			// (can write_len + can read len - nhandled) is not enough to hold next messag	
@@ -195,11 +195,10 @@ int jmy_net_proto_unpack_data_head(const char* buf, unsigned int len, JmyPacketU
 				return 0;
 			}
 			// ack count
-			data.data = (int)((buf[1]<<8)&0xff00 + buf[2]&0xff);
+			data.data = (int)(((buf[1]<<8)&0xff00) + (buf[2]&0xff));
 			// curr id
-			data.param = (void*)(long)((buf[3]<<8)&0xff00 + buf[4]&0xff);	
+			data.param = (void*)(long)(((buf[3]<<8)&0xff00) + (buf[4]&0xff));
 			handled = 1+2+2;
-			LibJmyLogInfo("unpack ack data(ack_count:%d, curr_id:%d)", (int)data.data, (int)(long)data.param);
 		}
 		break;
 	case JMY_PACKET_HEARTBEAT:
@@ -209,7 +208,7 @@ int jmy_net_proto_unpack_data_head(const char* buf, unsigned int len, JmyPacketU
 				return 0;
 			}
 			// time
-			data.param = (void*)(long)((buf[1]<<24)&0xff000000 + (buf[2]<<16)&0xff0000 + (buf[3]<<8)&0xff00 + buf[4]&0xff);
+			data.param = (void*)(long)( ((buf[1]<<24)&0xff000000) + ((buf[2]<<16)&0xff0000) + ((buf[3]<<8)&0xff00) + (buf[4]&0xff) );
 			handled = 1+4;
 		}
 		break;

@@ -139,7 +139,7 @@ static void clients_run(io_service* service, int client_count)
 		if (ss > 0) {
 			//
 		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	} 
 }
 

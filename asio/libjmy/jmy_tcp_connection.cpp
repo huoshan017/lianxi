@@ -219,7 +219,6 @@ int JmyTcpConnection::sendDisconnectAck()
 
 int JmyTcpConnection::handleAck(JmyAckInfo* info)
 {
-	LibJmyLogInfo("handleAck, info->ack_count(%d)", info->ack_count);
 	if (info->ack_count > 0) {
 		if (buffer_->use_send_list) {
 			if (buffer_->send_buff_list.getUsedSize() < info->ack_count) {
@@ -275,7 +274,6 @@ int JmyTcpConnection::handle_recv()
 			return -1;
 		}
 		total_reconn_info_.recv_count = 0;
-		LibJmyLogInfo("handled %d data, to ack", ack_info.ack_count);
 	} else {
 		total_reconn_info_.recv_count += count;
 	}
@@ -318,30 +316,33 @@ int JmyTcpConnection::handle_send()
 			sending_data_ = false;
 		});
 	} else {
+		LibJmyLogInfo("async_write_some, read_len(%u)", read_len);
 		sock_.async_write_some(
 				boost::asio::buffer(buffer_->send_buff_list.getReadBuff(), buffer_->send_buff_list.getReadLen()),
 				[this](const boost::system::error_code& err, size_t bytes_transferred) {
 			if (!err) {
-				if (bytes_transferred > 0) {
-					if (buffer_->send_buff_list.readLen(bytes_transferred) > 0) {
-						// check send data count
-						if (total_reconn_info_.send_count+1 >= mgr_.getConf().reconn_conf.max_cached_send_count) {
-							close();
-							state_ = JMY_CONN_STATE_DISCONNECTED;
-							LibJmyLogError("cached send buffer count is max");
-							return;
-						}
-						total_reconn_info_.send_count += 1;
-					}
-				}
-				LibJmyLogDebug("connection(%d) send %d bytes", getId(), bytes_transferred);
-			} else {
 				close();
 				state_ = JMY_CONN_STATE_DISCONNECTED;
 				LibJmyLogError("connection(%d) async_write_some error: %d", id_, err.value());
 				return;
 			}
+			
 			sending_data_ = false;
+			if (bytes_transferred > 0) {
+				if (buffer_->send_buff_list.readLen(bytes_transferred) > 0) {
+					// check send data count
+					if (total_reconn_info_.send_count+1 >= mgr_.getConf().reconn_conf.max_cached_send_count) {
+						close();
+						state_ = JMY_CONN_STATE_DISCONNECTED;
+						LibJmyLogError("cached send buffer count is max");
+						return;
+					}
+					total_reconn_info_.send_count += 1;
+					LibJmyLogInfo("send list count %d", total_reconn_info_.send_count);
+					//handle_send();
+				}
+			}
+			LibJmyLogDebug("connection(%d) send %d bytes", getId(), bytes_transferred);
 		});
 	}
 	sending_data_ = true;

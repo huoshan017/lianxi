@@ -321,6 +321,8 @@ int JmyDataHandler::handleOne(
 			LibJmyLogError("data len(%d) is invalid", data.data);
 		}
 		return -1;
+	} else if (r == 0 && data.type != JMY_PACKET_USER_DATA) {
+		return 0;
 	}
 
 	// user data
@@ -339,7 +341,10 @@ int JmyDataHandler::handleOne(
 		}
 
 		int res = handleMsg(&data.msg_info);
-		if (res < 0) return res;
+		if (res < 0) {
+			LibJmyLogError("handle msg(%d) failed", data.msg_info.msg_id);
+			return -1;
+		}
 	}
 	// ack
 	else if (data.type == JMY_PACKET_ACK) {

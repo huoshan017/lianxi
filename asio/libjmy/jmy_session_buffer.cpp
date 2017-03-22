@@ -484,13 +484,8 @@ int JmySessionBufferList::readLen(unsigned int len)
 		return 0;
 
 	if (b.is_read_out()) {
+		used_list_.push_back(std::move(b));
 		using_list_.pop_front();
-		//if (drop_cond_.noCond()) {
-		//	b.destroy();
-		//}
-		//else {
-			used_list_.push_back(std::move(b));
-		//}
 		return 1;
 	}
 	//LibJmyLogInfo("using_list size(%u), used_list size(%u)", using_list_.size(), used_list_.size());
@@ -507,6 +502,10 @@ void JmySessionBufferList::dropUsed(unsigned int len)
 	for (; i<len; i++) {
 		if (used_list_.size() == 0)
 			break;
+
+		buffer& b = used_list_.front();
+		b.destroy();
 		used_list_.pop_front();
 	}
+	LibJmyLogInfo("droped %u data", len);
 }
