@@ -199,16 +199,25 @@ int JmyTcpClients::sendInturn(int msg_id, const char* data, unsigned int len)
 	return cs.get_count();
 }
 
-int JmyTcpClients::runInturn()
-{
-	int c = 0;
-	std::set<int>::iterator it = used_ids_.begin();
-	for (; it!=used_ids_.end(); ++it) {
-		JmyTcpConnection* conn = getConnection(*it);
-		if (conn) {
-			if (conn->run() >= 0)
-				c += 1;
+struct connection_run {
+	connection_run(JmyTcpConnectionMgr& mgr) : mgr_(mgr), count_(0) {}
+	void operator()(int id) {
+		JmyTcpConnection* conn = mgr_.get(id);
+		if (!conn) return;
+		if (conn->run() >= 0) {
+			count_ += 1;
 		}
 	}
-	return c;
+	int get_count() const { return count_; }
+
+private:
+	JmyTcpConnectionMgr& mgr_;
+	int count_;
+};
+
+int JmyTcpClients::runInturn()
+{
+	connection_run cr(mgr_);
+	std::for_each(used_ids_.begin(), used_ids_.end(), cr);
+	return cr.get_count();
 }

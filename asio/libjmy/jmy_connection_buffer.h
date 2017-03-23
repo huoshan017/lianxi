@@ -19,6 +19,8 @@ struct JmyConnectionBuffer {
 	JmySessionBufferList recv_buff_list;				// recv buffer list
 	bool use_send_list;
 	bool use_recv_list;
+	JmyTotalReconnInfo total_reconn_info;				// hold total reconn info
+
 	void init(const JmyBufferConfig& config, std::shared_ptr<JmySessionBufferPool> pool) {
 		use_send_list = config.use_send_buff_list;
 		use_recv_list = config.use_recv_buff_list;
@@ -32,18 +34,25 @@ struct JmyConnectionBuffer {
 		} else {
 			recv_buff_list.init(0, 0);
 		}
+		std::memset(&total_reconn_info, 0, sizeof(total_reconn_info));
 	}
+
 	void destroy() {
 		send_buff_list.destroy();
 		recv_buff_list.destroy();
 		send_buff.destroy();
 		recv_buff.destroy();
+		total_reconn_info.recv_count = 0;
+		total_reconn_info.send_count = 0;	
 	}
+
 	void reset() {
 		send_buff_list.reset();
 		recv_buff_list.reset();
 		send_buff.reset();
 		recv_buff.reset();
+		total_reconn_info.recv_count = 0;
+		total_reconn_info.send_count = 0;
 	}
 };
 

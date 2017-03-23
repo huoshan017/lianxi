@@ -62,6 +62,11 @@ struct JmyPacketUnpackData {
 	}
 };
 
+/**
+ * pack type
+ */
+JmyPacketType jmy_net_proto_pack_type(const char* buf);
+
 #if USE_CONN_PROTO
 /**
  * pack connect

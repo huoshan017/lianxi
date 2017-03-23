@@ -7,6 +7,7 @@
 #include <atomic>
 #include "jmy_session_buffer_pool.h"
 #include "jmy_datatype.h"
+#include "jmy_net_proto.h"
 #include "jmy_mem.h"
 #include "jmy_log.h"
 
@@ -166,6 +167,12 @@ public:
 	unsigned int getUsingSize() const { return using_list_.size(); }
 	unsigned int getUsedSize() const { return used_list_.size(); }
 	unsigned int getUsedBytes() const { return curr_used_bytes_; }
+	JmyPacketType getCurrPacketType() {
+		if (using_list_.size() == 0)
+			return JMY_PACKET_NONE;
+		buffer& b = using_list_.front();
+		return (JmyPacketType)b.getPacketType();
+	}
 
 private:
 	struct buffer {
@@ -188,6 +195,7 @@ private:
 			return *this;
 		}
 		~buffer() { /*destroy();*/ }
+		JmyPacketType getPacketType() const { return jmy_net_proto_pack_type(data_); }
 		bool init(const char* data, unsigned int len) {
 			if (!data || !len) return false;
 			if (data_ && len_!=len) {

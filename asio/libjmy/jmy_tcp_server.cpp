@@ -87,6 +87,7 @@ void JmyTcpServer::close()
 #if USE_CONNECTOR_AND_SESSION
 	session_mgr_->clear();
 #else
+	conns_.clear();
 	conn_mgr_.clear();
 #endif
 	acceptor_->close();
@@ -129,7 +130,7 @@ int JmyTcpServer::do_accept()
 				if (ec.value()==boost::system::errc::operation_canceled || ec.value()==boost::system::errc::operation_in_progress) {
 					LibJmyLogError("error code(%d)", ec.value());
 				} else {
-					LibJmyLogError("async_accept error: %s", ec.value());
+					LibJmyLogError("async_accept error: %d", ec.value());
 					return;	
 				}
 			} else {
@@ -137,7 +138,7 @@ int JmyTcpServer::do_accept()
 					return;
 			}
 			do_accept();
-		});
+	});
 	return 1;
 }
 
@@ -173,6 +174,7 @@ int JmyTcpServer::accept_new()
 	buffer->init(conf_.conn_conf.buff_conf, buff_pool_);
 	conn->setBuffer(buffer);
 	conn->start();
+	conns_.push_back(conn);
 	ip::tcp::endpoint ep = conn->getSock().remote_endpoint();
 	LibJmyLogInfo("new connection(%d, %s:%d) start", conn->getId(), ep.address().to_string().c_str(), ep.port());
 #endif
@@ -193,8 +195,12 @@ int JmyTcpServer::run()
 	if (session_mgr_->run() < 0)
 		return -1;
 #else
-	if (conn_mgr_.usedRun() < 0) {
+	/*if (conn_mgr_.usedRun() < 0) {
 		LibJmyLogError("connection manager run failed");
+		return -1;
+	}*/
+	if (run_conns() < 0) {
+		LibJmyLogError("run conns failed");
 		return -1;
 	}
 #endif
@@ -203,4 +209,34 @@ int JmyTcpServer::run()
 	service_.poll();
 #endif
 	return 0;
+}
+
+int JmyTcpServer::run_conns()
+{
+	int n = 0;
+	std::list<JmyTcpConnection*>::iterator tmp_it;
+	JmyTcpConnection* conn = nullptr;
+	std::list<JmyTcpConnection*>::iterator it = conns_.begin();
+	for (; it!=conns_.end(); ) {
+		tmp_it = it;
+		tmp_it++;
+		bool del = false;
+		conn = *it;
+		if (!conn || conn->isDisconnect()) {
+			del = true;
+		} else {
+			if (conn->run() >= 0) {
+				n += 1;
+			}
+		}
+		if (del) {
+			if (conn) {
+				conn_mgr_.free(conn);
+				buffer_mgr_.suspendBuffer(conn->getBuffer());
+			}
+			conns_.erase(it);
+		}
+		it = tmp_it;
+	}
+	return n;
 }

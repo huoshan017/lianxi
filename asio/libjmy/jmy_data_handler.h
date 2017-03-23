@@ -31,9 +31,9 @@ public:
 #endif
 	int processData(JmyDoubleSessionBuffer& recv_buffer, int session_id, void* param);
 	// return write bytes count
-	int writeData(JmySessionBuffer& buffer, int msg_id, const char* data, unsigned int len);
-	int writeData(JmyDoubleSessionBuffer* buffer, int msg_id, const char* data, unsigned int len);
-	int writeData(JmySessionBufferList* buffer_list, int msg_id, const char* data, unsigned int len);
+	int writeUserData(JmySessionBuffer& buffer, int msg_id, const char* data, unsigned int len);
+	int writeUserData(JmyDoubleSessionBuffer* buffer, int msg_id, const char* data, unsigned int len);
+	int writeUserData(JmySessionBufferList* buffer_list, int msg_id, const char* data, unsigned int len);
 
 #if USE_CONN_PROTO
 	template <class SessionBuffer>
@@ -46,7 +46,7 @@ public:
 	int writeReconnRes(SessionBuffer* buffer, unsigned int id, char* session/*, unsigned char session_len*/);
 #endif
 	template <class SessionBuffer>
-	int writeData(SessionBuffer* buffer, int msg_id, const char* data, unsigned int len);
+	int writeUserData(SessionBuffer* buffer, int msg_id, const char* data, unsigned int len);
 	template <class SessionBuffer>
 	int writeAck(SessionBuffer* buffer, unsigned short msg_count, unsigned short curr_id);
 	template <class SessionBuffer>
@@ -153,7 +153,7 @@ int JmyDataHandler::writeReconnRes(SessionBuffer* buffer, unsigned int id, char*
 #endif
 
 template <class SessionBuffer>
-int JmyDataHandler::writeData(SessionBuffer* buffer, int msg_id, const char* data, unsigned int len)
+int JmyDataHandler::writeUserData(SessionBuffer* buffer, int msg_id, const char* data, unsigned int len)
 {
 	char head_buf[JMY_PACKET_LEN_USER_DATA_HEAD];
 	int res = jmy_net_proto_pack_msgid(head_buf, sizeof(head_buf), msg_id, len);

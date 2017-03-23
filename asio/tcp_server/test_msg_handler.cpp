@@ -13,7 +13,6 @@ int TestMsgHandler::process_one(JmyMsgInfo* info)
 	int session_id = info->session_id;
 #if USE_CONNECTOR_AND_SESSION
 	JmyTcpSessionMgr* session_mgr = (JmyTcpSessionMgr*)info->param;
-	ServerLogDebug("data(%d), len(%d)", data, len);
 	JmyTcpSession* session = session_mgr->getSessionById(session_id);
 	if (!session) {
 		ServerLogError("session(%d) not found", session_id);
@@ -29,6 +28,6 @@ int TestMsgHandler::process_one(JmyMsgInfo* info)
 	}
 	conn->send(1, data, len);
 #endif
-	ServerLogDebug("processed count %d", count_++);
+	//ServerLogDebug("processed count %d", count_++);
 	return len;
 }

@@ -477,19 +477,21 @@ unsigned int JmySessionBufferList::getReadLen()
 int JmySessionBufferList::readLen(unsigned int len)
 {
 	if (using_list_.size() == 0)
-		return 0;
+		return (int)JMY_PACKET_NONE;
 
 	buffer& b = using_list_.front();
 	if (!b.read(len))
-		return 0;
+		return (int)JMY_PACKET_NONE;
 
+	JmyPacketType pt = b.getPacketType();
 	if (b.is_read_out()) {
-		used_list_.push_back(std::move(b));
+		if (pt == JMY_PACKET_USER_DATA)
+			used_list_.push_back(std::move(b));
 		using_list_.pop_front();
-		return 1;
+		return (int)pt;
 	}
 	//LibJmyLogInfo("using_list size(%u), used_list size(%u)", using_list_.size(), used_list_.size());
-	return 0;
+	return (int)JMY_PACKET_NONE;
 }
 
 void JmySessionBufferList::dropUsed(unsigned int len)
@@ -507,5 +509,5 @@ void JmySessionBufferList::dropUsed(unsigned int len)
 		b.destroy();
 		used_list_.pop_front();
 	}
-	LibJmyLogInfo("droped %u data", len);
+	//LibJmyLogInfo("droped %u data", len);
 }

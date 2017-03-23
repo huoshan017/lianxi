@@ -1,5 +1,6 @@
 #pragma once
 
+#include <list>
 #include <thread>
 #include <boost/asio.hpp>
 #if USE_CONNECTOR_AND_SESSION
@@ -36,6 +37,7 @@ private:
 #if USE_THREAD
 	int do_loop();
 #endif
+	int run_conns();
 
 private:
 	io_service service_;
@@ -53,6 +55,7 @@ private:
 	JmyConnectionBufferMgr buffer_mgr_;
 	JmyIdGenerator<int> id_gene_;
 	JmyTcpConnection curr_conn_;
+	std::list<JmyTcpConnection*> conns_;
 #endif
 	std::shared_ptr<JmySessionBufferPool> buff_pool_;
 	JmyServerConfig conf_;

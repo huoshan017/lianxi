@@ -18,6 +18,10 @@
 			4; \
 		})
 
+JmyPacketType jmy_net_proto_pack_type(const char* buf) {
+	return (JmyPacketType)buf[0];
+}
+
 #if USE_CONN_PROTO
 int jmy_net_proto_pack_connect(char* buf, unsigned char len) {
 	if (!buf || len < JMY_PACKET_LEN_CONN) return -1;

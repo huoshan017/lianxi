@@ -182,7 +182,7 @@ int JmyDataHandler::processData(JmyDoubleSessionBuffer& recv_buffer, int session
 	return count;
 }
 
-int JmyDataHandler::writeData(JmySessionBuffer& send_buffer, int msg_id, const char* data, unsigned int len)
+int JmyDataHandler::writeUserData(JmySessionBuffer& send_buffer, int msg_id, const char* data, unsigned int len)
 {
 	if (!data || !len)
 		return 0;
@@ -191,10 +191,10 @@ int JmyDataHandler::writeData(JmySessionBuffer& send_buffer, int msg_id, const c
 		LibJmyLogError("data length(%d) is not enough to write", len);
 		return -1;
 	}
-	return writeData<JmySessionBuffer>(&send_buffer, msg_id, data, len);
+	return writeUserData<JmySessionBuffer>(&send_buffer, msg_id, data, len);
 }
 
-int JmyDataHandler::writeData(JmyDoubleSessionBuffer* send_buffer, int msg_id, const char* data, unsigned int len)
+int JmyDataHandler::writeUserData(JmyDoubleSessionBuffer* send_buffer, int msg_id, const char* data, unsigned int len)
 {
 	if (!send_buffer || !data || !len)
 		return 0;
@@ -222,15 +222,15 @@ int JmyDataHandler::writeData(JmyDoubleSessionBuffer* send_buffer, int msg_id, c
 			return -1;
 		}
 	}
-	return writeData<JmyDoubleSessionBuffer>(send_buffer, msg_id, data, len);
+	return writeUserData<JmyDoubleSessionBuffer>(send_buffer, msg_id, data, len);
 }
 
-int JmyDataHandler::writeData(JmySessionBufferList* buffer_list, int msg_id, const char* data, unsigned int len)
+int JmyDataHandler::writeUserData(JmySessionBufferList* buffer_list, int msg_id, const char* data, unsigned int len)
 {
 	if (!buffer_list || !data || !len)
 		return 0;
 
-	return writeData<JmySessionBufferList>(buffer_list, msg_id, data, len);
+	return writeUserData<JmySessionBufferList>(buffer_list, msg_id, data, len);
 }
 
 int JmyDataHandler::handleMsg(JmyMsgInfo* info)

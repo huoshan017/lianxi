@@ -41,7 +41,7 @@ int TestMsgHandler::process_one(JmyMsgInfo* info)
 	if (std::memcmp(data, s_send_data[index], len) != 0) {
 		ClientLogWarn("get data from msg(%s) compared from s_send_data[%d] (%s) is different", data, index, s_send_data[index]);
 	} else {
-		ClientLogDebug("compare data(%s) is same", data);
+		//ClientLogDebug("compare data(%s) is same", data);
 	}
 	index += 1;
 	if (index >= s) {

@@ -17,6 +17,7 @@ public:
 	JmyTcpConnection(io_service& service, JmyTcpConnectionMgr& mgr, JmyConnType conn_type = JMY_CONN_TYPE_NONE);
 	~JmyTcpConnection();
 	void close();
+	void force_close();
 	void destroy();
 	void reset();
 
@@ -33,6 +34,7 @@ public:
 	JmyConnState getConnState() const { return state_; }
 	bool isDisconnect() const { return state_ == JMY_CONN_STATE_DISCONNECTED; } 
 	void setDataHandler(std::shared_ptr<JmyDataHandler> handler) { handler_ = handler; }
+	std::shared_ptr<JmyConnectionBuffer> getBuffer() const { return buffer_; }
 	void setBuffer(std::shared_ptr<JmyConnectionBuffer> buffer) { buffer_ = buffer; }
 	void* getUnusedData() const { return unused_data_; }
 	void setUnusedData(void* data) { unused_data_ = data; }
@@ -61,7 +63,6 @@ protected:
 	std::chrono::system_clock::time_point active_close_start_;	// active close time start
 	std::shared_ptr<JmyDataHandler> handler_;					// data handler
 	std::shared_ptr<JmyConnectionBuffer> buffer_;				// recv and send buffer
-	JmyTotalReconnInfo total_reconn_info_;						// hold total reconn info
 	void* unused_data_;											// extra data when need to use
 };
 
