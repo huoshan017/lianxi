@@ -292,19 +292,37 @@ int JmyDataHandler::handleAck(JmyAckMsgInfo* info)
 int JmyDataHandler::handleHeartbeat(JmyHeartbeatMsgInfo* info)
 {
 	if (!info) return -1;
-	return 0;
+	JmyTcpConnectionMgr* mgr = (JmyTcpConnectionMgr*)info->session_param;
+	JmyTcpConnection* conn = mgr->get(info->session_id);
+	if (!conn) {
+		LibJmyLogError("not found connection(%d)", info->session_id);
+		return -1;
+	}
+	return conn->handleHeartbeat();
 }
 
 int JmyDataHandler::handleDisconnect(JmyDisconnectMsgInfo* info)
 {
 	if (!info) return -1;
-	return 0;
+	JmyTcpConnectionMgr* mgr = (JmyTcpConnectionMgr*)info->session_param;
+	JmyTcpConnection* conn = mgr->get(info->session_id);
+	if (!conn) {
+		LibJmyLogError("not found connection(%d)", info->session_id);
+		return -1;
+	}
+	return conn->handleDisconnect();
 }
 
 int JmyDataHandler::handleDisconnectAck(JmyDisconnectAckMsgInfo* info)
 {
 	if (!info) return -1;
-	return 0;
+	JmyTcpConnectionMgr* mgr = (JmyTcpConnectionMgr*)info->session_param;
+	JmyTcpConnection* conn = mgr->get(info->session_id);
+	if (!conn) {
+		LibJmyLogError("not found connection(%d)", info->session_id);
+		return -1;
+	}
+	return conn->handleDisconnectAck();
 }
 
 int JmyDataHandler::handleOne(
