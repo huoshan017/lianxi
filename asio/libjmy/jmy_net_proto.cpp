@@ -69,20 +69,16 @@ int jmy_net_proto_pack_disconnect_ack(char* buf, unsigned char len) {
 int jmy_net_proto_pack_msgid(char* buf, unsigned char len, int msgid, unsigned short data_len) {
 	if (!buf || len < JMY_PACKET_LEN_USER_DATA_HEAD) return -1;
 	buf[0] = (char)JMY_PACKET_USER_DATA;
-	buf[1] = ((data_len+2)>>8) & 0xff;
-	buf[2] = (data_len+2) & 0xff;
-	buf[3] = (msgid>>8) & 0xff;
-	buf[4] = msgid & 0xff;
+	PACK_INT16_TO_BUFF((data_len+2), (buf+1));
+	PACK_INT16_TO_BUFF((msgid), (buf+3));
 	return JMY_PACKET_LEN_USER_DATA_HEAD;
 }
 
 int jmy_net_proto_pack_ack(char* buf, unsigned char len, unsigned short msg_count, unsigned short curr_id) {
 	if (!buf || len < JMY_PACKET_LEN_ACK) return -1;
 	buf[0] = (char)JMY_PACKET_ACK;
-	buf[1] = (msg_count>>8) & 0xff;
-	buf[2] = msg_count & 0xff;
-	buf[3] = (curr_id>>8) & 0xff;
-	buf[4] = curr_id & 0xff;
+	PACK_INT16_TO_BUFF(msg_count, (buf+1));
+	PACK_INT16_TO_BUFF(curr_id, (buf+3));
 	return JMY_PACKET_LEN_ACK;
 }
 
@@ -91,10 +87,7 @@ int jmy_net_proto_pack_heartbeat(char* buf, unsigned char len) {
 	buf[0] = (char)JMY_PACKET_HEARTBEAT;
 	std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
 	std::time_t t = std::chrono::system_clock::to_time_t(now);
-	buf[1] = (t>>24) & 0xff;
-	buf[2] = (t>>16) & 0xff;
-	buf[3] = (t>>8) & 0xff;
-	buf[4] = t & 0xff;
+	PACK_INT32_TO_BUFF(t, buf);
 	return JMY_PACKET_LEN_HEARTBEAT;
 }
 
