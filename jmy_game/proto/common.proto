@@ -1,0 +1,27 @@
+syntax="proto3";
+
+enum
+{
+	MSGID_C2L_REQUEST = 1000;
+	MSGID_L2C_RESPONSE = 1001;
+	MSGID_C2L_SELECT_SERVER_REQUEST = 1002;
+	MSGID_L2C_SELECT_SERVER_RESPONSE = 1003;	
+	MSGID_C2L_ENTER_GAME_REQUEST = 1004;
+	MSGID_L2C_ENTER_GAME_RESPONSE = 1005;
+}
+
+message MsgC2LRequest
+{
+}
+
+message MsgL2CResponse
+{
+}
+
+message MsgC2LSelectServerRequest
+{
+}
+
+message MsgL2CSelectServerResponse
+{
+}

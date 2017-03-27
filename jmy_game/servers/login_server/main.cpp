@@ -1,5 +1,5 @@
-#include "../../libjmy/jmy_tcp_server.h"
-#include "../../libjmy/jmy_log.h"
+#include "../libjmy/jmy_tcp_server.h"
+#include "../libjmy/jmy_log.h"
 #include <iostream>
 #include "util.h"
 #include "config_loader.h"

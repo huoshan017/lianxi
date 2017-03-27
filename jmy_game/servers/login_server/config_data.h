@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../libjmy/jmy_datatype.h"
+#include "../libjmy/jmy_datatype.h"
 #include "login_msg_handler.h"
 
 static JmyId2MsgHandler s_login_handlers[] = {

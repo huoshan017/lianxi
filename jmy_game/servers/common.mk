@@ -1,7 +1,7 @@
 CC = clang++
 CCFLAGS = -g -Wall -O0 -std=c++11 -DJEMALLOC_NO_DEMANGLE
 
-JMYDIR = $(TOPDIR)/../libjmy
+JMYDIR = $(TOPDIR)/libjmy
 INCLUDES = -I$(TOPDIR) -I$(JMYDIR)
 THIRDLIB = $(JMYDIR)/thirdparty/lib
 LIBS = -L$(JMYDIR)/lib -L$(THIRDLIB)/zlog -L$(THIRDLIB)/jemalloc
