@@ -15,7 +15,7 @@ init:
 	mkdir -p $(OBJDIR) $(TARGET_DIR)
 
 $(TARGET_LIB): $(OBJS) 
-	$(AR) -crs $(TARGET_LIB) 
+	$(AR) -crs $(TARGET_LIB) $^
 
 $(OBJS) : $(OBJDIR)/%.o : %.cpp
 	$(CC) $(CCFLAGS) -c $< -o $@
