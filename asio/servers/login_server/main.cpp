@@ -7,7 +7,7 @@ int main(int argc, char* argv[])
 	(void)argc;
 	(void)argv;
 	JmyTcpServer server;
-	server.loadConfig();
+	//server.loadConfig();
 	if (server.listenStart(s_listen_port)) {
 		return -1;
 	}
