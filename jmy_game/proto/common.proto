@@ -1,7 +1,8 @@
 syntax="proto3";
 
-enum
+enum MsgIdType
 {
+	MSGID_NONE = 0;
 	MSGID_C2L_REQUEST = 1000;
 	MSGID_L2C_RESPONSE = 1001;
 	MSGID_C2L_SELECT_SERVER_REQUEST = 1002;

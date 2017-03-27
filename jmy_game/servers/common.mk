@@ -15,7 +15,7 @@ OBJS = $(patsubst %.cpp, $(OBJDIR)/%.o, $(SRCS))
 
 all: init $(EXE)  
 init:
-	mkdir -p $(OBJDIR)
+	mkdir -p $(OBJDIR) $(SERVER_BINDIR)
 
 $(EXE): $(OBJS) 
 	$(CC) $^ -o $@ $(INCLUDES) $(LIBS) $(CCFLAGS) -ljmy -lboost_system -lboost_thread $(THIRDLIB)/zlog/libzlog.a $(THIRDLIB)/jemalloc/libjemalloc.a -lpthread
