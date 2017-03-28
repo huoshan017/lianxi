@@ -1,4 +1,4 @@
-dirs := libjmy login_server gate_server game_server
+dirs := ../proto libjmy login_server gate_server game_server
 
 define make_subdir
 	@for subdir in $(dirs); do \

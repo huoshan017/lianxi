@@ -1,5 +1,12 @@
 #pragma once
 
+const unsigned int DEFAULT_SEND_BUFFER_SIZE = 4096;
+const unsigned int MAX_SEND_BUFFER_SIZE = 64*1024;
+const unsigned int DEFAULT_RECV_BUFFER_SIZE = 4096;
+const unsigned int MAX_RECV_BUFFER_SIZE = 64*1024;
+const unsigned int DEFAULT_MAX_SEND_BUFFER_COUNT = 100;
+const unsigned int DEFAULT_MAX_RECV_BUFFER_COUNT = 100;
+
 enum { JMY_ACK_START_ID = 1, };
 enum { JMY_ACK_END_ID = 60000, };
 

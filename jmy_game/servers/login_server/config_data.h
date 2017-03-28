@@ -1,12 +1,13 @@
 #pragma once
 
+#include "../../proto/common.pb.h"
 #include "../libjmy/jmy_datatype.h"
 #include "login_msg_handler.h"
 
 static JmyId2MsgHandler s_login_handlers[] = {
-	{ 1, LoginMsgHandler::processLogin },
-	{ 2, LoginMsgHandler::processSelectGameServer },
-	{ 3, LoginMsgHandler::processEnterGameServer },
+	{ MSGID_C2L_LOGIN_REQUEST, LoginMsgHandler::processLogin },
+	{ MSGID_C2L_SELECT_SERVER_REQUEST, LoginMsgHandler::processSelectServer },
+	{ MSGID_C2G_ENTER_GAME_REQUEST, LoginMsgHandler::processEnterGame },
 };
 
 static JmyServerConfig s_login_config = {

@@ -1,24 +1,29 @@
 #pragma once
 
-#include "../common/log_util.h"
+#include "../libjmy/jmy_util.h"
 
 #define s_libjmy_log_cate "libjmy_log"
 #define s_server_log_cate "server_log"
 
 #define ServerLogDebug(...) \
-	LogDebug(s_server_log_cate, __VA_ARGS__)
+	JmyLogDebug(s_server_log_cate, __VA_ARGS__)
 
 #define ServerLogInfo(...) \
-	LogInfo(s_server_log_cate, __VA_ARGS__)
+	JmyLogInfo(s_server_log_cate, __VA_ARGS__)
 
 #define ServerLogNotice(...) \
-	LogNotice(s_server_log_cate, __VA_ARGS__)
+	JmyLogNotice(s_server_log_cate, __VA_ARGS__)
 
 #define ServerLogWarn(...) \
-	LogWarn(s_server_log_cate, __VA_ARGS__)
+	JmyLogWarn(s_server_log_cate, __VA_ARGS__)
 
 #define ServerLogError(...) \
-	LogError(s_server_log_cate, __VA_ARGS__)
+	JmyLogError(s_server_log_cate, __VA_ARGS__)
 
 #define ServerLogFatal(...) \
-	LogFatal(s_server_log_cate, __VA_ARGS__)
+	JmyLogFatal(s_server_log_cate, __VA_ARGS__)
+
+
+struct JmyMsgInfo;
+class JmyTcpConnection;
+JmyTcpConnection* get_connection(JmyMsgInfo*);

@@ -5,10 +5,10 @@
 # It is necessary for linking the library.
 
 # The name that we can dlopen(3).
-dlname='libprotobuf.so.11'
+dlname='libprotobuf.so.12'
 
 # Names of this library.
-library_names='libprotobuf.so.11.0.0 libprotobuf.so.11 libprotobuf.so'
+library_names='libprotobuf.so.12.0.0 libprotobuf.so.12 libprotobuf.so'
 
 # The name of the static archive.
 old_library='libprotobuf.a'
@@ -17,13 +17,13 @@ old_library='libprotobuf.a'
 inherited_linker_flags=' -pthread'
 
 # Libraries that this one depends upon.
-dependency_libs=' -lpthread -lz'
+dependency_libs=' -lpthread -lz /usr/local/lib/../lib64/libstdc++.la'
 
 # Names of additional weak libraries provided by this library
 weak_library_names=''
 
 # Version information for libprotobuf.
-current=11
+current=12
 age=0
 revision=0
 
@@ -38,4 +38,4 @@ dlopen=''
 dlpreopen=''
 
 # Directory that this library needs to be installed in:
-libdir='/usr/lib64'
+libdir='/usr/lib'
