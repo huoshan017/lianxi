@@ -8,6 +8,7 @@ enum MsgIdType {
 	MSGID_L2C_SELECT_SERVER_RESPONSE = 1003;	
 	MSGID_C2G_ENTER_GAME_REQUEST = 1004;
 	MSGID_G2C_ENTER_GAME_RESPONSE = 1005;
+	MSGID_G2C_ENTER_GAME_COMPLETE_NOTIFY = 1006;
 }
 
 message MsgC2LLoginRequest {
@@ -15,7 +16,7 @@ message MsgC2LLoginRequest {
 	bytes password = 2;
 }
 
-message ServerInfo {
+message MsgServerInfo {
 	int32 id = 1;
 	bytes name = 2;
 	bool is_maintenance = 3;
@@ -24,7 +25,7 @@ message ServerInfo {
 
 message MsgL2CLoginResponse {
 	int32 error_code = 1;
-	repeated ServerInfo servers = 2;
+	repeated MsgServerInfo servers = 2;
 }
 
 message MsgC2LSelectServerRequest {
@@ -34,4 +35,18 @@ message MsgC2LSelectServerRequest {
 message MsgL2CSelectServerResponse {
 	int32 error_code = 1;
 	bytes session_code = 2;
+	bytes server_ip = 3;
+	int32 port = 4;
+}
+
+message MsgC2GEnterGameRequest {
+	bytes account = 1;
+	bytes session_code = 2;
+}
+
+message MsgG2CEnterGameResponse {
+	int32 error_code = 1;
+}
+
+message MsgG2CEnterGameCompleteNotify {
 }
