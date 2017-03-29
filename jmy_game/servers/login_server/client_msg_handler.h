@@ -1,19 +1,19 @@
 #pragma once
 
 #include "../libjmy/jmy_const.h"
-#include "../../proto/common.pb.h"
+#include "../../proto/src/common.pb.h"
+#include "../../proto/src/error.pb.h"
 
 struct JmyMsgInfo;
 class JmyTcpConnection;
-class LoginMsgHandler
+class ClientMsgHandler
 {
 public:
 	static int processLogin(JmyMsgInfo*);
 	static int processSelectServer(JmyMsgInfo*);
-	static int processEnterGame(JmyMsgInfo*);
 
 private:
-	static void send_login_error(JmyTcpConnection* conn, MsgL2CLoginResponse& response, int error);
+	static void send_error(JmyMsgInfo* info, ProtoErrorType error);
 private:
 	static char tmp_[MAX_SEND_BUFFER_SIZE];
 };

@@ -6,9 +6,10 @@ OBJDIR = $(PWD)/obj
 TARGET = libproto.a
 TARGET_DIR = $(PWD)/lib
 TARGET_LIB = $(TARGET_DIR)/$(TARGET)
+SRCS_DIR = $(PWD)/src
 
-SRCS = $(wildcard *.cc)
-OBJS = $(patsubst %.cc, $(OBJDIR)/%.o, $(SRCS))
+SRCS = $(wildcard $(SRCS_DIR)/*.cc)
+OBJS = $(patsubst $(SRCS_DIR)/%.cc, $(OBJDIR)/%.o, $(SRCS))
 
 all: init $(TARGET_LIB)  
 init:
@@ -18,10 +19,10 @@ init:
 $(TARGET_LIB): $(OBJS) 
 	$(AR) -crs $(TARGET_LIB) $^
 
-$(OBJS) : $(OBJDIR)/%.o : %.cc
+$(OBJS) : $(OBJDIR)/%.o : $(SRCS_DIR)/%.cc
 	$(CC) $(CCFLAGS) -c $< -o $@ -I../servers/libjmy/thirdparty/include
 
 clean:
-	rm -fr $(OBJS) $(TARGET_LIB) $(SRCS) *.h
+	rm -fr $(OBJS) $(TARGET_LIB) $(SRCS) $(SRCS_DIR)/*.h
 
 .PHONY:clean

@@ -11,6 +11,7 @@ public:
 	~ConfigLoader();
 
 	bool loadJson(const char* jsonpath);
+	bool reload();
 	void close();
 
 	struct ServerConfig {
@@ -21,14 +22,10 @@ public:
 		int max_conn;
 		bool enable_reconnect;
 
-		std::string listen_game_ip;
-		short listen_game_port;
-		int listen_game_max_conn;
-		bool listen_game_enable_reconnect;
-
-		std::string connect_gate_ip;
-		short connect_gate_port;
-		bool connect_gate_enable_reconnect;
+		std::string listen_gate_ip;
+		short listen_gate_port;
+		int listen_gate_max_conn;
+		bool listen_gate_enable_reconnect;
 	};
 
 	const ServerConfig& getServerConfig() { return config_;  }
@@ -36,4 +33,5 @@ public:
 private:
 	rapidjson::Document doc_;
 	ServerConfig config_;
+	std::string jsonpath_;
 };

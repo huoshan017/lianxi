@@ -1,24 +1,41 @@
 #pragma once
 
-#include "../../proto/common.pb.h"
+#include "../../proto/src/common.pb.h"
 #include "../libjmy/jmy_datatype.h"
-#include "login_msg_handler.h"
+#include "client_msg_handler.h"
+#include "gate_msg_handler.h"
 
-static JmyId2MsgHandler s_login_handlers[] = {
-	{ MSGID_C2L_LOGIN_REQUEST, LoginMsgHandler::processLogin },
-	{ MSGID_C2L_SELECT_SERVER_REQUEST, LoginMsgHandler::processSelectServer },
-	{ MSGID_C2G_ENTER_GAME_REQUEST, LoginMsgHandler::processEnterGame },
+static JmyId2MsgHandler s_client_handlers[] = {
+	{ MSGID_C2L_LOGIN_REQUEST, ClientMsgHandler::processLogin },
+	{ MSGID_C2L_SELECT_SERVER_REQUEST, ClientMsgHandler::processSelectServer },
 };
 
 static JmyServerConfig s_login_config = {
 	{
 		{ 2048, 2048, 0, 0, false, true},
 		{ 10000, 10 },
-		s_login_handlers,
-		sizeof(s_login_handlers)/sizeof(s_login_handlers[0]),
+		s_client_handlers,
+		sizeof(s_client_handlers)/sizeof(s_client_handlers[0]),
 		true
 	},
 	(char*)"127.0.0.1",
 	10000,
 	1024*10
+};
+
+static JmyId2MsgHandler s_gate_handlers[] = {
+	{ MSGID_C2T_ENTER_GAME_REQUEST, GateMsgHandler::processConnect },
+};
+
+static JmyServerConfig s_gate_config = {
+	{
+		{ 1024*64, 1024*64, 0, 0, false, true },
+		{ 1000, 10 },
+		s_gate_handlers,
+		sizeof(s_gate_handlers)/sizeof(s_gate_handlers[0]),
+		true
+	},
+	(char*)"0.0.0.0",
+	20000,
+	4
 };

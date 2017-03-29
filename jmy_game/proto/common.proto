@@ -1,14 +1,24 @@
 syntax="proto3";
+import "error.proto";
 
 enum MsgIdType {
-	MSGID_NONE = 0;
-	MSGID_C2L_LOGIN_REQUEST = 1000;
-	MSGID_L2C_LOGIN_RESPONSE = 1001;
-	MSGID_C2L_SELECT_SERVER_REQUEST = 1002;
-	MSGID_L2C_SELECT_SERVER_RESPONSE = 1003;	
-	MSGID_C2G_ENTER_GAME_REQUEST = 1004;
-	MSGID_G2C_ENTER_GAME_RESPONSE = 1005;
-	MSGID_G2C_ENTER_GAME_COMPLETE_NOTIFY = 1006;
+	MSGID_NONE								= 0;
+	MSGID_ERROR								= 1;
+	/* Client <-> LoginServer */
+	MSGID_C2L_LOGIN_REQUEST					= 100000; // login request
+	MSGID_L2C_LOGIN_RESPONSE				= 100001; // login response
+	MSGID_C2L_SELECT_SERVER_REQUEST			= 100002; // select server
+	MSGID_L2C_SELECT_SERVER_RESPONSE		= 100003; // select server response
+	/* Client <-> GateServer */
+	MSGID_C2T_ENTER_GAME_REQUEST			= 100004; // enter game request
+	MSGID_T2C_ENTER_GAME_RESPONSE			= 100005; // enter game response
+	MSGID_T2C_ENTER_GAME_COMPLETE_NOTIFY	= 100006; // enter game complete notify
+	MSGID_C2T_RECONNECT_REQUEST				= 101000; // reconnect gate server
+	MSGID_T2C_RECONNECT_RESPONSE			= 101001; // reconnect response
+}
+
+message MsgError {
+	ProtoErrorType error_code = 1;
 }
 
 message MsgC2LLoginRequest {
@@ -24,8 +34,7 @@ message MsgServerInfo {
 }
 
 message MsgL2CLoginResponse {
-	int32 error_code = 1;
-	repeated MsgServerInfo servers = 2;
+	repeated MsgServerInfo servers = 1;
 }
 
 message MsgC2LSelectServerRequest {
@@ -33,20 +42,26 @@ message MsgC2LSelectServerRequest {
 }
 
 message MsgL2CSelectServerResponse {
-	int32 error_code = 1;
-	bytes session_code = 2;
-	bytes server_ip = 3;
-	int32 port = 4;
+	bytes session_code = 1;
+	bytes server_ip = 2;
+	int32 port = 3;
 }
 
-message MsgC2GEnterGameRequest {
+message MsgC2TEnterGameRequest {
 	bytes account = 1;
 	bytes session_code = 2;
 }
 
-message MsgG2CEnterGameResponse {
-	int32 error_code = 1;
+message MsgT2CEnterGameResponse {
 }
 
-message MsgG2CEnterGameCompleteNotify {
+message MsgT2CEnterGameCompleteNotify {
+}
+
+message MsgC2TReconnectRequest {
+	bytes account = 1;
+	bytes session = 2;
+}
+
+message MsgT2CReconnectResponse {
 }

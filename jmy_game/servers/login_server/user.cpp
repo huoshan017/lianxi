@@ -1,6 +1,6 @@
 #include "user.h"
 #include "../libjmy/jmy.h"
-#include "util.h"
+#include "../common/util.h"
 
 /* User */
 User::User() : id_(0), mgr_(nullptr), state_(USER_STATE_IDLE)
@@ -109,6 +109,7 @@ bool UserManager::deleteUserById(int id)
 		ServerLogError("not found user(%d)", id);
 		return false;
 	}
+	jmy_mem_free<User>(it->second);
 	id2user_.erase(id);
 	return true;
 }
