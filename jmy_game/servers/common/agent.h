@@ -5,7 +5,7 @@
 #include <string>
 #include "../libjmy/jmy_tcp_connection.h"
 #include "../libjmy/jmy_mem.h"
-#include "../libjmy/jmy_log.h"
+#include "util.h"
 
 enum AgentStateType {
 	AGENT_STATE_NONE = 0,
