@@ -7,6 +7,7 @@
 static const int SESSION_CODE_LENGTH = 16;
 
 char ClientMsgHandler::tmp_[MAX_SEND_BUFFER_SIZE];
+ClientUserManager ClientMsgHandler::user_mgr_;
 
 void ClientMsgHandler::send_error(JmyMsgInfo* info, ProtoErrorType error) {
 	JmyTcpConnection* conn = get_connection(info);
@@ -28,7 +29,8 @@ int ClientMsgHandler::processLogin(JmyMsgInfo* info)
 	request.account();
 	request.password();
 
-	User* user = USER_MGR->newUser(info->session_id, (JmyTcpConnectionMgr*)info->param, request.account().c_str());
+	//User* user = USER_MGR->newUser(info->session_id, (JmyTcpConnectionMgr*)info->param, request.account().c_str());
+	ClientUser* user = user_mgr_.newAgent(info->session_id, (JmyTcpConnectionMgr*)info->param);
 	if (!user) {
 		send_error(info, PROTO_ERROR_LOGIN_REPEATED);
 		ServerLogError("create user by account(%s) failed", request.account().c_str());
@@ -38,7 +40,8 @@ int ClientMsgHandler::processLogin(JmyMsgInfo* info)
 	MsgL2CLoginResponse response;
 	response.SerializeToArray(tmp_, sizeof(tmp_));
 
-	user->setState(USER_STATE_VERIFIED);
+	//user->setState(USER_STATE_VERIFIED);
+	user->setState(AGENT_STATE_VERIFIED);
 	user->sendMsg(MSGID_L2C_LOGIN_RESPONSE, tmp_, response.ByteSize());
 	ServerLogInfo("account(%d) login", request.account().c_str());
 
@@ -54,7 +57,8 @@ int ClientMsgHandler::processSelectServer(JmyMsgInfo* info)
 		return -1;
 	}
 
-	User* user = USER_MGR->getUserById(info->session_id);
+	//User* user = USER_MGR->getUserById(info->session_id);
+	ClientUser* user = user_mgr_.getAgent(info->session_id);
 	if (!user) {
 		send_error(info, PROTO_ERROR_LOGIN_ACCOUNT_OR_PASSWORD_INVALID);
 		ServerLogError("cant find user by id(%d)", info->session_id);
@@ -72,7 +76,8 @@ int ClientMsgHandler::processSelectServer(JmyMsgInfo* info)
 	}
 	response.set_session_code(session_code);
 	user->sendMsg(MSGID_L2C_SELECT_SERVER_RESPONSE, tmp_, response.ByteSize());
-	ServerLogInfo("user(%s) select server", user->getAccount());
+	//ServerLogInfo("user(%s) select server", user->getAccount());
+	ServerLogInfo("user(%d) select server", user->getId());
 
 	return 0;
 }

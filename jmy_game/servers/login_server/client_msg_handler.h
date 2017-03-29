@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../libjmy/jmy_const.h"
+#include "user.h"
 #include "../../proto/src/common.pb.h"
 #include "../../proto/src/error.pb.h"
 
@@ -16,4 +17,5 @@ private:
 	static void send_error(JmyMsgInfo* info, ProtoErrorType error);
 private:
 	static char tmp_[MAX_SEND_BUFFER_SIZE];
+	static ClientUserManager user_mgr_;
 };

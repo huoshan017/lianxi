@@ -31,6 +31,10 @@ public:
 	int_type getId() const { return id_; }
 	AgentStateType getState() const { return state_; }
 	void setState(AgentStateType state) { state_ = state; }
+	data_type& getData() const { return data_; }
+	data_type* getDataPointer() { return &data_; }
+	void setData(const data_type& data) { data_ = data; }
+	void setData(data_type&& data) { data_ = data; }
 
 	int sendMsg(int msgid, const char* data, int len) {
 		if (state_ != AGENT_STATE_VERIFIED) return 0;
@@ -60,7 +64,7 @@ class AgentManager
 {
 public:
 	typedef Agent<data_type, int_type> agent_type;
-	typedef std::unordered_map<int_type, agent_type> agents_map;
+	typedef std::unordered_map<int_type, agent_type*> agents_map;
 
 	AgentManager() {}
 	~AgentManager() { clear(); }
@@ -175,7 +179,12 @@ public:
 			return false;
 		}
 		jmy_mem_free<agent_type>(agent);
+		if (agent_count_ == 0) {
+			ServerLogError("agent count is zero, cant delete agent(%d)", id);
+			return false;
+		}
 		agents_[id] = nullptr;
+		agent_count_ -= 1;
 		return true;
 	}
 

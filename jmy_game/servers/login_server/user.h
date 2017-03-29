@@ -50,3 +50,10 @@ private:
 };
 
 #define USER_MGR (UserManager::getInstance())
+
+#include "../common/agent.h"
+struct UserData {
+	std::string account;
+};
+typedef Agent<UserData, int> ClientUser;
+typedef AgentManager<UserData, int> ClientUserManager;
