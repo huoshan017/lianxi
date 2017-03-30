@@ -1,5 +1,7 @@
 #include "../libjmy/jmy_tcp_server.h"
+#include "../libjmy/jmy_tcp_connection.h"
 #include "../libjmy/jmy_log.h"
+#include "../common/util.h"
 #include <iostream>
 #include "config_loader.h"
 #include "config_data.h"
@@ -47,6 +49,9 @@ int main(int argc, char* argv[])
 	}
 
 	ServerLogInfo("start listening port %d", config.port);
+
+	JmyTcpConnection login_conn;
+	login_conn.async_connect();
 
 	while (main_server.run() >= 0) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));

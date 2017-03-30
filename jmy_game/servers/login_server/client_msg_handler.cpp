@@ -7,7 +7,7 @@
 static const int SESSION_CODE_LENGTH = 16;
 
 char ClientMsgHandler::tmp_[MAX_SEND_BUFFER_SIZE];
-ClientUserManager ClientMsgHandler::user_mgr_;
+ClientAgentManager ClientMsgHandler::client_mgr_;
 
 void ClientMsgHandler::send_error(JmyMsgInfo* info, ProtoErrorType error) {
 	JmyTcpConnection* conn = get_connection(info);
@@ -30,7 +30,7 @@ int ClientMsgHandler::processLogin(JmyMsgInfo* info)
 	request.password();
 
 	//User* user = USER_MGR->newUser(info->session_id, (JmyTcpConnectionMgr*)info->param, request.account().c_str());
-	ClientUser* user = user_mgr_.newAgent(info->session_id, (JmyTcpConnectionMgr*)info->param);
+	ClientAgent* user = client_mgr_.newAgent(request.account(), (JmyTcpConnectionMgr*)info->param, info->session_id);
 	if (!user) {
 		send_error(info, PROTO_ERROR_LOGIN_REPEATED);
 		ServerLogError("create user by account(%s) failed", request.account().c_str());
@@ -58,7 +58,7 @@ int ClientMsgHandler::processSelectServer(JmyMsgInfo* info)
 	}
 
 	//User* user = USER_MGR->getUserById(info->session_id);
-	ClientUser* user = user_mgr_.getAgent(info->session_id);
+	ClientAgent* user = client_mgr_.getAgentById(info->session_id);
 	if (!user) {
 		send_error(info, PROTO_ERROR_LOGIN_ACCOUNT_OR_PASSWORD_INVALID);
 		ServerLogError("cant find user by id(%d)", info->session_id);

@@ -27,3 +27,5 @@
 struct JmyMsgInfo;
 class JmyTcpConnection;
 JmyTcpConnection* get_connection(JmyMsgInfo*);
+
+char* get_session_code(char*, int);

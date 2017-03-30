@@ -128,7 +128,7 @@ private:
 
 struct JmyBufferDropConditionData {
 	uint32_t conds;
-	uint32_t params[DropConditionCount];
+	uint32_t params[JMY_DROP_CONDITION_COUNT];
 	JmyBufferDropConditionData() : conds(0) {
 		std::memset(params, 0, sizeof(params));
 	}

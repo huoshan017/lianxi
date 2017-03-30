@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../proto/src/common.pb.h"
+#include "../../proto/src/server.pb.h"
 #include "../libjmy/jmy_datatype.h"
 #include "client_msg_handler.h"
 #include "gate_msg_handler.h"
@@ -24,7 +25,8 @@ static JmyServerConfig s_login_config = {
 };
 
 static JmyId2MsgHandler s_gate_handlers[] = {
-	{ MSGID_C2T_ENTER_GAME_REQUEST, GateMsgHandler::processConnect },
+	{ MSGID_T2L_CONNECT_REQUEST, GateMsgHandler::processConnect },
+	{ MSGID_T2L_SELECTED_SERVER_RESPONSE, GateMsgHandler::processSelectedServerResponse },
 };
 
 static JmyServerConfig s_gate_config = {

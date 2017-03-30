@@ -16,19 +16,21 @@ enum AgentStateType {
 
 class JmyTcpConnectionMgr;
 
-template <typename data_type, typename int_type>
+template <typename data_type, typename id_type>
 class Agent
 {
 public:
+	typedef typename std::enable_if<std::is_integral<id_type>::value, id_type>::type int_id_type;
+
 	Agent() : data_(), id_(0), mgr_(nullptr), state_(AGENT_STATE_NONE) {}
 	~Agent() {}
-	void init(int id, JmyTcpConnectionMgr* mgr) {
+	void init(int_id_type id, JmyTcpConnectionMgr* mgr) {
 		id_ = id;
 		mgr_ = mgr;
 		state_ = AGENT_STATE_NONE;
 	}
 
-	int_type getId() const { return id_; }
+	int_id_type getId() const { return id_; }
 	AgentStateType getState() const { return state_; }
 	void setState(AgentStateType state) { state_ = state; }
 	data_type& getData() const { return data_; }
@@ -45,7 +47,7 @@ public:
 		}
 
 		if (conn->send(msgid, data, len) < 0) {
-			ServerLogError("agent(%d) send message failed", id_);
+			ServerLogError("agent(%d) send message(%d) failed", id_, msgid);
 			return -1;
 		}
 
@@ -54,82 +56,104 @@ public:
 
 private:
 	data_type data_;
-	int_type id_;
+	int_id_type id_;
 	JmyTcpConnectionMgr* mgr_;
 	AgentStateType state_;
 };
 
-template <typename data_type, typename int_type>
+template <typename key_type, typename data_type, typename id_type>
 class AgentManager 
 {
 public:
-	typedef Agent<data_type, int_type> agent_type;
-	typedef std::unordered_map<int_type, agent_type*> agents_map;
+	typedef Agent<data_type, id_type> agent_type;
+	typedef typename agent_type::int_id_type int_id_type;
+	typedef std::unordered_map<key_type, agent_type*> key2agent_map_type;
+	typedef std::unordered_map<int_id_type, key_type> id2key_map_type;
+	typedef std::unordered_map<key_type, int_id_type> key2id_map_type;
 
 	AgentManager() {}
 	~AgentManager() { clear(); }
 
 	void clear() {
-		typename agents_map::iterator it = id2agents_.begin();
-		for (; it!=id2agents_.end(); ++it) {
+		typename key2agent_map_type::iterator it = key2agents_.begin();
+		for (; it!=key2agents_.end(); ++it) {
 			if (it->second) {
 				jmy_mem_free(it->second);
 			}
 		}
-		id2agents_.clear();
+		key2agents_.clear();
+		id2keys_.clear();
 	}
 
-	agent_type* newAgent(int_type id, JmyTcpConnectionMgr* mgr) {
-		typename agents_map::iterator it = id2agents_.find(id);
-		if (it != id2agents_.end()) {
-			ServerLogError("already has user(%d), create user failed", id);
-			return nullptr;
-		}
+	agent_type* newAgent(const key_type& key, JmyTcpConnectionMgr* mgr, int_id_type id) {
+		typename key2agent_map_type::iterator it = key2agents_.find(key);
+		if (it != key2agents_.end()) { return nullptr; }
 		agent_type* agent = jmy_mem_malloc<agent_type>();
 		agent->init(id, mgr);
-		id2agents_.insert(std::make_pair(id, agent));
+		key2agents_.insert(std::make_pair(key, agent));
+		id2keys_.insert(std::make_pair(id, key));
+		key2ids_.insert(std::make_pair(key, id));
 		return agent;
 	}
 
-	agent_type* getAgent(int_type id) {
-		typename agents_map::iterator it = id2agents_.find(id);
-		if (it == id2agents_.end()) {
-			ServerLogError("cant found account(%d)", id);
-			return nullptr;
-		}
+	agent_type* getAgent(key_type key) {
+		typename key2agent_map_type::iterator it = key2agents_.find(key);
+		if (it == key2agents_.end()) { return nullptr; }
 		return it->second;
 	}
 
-	bool deleteAgent(int_type id) {
-		typename agents_map::iterator it = id2agents_.find(id);
-		if (it == id2agents_.end()) {
-			ServerLogError("cant found id(%d)", id);
-			return false;
+	agent_type* getAgentById(int_id_type id) {
+		typename id2key_map_type::iterator it = id2keys_.find(id);
+		if (it == id2keys_.end()) { return nullptr; }
+		return getAgent(it->second);
+	}
+
+	bool deleteAgent(key_type key) {
+		typename key2agent_map_type::iterator it = key2agents_.find(key);
+		if (it == key2agents_.end()) { return false; }
+		typename key2id_map_type::iterator kit = key2ids_.find(key);
+		if (kit != key2ids_.end()) {
+			id2keys_.erase(kit->second);
+			key2ids_.erase(kit);
 		}
 		jmy_mem_free(it->second);
-		id2agents_.erase(it);
+		key2agents_.erase(it);
 		return true;
 	}
 
-	bool setAgentState(int_type id, AgentStateType state) {
-		typename agents_map::iterator it = id2agents_.find(id);
-		if (it == id2agents_.end()) {
-			ServerLogError("not found user(%d)", id);
-			return false;
-		}
+	bool deleteAgentById(int_id_type id) {
+		typename id2key_map_type::iterator it = id2keys_.find(id);
+		if (it == id2keys_.end()) { return false; }
+		if (!deleteAgent(it->second)) { return false; }
+		return true;
+	}
+
+	bool setAgentState(key_type key, AgentStateType state) {
+		typename key2agent_map_type::iterator it = key2agents_.find(key);
+		if (it == key2agents_.end()) { return false; }
+		if (!it->second) { return false; }
 		it->second->setState(state);
 		return true;
 	}
 
+	bool setAgentStateById(int_id_type id, AgentStateType state) {
+		typename id2key_map_type::iterator it = id2keys_.find(id);
+		if (it == id2keys_.end()) { return false; }
+		return setAgentState(it->second, state);
+	}
+
 protected:
-	agents_map id2agents_;
+	key2agent_map_type key2agents_;
+	id2key_map_type id2keys_;
+	key2id_map_type key2ids_;
 };
 
-template <typename data_type, typename int_type, size_t max_id>
+template <typename data_type, typename id_type, size_t max_id>
 class AgentManagerPerf
 {
 public:
-	typedef Agent<data_type, int_type> agent_type;
+	typedef Agent<data_type, id_type> agent_type;
+	typedef typename agent_type::int_id_type int_id_type;
 	typedef std::array<agent_type*, max_id+1> agent_array_type;
 	AgentManagerPerf() : agent_count_(0) { init(); }
 	~AgentManagerPerf() { clear(); }
@@ -152,10 +176,9 @@ public:
 		}
 	}
 
-	agent_type* newAgent(int_type id, JmyTcpConnectionMgr* mgr) {
+	agent_type* newAgent(int_id_type id, JmyTcpConnectionMgr* mgr) {
 		agent_type* agent = getAgent(id);
 		if (!agent) {
-			ServerLogError("already has agent with id(%d)", id);
 			return nullptr;
 		}
 		agent = jmy_mem_malloc<agent_type>();
@@ -165,22 +188,20 @@ public:
 		return agent;
 	}
 
-	agent_type* getAgent(int_type id) {
+	agent_type* getAgent(int_id_type id) {
 		if (id > agents_.size()-1) {
-			ServerLogError("id(%d) overed array size(%u)", id, agents_.size());
 			return nullptr;
 		}
 		return agents_.at(id);
 	}
 
-	bool deleteAgent(int_type id) {
+	bool deleteAgent(int_id_type id) {
 		agent_type* agent = getAgent(id);
 		if (!agent) {
 			return false;
 		}
 		jmy_mem_free<agent_type>(agent);
 		if (agent_count_ == 0) {
-			ServerLogError("agent count is zero, cant delete agent(%d)", id);
 			return false;
 		}
 		agents_[id] = nullptr;
@@ -188,10 +209,9 @@ public:
 		return true;
 	}
 
-	bool setAgentState(int_type id, AgentStateType state) {
+	bool setAgentState(int_id_type id, AgentStateType state) {
 		agent_type* agent = getAgent(id);
 		if (!agent)  {
-			ServerLogError("not found agent with id(%d)", id);
 			return false;
 		}
 		agent->setState(state);

@@ -6,6 +6,7 @@
 #include "jmy_datatype.h"
 #include "jmy_data_handler.h"
 #include "jmy_connection_buffer.h"
+#include "jmy_event_handler.h"
 
 using namespace boost::asio;
 
@@ -27,17 +28,22 @@ public:
 	int send(int msg_id, const char* data, unsigned int len);
 	int run();
 
+	// set event handler
+	void setEventHandler(const JmyEventHandler& handler);
+
+	// geter and seter
 	void setId(int id) { id_ = id; }
 	int getId() const { return id_; }
 	ip::tcp::socket& getSock() { return sock_; }
 	JmyConnType getConnType() const { return conn_type_; }
 	JmyConnState getConnState() const { return state_; }
 	bool isDisconnect() const { return state_ == JMY_CONN_STATE_DISCONNECTED; } 
-	void setDataHandler(std::shared_ptr<JmyDataHandler> handler) { handler_ = handler; }
+	void setDataHandler(std::shared_ptr<JmyDataHandler> handler) { data_handler_ = handler; }
 	std::shared_ptr<JmyConnectionBuffer> getBuffer() const { return buffer_; }
 	void setBuffer(std::shared_ptr<JmyConnectionBuffer> buffer) { buffer_ = buffer; }
 	void* getUnusedData() const { return unused_data_; }
 	void setUnusedData(void* data) { unused_data_ = data; }
+	JmyTcpConnectionMgr& getConnectionMgr() { return mgr_; }
 
 	int handleAck(JmyAckInfo*);
 	int handleHeartbeat();
@@ -51,6 +57,7 @@ protected:
 	int sendDisconnectAck();
 	int handle_recv();
 	int handle_send();
+	int handle_event(int event_id, long param);
 
 protected:
 	int id_;
@@ -61,8 +68,10 @@ protected:
 	JmyConnState state_;										// connection state
 	bool sending_data_;											// is sending data
 	std::chrono::system_clock::time_point active_close_start_;	// active close time start
-	std::shared_ptr<JmyDataHandler> handler_;					// data handler
+	std::shared_ptr<JmyDataHandler> data_handler_;					// data handler
 	std::shared_ptr<JmyConnectionBuffer> buffer_;				// recv and send buffer
+	JmyEventHandler event_handler_;
+	std::chrono::system_clock::time_point last_run_tick_;
 	void* unused_data_;											// extra data when need to use
 };
 

@@ -36,6 +36,22 @@ struct JmyId2MsgHandler {
 	jmy_msg_handler handler;
 };
 
+struct JmyEventInfo {
+	int event_id;
+	int conn_id;
+	void* param;
+	long param_l;
+	JmyEventInfo() : event_id(0), conn_id(0), param(nullptr), param_l(0) {}
+	JmyEventInfo(int eid, int cid, void* p, long p2) : event_id(eid), conn_id(cid), param(p), param_l(p2) {}
+};
+
+typedef int (*jmy_event_handler)(JmyEventInfo*);
+
+struct JmyId2EventHandler {
+	int event_id;
+	jmy_event_handler handler;
+};
+
 // hold ack_count and curr_id
 struct JmyAckInfo {
 	unsigned short ack_count;

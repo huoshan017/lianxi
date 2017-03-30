@@ -15,3 +15,15 @@ JmyTcpConnection* get_connection(JmyMsgInfo* info)
 	}
 	return conn;
 }
+
+char* get_session_code(char* session_buf, int buf_len)
+{
+	static char cs[] = "abcdefghijklmnopqrstuvwxyz0123456789~!@#$%^&*()_+`-={}[]:<>?,./";
+	// generate session string
+	std::default_random_engine gen;
+	std::uniform_int_distribution<> dis(0, sizeof(cs));
+	for (int i=0; i<buf_len; ++i) {
+		session_buf[i] = dis(gen);
+	}
+	return session_buf;
+}

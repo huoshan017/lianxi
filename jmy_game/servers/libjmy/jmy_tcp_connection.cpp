@@ -31,6 +31,7 @@ void JmyTcpConnection::force_close()
 
 	sock_.close();
 	state_ = JMY_CONN_STATE_DISCONNECTED;
+	handle_event(JMY_EVENT_DISCONNECT, 0);
 }
 
 void JmyTcpConnection::destroy()
@@ -65,6 +66,7 @@ void JmyTcpConnection::asynConnect(const char* ip, short port)
 		sock_.set_option(ip::tcp::no_delay(false));
 		state_ = JMY_CONN_STATE_CONNECTED;
 		start();
+		handle_event(JMY_EVENT_CONNECT, 0);
 	});
 	state_ = JMY_CONN_STATE_CONNECTING;
 }
@@ -89,6 +91,7 @@ bool JmyTcpConnection::connect(const char* ip, short port)
 	}
 	ep_ = ep;
 	state_ = JMY_CONN_STATE_CONNECTED;
+	handle_event(JMY_EVENT_CONNECT, 0);
 	return true;
 }
 
@@ -99,8 +102,8 @@ void JmyTcpConnection::start()
 		return;
 	}
 
-	if (!handler_.get() || !buffer_.get()) {
-		LibJmyLogError("handler(0x%x) or buffer(0x%x) not set", handler_.get(), buffer_.get());
+	if (!data_handler_.get() || !buffer_.get()) {
+		LibJmyLogError("handler(0x%x) or buffer(0x%x) not set", data_handler_.get(), buffer_.get());
 		return;
 	}
 
@@ -140,13 +143,13 @@ int JmyTcpConnection::send(int msg_id, const char* data, unsigned int len)
 		return -1;
 
 	if (!buffer_->use_send_list) {
-		int res = handler_->writeUserData(&buffer_->send_buff, msg_id, data, len);
+		int res = data_handler_->writeUserData(&buffer_->send_buff, msg_id, data, len);
 		if (res < 0) {
 			LibJmyLogError("write data length(%d) failed", len);
 			return -1;
 		}
 	} else {
-		int res = handler_->writeUserData(&buffer_->send_buff_list, msg_id, data, len);
+		int res = data_handler_->writeUserData(&buffer_->send_buff_list, msg_id, data, len);
 		if (res < 0) {
 			LibJmyLogError("write data length(%d) failed", len);
 			return -1;
@@ -161,12 +164,12 @@ int JmyTcpConnection::sendAck(JmyAckInfo* info)
 		return -1;
 
 	if (!buffer_->use_send_list) {
-		if (handler_->writeAck(&buffer_->send_buff, info->ack_count, info->curr_id) < 0) {
+		if (data_handler_->writeAck(&buffer_->send_buff, info->ack_count, info->curr_id) < 0) {
 			LibJmyLogError("write ack failed");
 			return -1;
 		}
 	} else {
-		if (handler_->writeAck(&buffer_->send_buff_list, info->ack_count, info->curr_id) < 0) {
+		if (data_handler_->writeAck(&buffer_->send_buff_list, info->ack_count, info->curr_id) < 0) {
 			LibJmyLogError("write ack failed");
 			return -1;
 		}
@@ -180,12 +183,12 @@ int JmyTcpConnection::sendHeartbeat()
 		return -1;
 
 	if (!buffer_->use_send_list) {
-		if (handler_->writeHeartbeat(&buffer_->send_buff) < 0) {
+		if (data_handler_->writeHeartbeat(&buffer_->send_buff) < 0) {
 			LibJmyLogError("write heart beat failed");
 			return -1;
 		}
 	} else {
-		if (handler_->writeHeartbeat(&buffer_->send_buff_list) < 0) {
+		if (data_handler_->writeHeartbeat(&buffer_->send_buff_list) < 0) {
 			LibJmyLogError("write heart beat failed");
 			return -1;
 		}
@@ -196,12 +199,12 @@ int JmyTcpConnection::sendHeartbeat()
 int JmyTcpConnection::sendDisconnect()
 {
 	if (!buffer_->use_send_list) {
-		if (handler_->writeDisconnect(&buffer_->send_buff) < 0) {
+		if (data_handler_->writeDisconnect(&buffer_->send_buff) < 0) {
 			LibJmyLogError("write disconnect failed");
 			return -1;
 		}
 	} else {
-		if (handler_->writeDisconnect(&buffer_->send_buff_list) < 0) {
+		if (data_handler_->writeDisconnect(&buffer_->send_buff_list) < 0) {
 			LibJmyLogError("write disconnect failed");
 			return -1;
 		}
@@ -212,12 +215,12 @@ int JmyTcpConnection::sendDisconnect()
 int JmyTcpConnection::sendDisconnectAck()
 {
 	if (!buffer_->use_send_list) {
-		if (handler_->writeDisconnectAck(&buffer_->send_buff) < 0) {
+		if (data_handler_->writeDisconnectAck(&buffer_->send_buff) < 0) {
 			LibJmyLogError("write disconnect ack failed");
 			return -1;
 		}
 	} else {
-		if (handler_->writeDisconnectAck(&buffer_->send_buff_list) < 0) {
+		if (data_handler_->writeDisconnectAck(&buffer_->send_buff_list) < 0) {
 			LibJmyLogError("write disconnect ack failed");
 			return -1;
 		}
@@ -266,7 +269,7 @@ int JmyTcpConnection::handleDisconnectAck()
 int JmyTcpConnection::handle_recv()
 {
 	// data process
-	int count = handler_->processData(buffer_->recv_buff, id_, &mgr_);
+	int count = data_handler_->processData(buffer_->recv_buff, id_, &mgr_);
 	if (count < 0) {
 		LibJmyLogError("handle_recv failed");
 		return -1;
@@ -357,10 +360,35 @@ int JmyTcpConnection::handle_send()
 	return 1;
 }
 
+int JmyTcpConnection::handle_event(int event_id, long param)
+{
+	JmyEventInfo info;
+	info.event_id = event_id;
+	info.conn_id = id_;
+	info.param = (void*)&mgr_;
+	info.param_l = param;
+	int res = 0;
+	if (event_id == JMY_EVENT_CONNECT)
+		res = event_handler_.onConnect(&info);
+	else if (event_id == JMY_EVENT_DISCONNECT)
+		res = event_handler_.onDisconnect(&info);
+	else if (event_id == JMY_EVENT_TICK)
+		res = event_handler_.onTick(&info);
+	else if (event_id == JMY_EVENT_TIMER)
+		res = event_handler_.onTimer(&info);
+	else
+		res = event_handler_.onEvent(&info);
+	return res;
+}
+
 int JmyTcpConnection::run()
 {
+	std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+	long elapsed = std::chrono::duration_cast<std::chrono::microseconds>(now - last_run_tick_).count();
+	handle_event(JMY_EVENT_TICK, elapsed);
+	last_run_tick_ = now;
+
 	if (state_ == JMY_CONN_STATE_DISCONNECTING) {
-		std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
 		if (std::chrono::duration_cast<std::chrono::seconds>(now-active_close_start_).count() >= JMY_ACTIVE_CLOSE_CONNECTION_TIMEOUT) {
 			force_close();
 			return 0;
