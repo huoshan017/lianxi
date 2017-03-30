@@ -1,10 +1,9 @@
 #include "client_msg_handler.h"
 #include "../libjmy/jmy.h"
 #include "../common/util.h"
+#include "../../proto/src/server.pb.h"
 #include "user.h"
 #include <random>
-
-static const int SESSION_CODE_LENGTH = 16;
 
 char ClientMsgHandler::tmp_[MAX_SEND_BUFFER_SIZE];
 ClientAgentManager ClientMsgHandler::client_mgr_;
@@ -65,17 +64,10 @@ int ClientMsgHandler::processSelectServer(JmyMsgInfo* info)
 		return -1;
 	}
 
-	MsgL2CSelectServerResponse response;
-	static char cs[] = "abcdefghijklmnopqrstuvwxyz0123456789~!@#$%^&*()_+`-={}[]:<>?,./";
-	// generate session string
-	std::default_random_engine gen;
-	std::uniform_int_distribution<> dis(0, sizeof(cs));
-	char* session_code = (char*)jmy_mem_malloc(SESSION_CODE_LENGTH);
-	for (int i=0; i<SESSION_CODE_LENGTH; ++i) {
-		session_code[i] = dis(gen);
-	}
-	response.set_session_code(session_code);
-	user->sendMsg(MSGID_L2C_SELECT_SERVER_RESPONSE, tmp_, response.ByteSize());
+	MsgL2TSelectedServerNotify notify;
+	notify.set_account(user->getData().account);
+	notify.SerializeToArray(tmp_, sizeof(tmp_));
+	user->sendMsg(MSGID_L2C_SELECT_SERVER_RESPONSE, tmp_, notify.ByteSize());
 	//ServerLogInfo("user(%s) select server", user->getAccount());
 	ServerLogInfo("user(%d) select server", user->getId());
 
