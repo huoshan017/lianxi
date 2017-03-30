@@ -12,7 +12,7 @@ enum MsgIdTypeServer {
 
 	/* GateServer <-> GameServer */
 	MSGID_G2T_CONNECT_REQUEST			= 200100;
-	MSGID_G2T_CONNECT_RESPONSE			= 200101;
+	MSGID_T2G_CONNECT_RESPONSE			= 200101;
 }
 
 // gate -> login  [MSGID_T2L_CONNECT_REQUEST]  gate connect login request

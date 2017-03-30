@@ -20,6 +20,7 @@ public:
 	static int processLogin(JmyMsgInfo*);
 	static int processSelectServer(JmyMsgInfo*);
 	static ClientAgentManager& getClientManager() { return client_mgr_; }
+	static ClientAgent* getClientAgent(const std::string& account);
 
 private:
 	static void send_error(JmyMsgInfo* info, ProtoErrorType error);

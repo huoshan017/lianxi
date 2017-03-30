@@ -39,7 +39,17 @@ int GateMsgHandler::processSelectedServerResponse(JmyMsgInfo* info)
 	}
 
 	MsgT2LSelectedServerResponse res;
+	res.ParseFromArray(info->data, info->len);
+	ClientAgent* client_agent = CLIENT_MGR.getAgent(res.account());
+	if (!client_agent) {
+		ServerLogError("cant get client agent with account(%s)", res.account().c_str());
+		return -1;
+	}
+	
 	MsgL2CSelectServerResponse response;
 	response.set_account(res.account());
+	response.set_session_code(res.session_code());
+	response.SerializeToArray(tmp_, sizeof(tmp_));
+	client_agent->sendMsg(MSGID_L2C_SELECT_SERVER_RESPONSE, tmp_, response.ByteSize());
 	return 0;
 }

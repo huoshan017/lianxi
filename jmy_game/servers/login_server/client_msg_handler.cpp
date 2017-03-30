@@ -28,7 +28,6 @@ int ClientMsgHandler::processLogin(JmyMsgInfo* info)
 	request.account();
 	request.password();
 
-	//User* user = USER_MGR->newUser(info->session_id, (JmyTcpConnectionMgr*)info->param, request.account().c_str());
 	ClientAgent* user = client_mgr_.newAgent(request.account(), (JmyTcpConnectionMgr*)info->param, info->session_id);
 	if (!user) {
 		send_error(info, PROTO_ERROR_LOGIN_REPEATED);
@@ -36,14 +35,12 @@ int ClientMsgHandler::processLogin(JmyMsgInfo* info)
 		return -1;
 	}
 
+	user->setState(AGENT_STATE_VERIFIED);
+
 	MsgL2CLoginResponse response;
 	response.SerializeToArray(tmp_, sizeof(tmp_));
-
-	//user->setState(USER_STATE_VERIFIED);
-	user->setState(AGENT_STATE_VERIFIED);
 	user->sendMsg(MSGID_L2C_LOGIN_RESPONSE, tmp_, response.ByteSize());
 	ServerLogInfo("account(%d) login", request.account().c_str());
-
 	return 0;
 }
 
@@ -56,7 +53,6 @@ int ClientMsgHandler::processSelectServer(JmyMsgInfo* info)
 		return -1;
 	}
 
-	//User* user = USER_MGR->getUserById(info->session_id);
 	ClientAgent* user = client_mgr_.getAgentById(info->session_id);
 	if (!user) {
 		send_error(info, PROTO_ERROR_LOGIN_ACCOUNT_OR_PASSWORD_INVALID);
@@ -68,8 +64,12 @@ int ClientMsgHandler::processSelectServer(JmyMsgInfo* info)
 	notify.set_account(user->getData().account);
 	notify.SerializeToArray(tmp_, sizeof(tmp_));
 	user->sendMsg(MSGID_L2C_SELECT_SERVER_RESPONSE, tmp_, notify.ByteSize());
-	//ServerLogInfo("user(%s) select server", user->getAccount());
 	ServerLogInfo("user(%d) select server", user->getId());
 
 	return 0;
+}
+
+ClientAgent* ClientMsgHandler::getClientAgent(const std::string& account)
+{
+	return client_mgr_.getAgent(account);
 }

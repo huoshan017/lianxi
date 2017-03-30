@@ -20,7 +20,6 @@ public:
 	static int processSelectedServerResponse(JmyMsgInfo* info);
 	static GateAgentManager& getGateManager() { return gate_mgr_; }
 
-
 private:
 	static char tmp_[MAX_SEND_BUFFER_SIZE];
 	static GateAgentManager gate_mgr_;
