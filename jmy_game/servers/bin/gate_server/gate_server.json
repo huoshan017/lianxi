@@ -1,0 +1,17 @@
+{
+	"server_name" : "gate_server",
+	"server_id" : 10001,
+	"server_ip" : "192.168.3.250",
+	"serevr_port" : 11001,
+	"max_conn" : 5000,
+	"enable_reconnect" : true,
+
+	"listen_game_ip" : "192.168.3.250",
+	"listen_game_port" : 20001,
+	"listen_game_max_conn" : 100,
+	"listen_game_enable_reconnect" : false,
+
+	"connect_login_ip" : "192.168.3.250",
+	"connect_login_port" : 20000,
+	"connect_login_enable_reconnect" : false
+}

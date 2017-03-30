@@ -1,0 +1,32 @@
+{
+	"server_name" : "login_server",
+	"server_id" : 10001,
+	"server_ip" : "192.168.3.250",
+	"server_nodes": [
+		{
+			"name" : "listen_client",
+			"port" : 10000,
+			"max_conn" : 5000,
+			"enable_reconnect" : false,
+			"extra_data" : nil
+		},
+		{
+			"name" : "listen_game",
+			"port" : 10001,
+			"max_conn" : 100,
+			"enable_reconnect" : false,
+			"extra_data" : {
+			
+			}
+		}
+	],
+
+	"client_nodes": [
+		{
+			"name" : "connect_gate",
+			"ip" : "192.168.3.250",
+			"port" : 10001,
+			"enable_reconnect" : false
+		}
+	]
+}
