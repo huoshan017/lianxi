@@ -47,7 +47,7 @@ bool ConfGateList::loadJson(const char* jsonpath)
 	short server_port = 0;
 	size_t s = doc_.Size();
 	for (size_t i=0; i<s; ++i) {
-		auto a = doc_.GetArray()[i];
+		rapidjson::Value& a = doc_[i];
 		if (!a["server_name"].IsString()) {
 			std::cout << "server_name type is not string" << std::endl;
 			return false;

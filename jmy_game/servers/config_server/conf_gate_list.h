@@ -19,7 +19,7 @@ public:
 	void clear();
 	void reset();
 
-	size_t getSize();
+	size_t getSize() const { return gate_count_; }
 
 	struct GateData {
 		std::string name;
