@@ -1,6 +1,7 @@
 #include "conn_msg_handler.h"
 #include "../common/util.h"
 #include "../../proto/src/server.pb.h"
+#include "conf_gate_list.h"
 
 char ConnMsgHandler::tmp_[MAX_SEND_BUFFER_SIZE];
 LoginAgentManager ConnMsgHandler::login_mgr_;
@@ -82,15 +83,14 @@ int ConnMsgHandler::processLoginConnect(JmyMsgInfo* info)
 
 	MsgCS2LS_ConnectResponse response;
 	// get gate server info from server_list.json
-	std::set<int>::iterator it = gate_id_set_.begin();
-	for (; it!=gate_id_set_.end(); ++it) {
-		GateAgent* gate_agent = gate_mgr_.getAgent(*it);
-		if (!gate_agent) continue;
-		GateAgentData& gate_data = gate_agent->getData();
+	size_t s = CONF_GATE_LIST->getSize();
+	for (size_t i=0; i<s; ++i) {
+		ConfGateList::GateData* gate_data = CONF_GATE_LIST->get(i);
+		if (!gate_data) continue;
 		MsgGateInfoData* data = response.add_gate_list();
-		data->set_gate_ip(gate_data.ip);
-		data->set_gate_port(gate_data.port);
-		data->set_gate_id(gate_data.id);
+		data->set_gate_ip(gate_data->ip);
+		data->set_gate_port(gate_data->port);
+		data->set_gate_id(gate_data->id);
 	}
 	if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
 		ServerLogError("serialize connect config_server response message failed");
