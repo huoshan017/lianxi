@@ -7,8 +7,8 @@
 #include "gate_msg_handler.h"
 
 static JmyId2MsgHandler s_client_handlers[] = {
-	{ MSGID_C2L_LOGIN_REQUEST, ClientMsgHandler::processLogin },
-	{ MSGID_C2L_SELECT_SERVER_REQUEST, ClientMsgHandler::processSelectServer },
+	{ MSGID_CL2LS_LOGIN_REQUEST, ClientMsgHandler::processLogin },
+	{ MSGID_CL2LS_SELECT_SERVER_REQUEST, ClientMsgHandler::processSelectServer },
 };
 
 static JmyServerConfig s_login_config = {
@@ -25,8 +25,8 @@ static JmyServerConfig s_login_config = {
 };
 
 static JmyId2MsgHandler s_gate_handlers[] = {
-	{ MSGID_T2L_CONNECT_REQUEST, GateMsgHandler::processConnect },
-	{ MSGID_T2L_SELECTED_SERVER_RESPONSE, GateMsgHandler::processSelectedServerResponse },
+	{ MSGID_GT2LS_CONNECT_REQUEST, GateMsgHandler::processConnect },
+	{ MSGID_GT2LS_SELECTED_SERVER_RESPONSE, GateMsgHandler::processSelectedServerResponse },
 };
 
 static JmyServerConfig s_gate_config = {

@@ -5,24 +5,24 @@ enum MsgIdType {
 	MSGID_NONE								= 0;
 	MSGID_ERROR								= 1;
 	/* Client <-> LoginServer */
-	MSGID_C2L_LOGIN_REQUEST					= 100000; // login request
-	MSGID_L2C_LOGIN_RESPONSE				= 100001; // login response
-	MSGID_C2L_SELECT_SERVER_REQUEST			= 100002; // select server
-	MSGID_L2C_SELECT_SERVER_RESPONSE		= 100003; // select server response
+	MSGID_CL2LS_LOGIN_REQUEST				= 100000; // login request
+	MSGID_LS2CL_LOGIN_RESPONSE				= 100001; // login response
+	MSGID_CL2LS_SELECT_SERVER_REQUEST		= 100002; // select server
+	MSGID_LS2CL_SELECT_SERVER_RESPONSE		= 100003; // select server response
 	/* Client <-> GateServer */
-	MSGID_C2T_ENTER_GAME_REQUEST			= 100004; // enter game request
-	MSGID_T2C_ENTER_GAME_RESPONSE			= 100005; // enter game response
-	MSGID_T2C_ENTER_GAME_COMPLETE_NOTIFY	= 100006; // enter game complete notify
-	MSGID_C2T_RECONNECT_REQUEST				= 101000; // reconnect gate server
-	MSGID_T2C_RECONNECT_RESPONSE			= 101001; // reconnect response
+	MSGID_CL2GT_ENTER_GAME_REQUEST			= 100004; // enter game request
+	MSGID_GT2CL_ENTER_GAME_RESPONSE			= 100005; // enter game response
+	MSGID_GT2CL_ENTER_GAME_COMPLETE_NOTIFY	= 100006; // enter game complete notify
+	MSGID_CL2GT_RECONNECT_REQUEST			= 101000; // reconnect gate server
+	MSGID_GT2CL_RECONNECT_RESPONSE			= 101001; // reconnect response
 }
 
 message MsgError {
 	ProtoErrorType error_code = 1;
 }
 
-// client -> login  [MSGID_C2L_LOGIN_REQUEST]  login request, send to login server
-message MsgC2LLoginRequest {
+// client -> login  [MSGID_CL2LS_LOGIN_REQUEST]  login request, send to login server
+message MsgCL2LS_LoginRequest {
 	bytes account = 1;
 	bytes password = 2;
 }
@@ -34,45 +34,45 @@ message MsgServerInfo {
 	bool is_busy = 4;
 }
 
-// login -> client  [MSGID_L2C_LOGIN_RESPONSE]  login response
-message MsgL2CLoginResponse {
+// login -> client  [MSGID_LS2CL_LOGIN_RESPONSE]  login response
+message MsgLS2CL_LoginResponse {
 	repeated MsgServerInfo servers = 1;
 }
 
-// client -> login  [MSGID_C2L_SELECT_SERVER_REQUEST]  request to select server, and then notify gate server
-message MsgC2LSelectServerRequest {
+// client -> login  [MSGID_CL2LS_SELECT_SERVER_REQUEST]  request to select server, and then notify gate server
+message MsgCL2LS_SelectServerRequest {
 	int32 sel_id = 1;
 }
 
-// login -> client  [MSGID_L2C_SELECT_SERVER_RESPONSE]  after get response from gate server, to response client select result
-message MsgL2CSelectServerResponse {
+// login -> client  [MSGID_LS2CL_SELECT_SERVER_RESPONSE]  after get response from gate server, to response client select result
+message MsgLS2CL_SelectServerResponse {
 	bytes session_code = 1;
 	bytes server_ip = 2;
 	int32 port = 3;
 }
 
-// client -> gate  [MSGID_C2T_ENTER_GAME_REQUEST]  request enter game, send to gate server
-message MsgC2TEnterGameRequest {
+// client -> gate  [MSGID_CL2GT_ENTER_GAME_REQUEST]  request enter game, send to gate server
+message MsgCL2GT_EnterGameRequest {
 	bytes account = 1;
 	bytes session_code = 2;
 }
 
-// gate -> client  [MSGID_T2C_ENTER_GAME_RESPONSE]  response for enter game request
-message MsgT2CEnterGameResponse {
+// gate -> client  [MSGID_GT2CL_ENTER_GAME_RESPONSE]  response for enter game request
+message MsgGT2CL_EnterGameResponse {
 	bytes reconnect_session = 1;
 }
 
-// gate -> client  [MSGID_T2C_ENTER_GAME_COMPLETE_NOTIFY]  enter game complete
-message MsgT2CEnterGameCompleteNotify {
+// gate -> client  [MSGID_GT2CL_ENTER_GAME_COMPLETE_NOTIFY]  enter game complete
+message MsgGT2CL_EnterGameCompleteNotify {
 }
 
-// client -> gate  [MSGID_C2T_RECONNECT_REQUEST]  reconnect request
-message MsgC2TReconnectRequest {
+// client -> gate  [MSGID_CL2GT_RECONNECT_REQUEST]  reconnect request
+message MsgCL2GT_ReconnectRequest {
 	bytes account = 1;
 	bytes reconnect_session = 2;
 }
 
-// gate -> client  [MSGID_T2C_RECONNECT_RESPONSE]  response for reconnect request
-message MsgT2CReconnectResponse {
+// gate -> client  [MSGID_GT2CL_RECONNECT_RESPONSE]  response for reconnect request
+message MsgGT2CL_ReconnectResponse {
 	bytes reconnect_session = 1;
 }

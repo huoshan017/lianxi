@@ -254,6 +254,10 @@ int JmyTcpConnection::handleHeartbeat()
 
 int JmyTcpConnection::handleDisconnect()
 {
+	if (state_ == JMY_CONN_STATE_DISCONNECTING) {
+		force_close();
+		return 0;
+	}
 	return sendDisconnectAck();
 }
 

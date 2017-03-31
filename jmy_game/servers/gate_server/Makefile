@@ -1,5 +1,5 @@
-export TOPDIR = $(PWD)/..
-export SERVER_DIR = $(TOPDIR)/gate_server
-export SERVER_BINDIR = $(TOPDIR)/bin/gate_server
+export TOP_DIR = $(PWD)/..
+export SERVER_DIR = $(TOP_DIR)/gate_server
+export SERVER_BINDIR = $(TOP_DIR)/bin/gate_server
 export SERVER_EXE = gate_server
-include $(TOPDIR)/common.mk
+include $(TOP_DIR)/common.mk

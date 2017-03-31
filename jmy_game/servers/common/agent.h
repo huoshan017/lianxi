@@ -33,7 +33,7 @@ public:
 	int_id_type getId() const { return id_; }
 	AgentStateType getState() const { return state_; }
 	void setState(AgentStateType state) { state_ = state; }
-	const data_type& getData() const { return data_; }
+	data_type& getData() { return data_; }
 	data_type* getDataPointer() { return &data_; }
 	void setData(const data_type& data) { data_ = data; }
 	void setData(data_type&& data) { data_ = data; }
@@ -51,6 +51,13 @@ public:
 			return -1;
 		}
 
+		return 0;
+	}
+
+	int close() {
+		JmyTcpConnection* conn = mgr_->get(id_);
+		if (!conn) return -1;
+		conn->close();
 		return 0;
 	}
 

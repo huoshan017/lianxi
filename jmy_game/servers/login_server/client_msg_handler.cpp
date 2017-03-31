@@ -13,12 +13,12 @@ void ClientMsgHandler::send_error(JmyMsgInfo* info, ProtoErrorType error) {
 	if (!conn) return;
 	MsgError response;
 	response.set_error_code(error);
-	conn->send(MSGID_L2C_LOGIN_RESPONSE, tmp_, response.ByteSize());
+	conn->send(MSGID_LS2CL_LOGIN_RESPONSE, tmp_, response.ByteSize());
 }
 
 int ClientMsgHandler::processLogin(JmyMsgInfo* info)
 {
-	MsgC2LLoginRequest request;
+	MsgCL2LS_LoginRequest request;
 	if (!request.ParseFromArray(info->data, info->len)) {
 		send_error(info, PROTO_ERROR_LOGIN_DATA_INVALID);
 		ServerLogError("parse MsgC2LLoginRequest failed");
@@ -37,16 +37,16 @@ int ClientMsgHandler::processLogin(JmyMsgInfo* info)
 
 	user->setState(AGENT_STATE_VERIFIED);
 
-	MsgL2CLoginResponse response;
+	MsgLS2CL_LoginResponse response;
 	response.SerializeToArray(tmp_, sizeof(tmp_));
-	user->sendMsg(MSGID_L2C_LOGIN_RESPONSE, tmp_, response.ByteSize());
+	user->sendMsg(MSGID_LS2CL_LOGIN_RESPONSE, tmp_, response.ByteSize());
 	ServerLogInfo("account(%d) login", request.account().c_str());
 	return 0;
 }
 
 int ClientMsgHandler::processSelectServer(JmyMsgInfo* info)
 {
-	MsgC2LSelectServerRequest request;
+	MsgCL2LS_SelectServerRequest request;
 	if (!request.ParseFromArray(info->data, info->len)) {
 		send_error(info, PROTO_ERROR_LOGIN_DATA_INVALID);
 		ServerLogError("parse MsgC2LSelectServerRequest failed");
@@ -60,10 +60,10 @@ int ClientMsgHandler::processSelectServer(JmyMsgInfo* info)
 		return -1;
 	}
 
-	MsgL2TSelectedServerNotify notify;
+	MsgLS2GT_SelectedServerNotify notify;
 	notify.set_account(user->getData().account);
 	notify.SerializeToArray(tmp_, sizeof(tmp_));
-	user->sendMsg(MSGID_L2C_SELECT_SERVER_RESPONSE, tmp_, notify.ByteSize());
+	user->sendMsg(MSGID_LS2CL_SELECT_SERVER_RESPONSE, tmp_, notify.ByteSize());
 	ServerLogInfo("user(%d) select server", user->getId());
 
 	return 0;

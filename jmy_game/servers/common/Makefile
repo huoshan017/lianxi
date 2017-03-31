@@ -25,6 +25,6 @@ $(OBJS) : $(OBJDIR)/%.o : %.cpp
 	$(CC) $(CCFLAGS) -c $< -o $@ $(INCLUDES)
 
 clean:
-	rm -fr $(COMMON_OBJS) $(OBJS) $(EXE)
+	rm -fr $(COMMON_OBJS) $(OBJS) $(TARGET_LIB)
 
 .PHONY:clean

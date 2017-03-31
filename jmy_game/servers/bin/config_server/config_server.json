@@ -1,0 +1,13 @@
+{
+	"server_name" : "config_server",
+	"server_id" : 30001,
+	"server_ip" : "192.168.3.250",
+	"server_port" : 30000,
+	"max_conn" : 1000,
+	"enable_reconnect" : false,
+
+	"gate_list_conf_path_type" : 0,
+	"gate_list_conf_local_path" : "./gate_list.json",
+	"gate_list_conf_remote_path" : "http://192.168.3.250/server_config/gate_list.json",
+	"log_conf_path" : "./log.conf"
+}

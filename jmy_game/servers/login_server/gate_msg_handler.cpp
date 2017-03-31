@@ -21,12 +21,12 @@ int GateMsgHandler::processConnect(JmyMsgInfo* info)
 		return -1;
 	}
 
-	MsgT2LConnectRequest request;
+	MsgGT2LS_ConnectRequest request;
 	request.gate_server_id();
 
-	MsgL2TConnectResponse response;
+	MsgLS2GT_ConnectResponse response;
 	response.SerializeToArray(tmp_, sizeof(tmp_));
-	agent->sendMsg(MSGID_L2T_CONNECT_RESPONSE, tmp_, response.ByteSize());
+	agent->sendMsg(MSGID_LS2GT_CONNECT_RESPONSE, tmp_, response.ByteSize());
 	return 0;
 }
 
@@ -38,7 +38,7 @@ int GateMsgHandler::processSelectedServerResponse(JmyMsgInfo* info)
 		return -1;
 	}
 
-	MsgT2LSelectedServerResponse res;
+	MsgGT2LS_SelectedServerResponse res;
 	res.ParseFromArray(info->data, info->len);
 	ClientAgent* client_agent = CLIENT_MGR.getAgent(res.account());
 	if (!client_agent) {
@@ -46,10 +46,15 @@ int GateMsgHandler::processSelectedServerResponse(JmyMsgInfo* info)
 		return -1;
 	}
 	
-	MsgL2CSelectServerResponse response;
-	response.set_account(res.account());
+	MsgLS2CL_SelectServerResponse response;
 	response.set_session_code(res.session_code());
 	response.SerializeToArray(tmp_, sizeof(tmp_));
-	client_agent->sendMsg(MSGID_L2C_SELECT_SERVER_RESPONSE, tmp_, response.ByteSize());
+	if (client_agent->sendMsg(MSGID_LS2CL_SELECT_SERVER_RESPONSE, tmp_, response.ByteSize()) < 0)
+		return -1;
+
+	// select server complete, close client
+	if (client_agent->close() < 0)
+		return -1;
+
 	return 0;
 }
