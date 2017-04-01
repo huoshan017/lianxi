@@ -83,28 +83,28 @@ bool ConfigLoader::loadJson(const char* jsonpath)
 		std::cout << "gate_list_conf_path_type type is not string" << std::endl;
 		return false;
 	}
-	config_.gate_list_conf_path_type = doc_["listen_gate_ip"].GetInt();
+	config_.gate_list_conf_path_type = doc_["gate_list_conf_path_type"].GetInt();
 
 	// gate_list_conf_local_path 
 	if (!doc_["gate_list_conf_local_path"].IsString()) {
 		std::cout << "gate_list_conf_local_path type is not int" << std::endl;
 		return false;
 	}
-	config_.gate_list_conf_local_path = doc_["gate_list_conf_local_path"].GetInt();
+	config_.gate_list_conf_local_path = doc_["gate_list_conf_local_path"].GetString();
 
 	// gate_list_conf_remote_path 
-	if (!doc_["gate_list_conf_remote_path"].IsInt()) {
+	if (!doc_["gate_list_conf_remote_path"].IsString()) {
 		std::cout << "gate_list_conf_remote_path type is not int" << std::endl;
 		return false;
 	}
-	config_.gate_list_conf_remote_path = doc_["gate_list_conf_remote_path"].GetInt();
+	config_.gate_list_conf_remote_path = doc_["gate_list_conf_remote_path"].GetString();
 
 	// log_conf_path 
-	if (!doc_["log_conf_path"].IsBool()) {
-		std::cout << "log_conf_path type is not bool" << std::endl;
+	if (!doc_["log_conf_path"].IsString()) {
+		std::cout << "log_conf_path type is not string" << std::endl;
 		return false;
 	}
-	config_.log_conf_path = doc_["log_conf_path"].GetBool();
+	config_.log_conf_path = doc_["log_conf_path"].GetString();
 	jsonpath_ = jsonpath;
 	
 	std::cout << "load " << jsonpath << " success" << std::endl;

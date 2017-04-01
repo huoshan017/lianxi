@@ -34,6 +34,7 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
+	// listen login and gate
 	JmyTcpServer main_server;
 	s_conn_config.max_conn = config.max_conn;
 	s_conn_config.listen_port = config.port;

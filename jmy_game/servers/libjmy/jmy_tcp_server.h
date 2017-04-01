@@ -48,6 +48,7 @@ private:
 #endif
 	std::shared_ptr<ip::tcp::acceptor> acceptor_;
 	std::shared_ptr<JmyDataHandler> handler_;
+	std::shared_ptr<JmyEventHandler> event_handler_;
 #if USE_CONNECTOR_AND_SESSION
 	std::shared_ptr<JmyTcpSessionMgr> session_mgr_;
 	JmyTcpSession curr_session_;

@@ -8,6 +8,7 @@
 char LoginMsgHandler::tmp_[MAX_SEND_BUFFER_SIZE];
 LoginAgentManager LoginMsgHandler::login_mgr_;
 LoginMsgHandler::account2data_type LoginMsgHandler::account2datas_;
+char LoginMsgHandler::session_code_buff_[ENTER_GAME_SESSION_CODE_LENGTH];
 
 int LoginMsgHandler::processSelectedServerNotify(JmyMsgInfo* info)
 {
@@ -17,7 +18,7 @@ int LoginMsgHandler::processSelectedServerNotify(JmyMsgInfo* info)
 		return -1;
 	}
 
-	MsgL2TSelectedServerNotify notify;
+	MsgLS2GT_SelectedServerNotify notify;
 	notify.ParseFromArray(info->data, info->len);
 	AccountData* account_data = getAccountData(notify.account());
 	if (account_data) {
@@ -29,11 +30,11 @@ int LoginMsgHandler::processSelectedServerNotify(JmyMsgInfo* info)
 	data->session_code = get_session_code(session_code_buff_, ENTER_GAME_SESSION_CODE_LENGTH);
 	account2datas_.insert(std::make_pair(notify.account(), data));
 
-	MsgT2LSelectedServerResponse response;
+	MsgGT2LS_SelectedServerResponse response;
 	response.set_account(notify.account());
 	response.set_session_code(session_code_buff_);
 	response.SerializeToArray(tmp_, sizeof(tmp_));
-	conn->send(MSGID_T2L_SELECTED_SERVER_RESPONSE, tmp_, response.ByteSize());
+	conn->send(MSGID_GT2LS_SELECTED_SERVER_RESPONSE, tmp_, response.ByteSize());
 	return 0;
 }
 

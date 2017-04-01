@@ -10,6 +10,7 @@
 #include "jmy_tcp_connector.h"
 #include "jmy_tcp_session.h"
 #else
+#include "jmy_tcp_client.h"
 #include "jmy_tcp_connection.h"
 #endif
 #include "jmy_singleton.hpp"

@@ -373,15 +373,15 @@ int JmyTcpConnection::handle_event(int event_id, long param)
 	info.param_l = param;
 	int res = 0;
 	if (event_id == JMY_EVENT_CONNECT)
-		res = event_handler_.onConnect(&info);
+		res = event_handler_->onConnect(&info);
 	else if (event_id == JMY_EVENT_DISCONNECT)
-		res = event_handler_.onDisconnect(&info);
+		res = event_handler_->onDisconnect(&info);
 	else if (event_id == JMY_EVENT_TICK)
-		res = event_handler_.onTick(&info);
+		res = event_handler_->onTick(&info);
 	else if (event_id == JMY_EVENT_TIMER)
-		res = event_handler_.onTimer(&info);
+		res = event_handler_->onTimer(&info);
 	else
-		res = event_handler_.onEvent(&info);
+		res = event_handler_->onEvent(&info);
 	return res;
 }
 
@@ -438,7 +438,7 @@ void JmyTcpConnectionMgr::clear()
 	used_map_.clear();
 }
 
-void JmyTcpConnectionMgr::init(int size, JmyConnType conn_type, const JmyConnectionConfig& conf)
+void JmyTcpConnectionMgr::init(int size, JmyConnType conn_type)
 {
 	int i = 0;
 	for (; i<size; ++i) {
@@ -446,6 +446,11 @@ void JmyTcpConnectionMgr::init(int size, JmyConnType conn_type, const JmyConnect
 		free_list_.push_back(conn);
 	}
 	size_ = size;
+}
+
+void JmyTcpConnectionMgr::init(int size, JmyConnType conn_type, const JmyConnectionConfig& conf)
+{
+	init(size, conn_type);
 	conf_ = conf;
 }
 
@@ -472,7 +477,8 @@ JmyTcpConnection* JmyTcpConnectionMgr::getFree(int id)
 JmyTcpConnection* JmyTcpConnectionMgr::get(int id)
 {
 	std::unordered_map<int, JmyTcpConnection*>::iterator it = used_map_.find(id);
-	if (it == used_map_.end()) return nullptr;
+	if (it == used_map_.end())
+		return nullptr;
 	return it->second;
 }
 

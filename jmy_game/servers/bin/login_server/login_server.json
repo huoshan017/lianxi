@@ -9,5 +9,11 @@
 	"listen_gate_ip" : "192.168.3.250",
 	"listen_gate_port" : 20000,
 	"listen_gate_max_conn" : 100,
-	"listen_gate_enable_reconnect" : false
+	"listen_gate_enable_reconnect" : false,
+
+	"connect_config_ip" : "192.168.3.250",
+	"connect_config_port" : 30000,
+	"connect_config_enable_reconnect" : false,
+
+	"log_conf_path" : "./log.conf"
 }

@@ -4,40 +4,81 @@
 #include "../../proto/src/server.pb.h"
 #include "../libjmy/jmy_datatype.h"
 #include "client_msg_handler.h"
+#include "client_event_handler.h"
 #include "gate_msg_handler.h"
+#include "gate_event_handler.h"
 
+/* client handler config */
 static JmyId2MsgHandler s_client_handlers[] = {
 	{ MSGID_CL2LS_LOGIN_REQUEST, ClientMsgHandler::processLogin },
 	{ MSGID_CL2LS_SELECT_SERVER_REQUEST, ClientMsgHandler::processSelectServer },
 };
-
-static JmyServerConfig s_login_config = {
-	{
-		{ 2048, 2048, 0, 0, false, true},
-		{ 10000, 10 },
-		s_client_handlers,
-		sizeof(s_client_handlers)/sizeof(s_client_handlers[0]),
-		true
-	},
+static JmyBaseEventHandlers s_client_base_event_handlers = {
+	ClientEventHandler::onConnect,
+	ClientEventHandler::onDisconnect,
+	ClientEventHandler::onTick,
+	ClientEventHandler::onTimer,
+};
+static JmyConnectionConfig s_client_conn_config = {
+	{ 2048, 2048, 0, 0, false, true},
+	{ 10000, 10 },
+	s_client_handlers,
+	sizeof(s_client_handlers)/sizeof(s_client_handlers[0]),
+	s_client_base_event_handlers,
+	nullptr, 0,
+	true
+};
+static JmyServerConfig s_client_config = {
+	s_client_conn_config,
 	(char*)"127.0.0.1",
 	10000,
 	1024*10
 };
 
+
+/* gate handler config */
 static JmyId2MsgHandler s_gate_handlers[] = {
 	{ MSGID_GT2LS_CONNECT_REQUEST, GateMsgHandler::processConnect },
 	{ MSGID_GT2LS_SELECTED_SERVER_RESPONSE, GateMsgHandler::processSelectedServerResponse },
 };
-
+static JmyBaseEventHandlers s_gate_base_event_handlers = {
+	GateEventHandler::onConnect,
+	GateEventHandler::onDisconnect,
+	GateEventHandler::onTick,
+	GateEventHandler::onTimer,
+};
+static JmyConnectionConfig s_gate_conn_config = {
+	{ 1024*64, 1024*64, 0, 0, false, true },
+	{ 1000, 10 },
+	s_gate_handlers,
+	sizeof(s_gate_handlers)/sizeof(s_gate_handlers[0]),
+	s_gate_base_event_handlers,
+	nullptr, 0,
+	true
+};
 static JmyServerConfig s_gate_config = {
-	{
-		{ 1024*64, 1024*64, 0, 0, false, true },
-		{ 1000, 10 },
-		s_gate_handlers,
-		sizeof(s_gate_handlers)/sizeof(s_gate_handlers[0]),
-		true
-	},
+	s_gate_conn_config,
 	(char*)"0.0.0.0",
 	20000,
 	4
+};
+
+/* connect config handler config */
+static JmyId2MsgHandler s_conn_config_handlers[] = {
+};
+static JmyBaseEventHandlers s_conn_config_base_event_handlers = {
+};
+static JmyConnectionConfig s_conn_conn_config = {
+	{ 1024*64, 1024*64, 0, 0, false, true },
+	{ 1000, 10 },
+	s_gate_handlers,
+	sizeof(s_gate_handlers)/sizeof(s_gate_handlers[0]),
+	s_conn_config_base_event_handlers,
+	nullptr, 0,
+	true
+};
+static JmyClientConfig s_conn_config = {
+	s_conn_conn_config,
+	(char*)"0.0.0.0",
+	20000
 };

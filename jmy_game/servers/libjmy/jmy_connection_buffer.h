@@ -37,6 +37,21 @@ struct JmyConnectionBuffer {
 		std::memset(&total_reconn_info, 0, sizeof(total_reconn_info));
 	}
 
+	void init(const JmyBufferConfig& config) {
+		use_send_list = config.use_send_buff_list;
+		use_recv_list = config.use_recv_buff_list;
+		if (!use_send_list) {
+			send_buff.init(config.send_buff_size, SESSION_BUFFER_TYPE_SEND);
+		} else {
+			send_buff_list.init(0, 0);
+		}
+		if (!use_recv_list) {
+			recv_buff.init(config.recv_buff_size, SESSION_BUFFER_TYPE_SEND);
+		} else {
+			recv_buff_list.init(0, 0);
+		}
+	}
+
 	void destroy() {
 		send_buff_list.destroy();
 		recv_buff_list.destroy();
@@ -61,6 +76,7 @@ public:
 	JmyConnectionBufferMgr();
 	~JmyConnectionBufferMgr();
 
+	bool init(int max_size);
 	bool init(int max_size, std::shared_ptr<JmySessionBufferPool> buff_pool);
 	void clear();
 

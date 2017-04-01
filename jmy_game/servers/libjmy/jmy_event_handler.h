@@ -24,6 +24,29 @@ public:
 			setHandler(id2handlers[i].event_id, id2handlers[i].handler);
 	}
 
+	void setConnectHandler(jmy_event_handler handler) {
+		handlers_[JMY_EVENT_CONNECT] = handler;
+	}
+
+	void setDisconnectHandler(jmy_event_handler handler) {
+		handlers_[JMY_EVENT_DISCONNECT] = handler;
+	}
+
+	void setTickHandler(jmy_event_handler handler) {
+		handlers_[JMY_EVENT_TICK] = handler;
+	}
+
+	void setTimerHandler(jmy_event_handler handler) {
+		handlers_[JMY_EVENT_TIMER] = handler;
+	}
+
+	void setBaseHandlers(const JmyBaseEventHandlers& handlers) {
+		handlers_[JMY_EVENT_CONNECT] = handlers.conn_handler;
+		handlers_[JMY_EVENT_DISCONNECT] = handlers.disconn_handler;
+		handlers_[JMY_EVENT_TICK] = handlers.tick_handler;
+		handlers_[JMY_EVENT_TIMER] = handlers.timer_handler;
+	}
+
 	// event handle
 	int onConnect(JmyEventInfo* info) {
 		if (handlers_[JMY_EVENT_CONNECT]) {
@@ -64,23 +87,28 @@ public:
 
 protected:
 	int onDefaultConnect(JmyEventInfo* info) {
-		std::cout << "connection " << info->conn_id << " connected" << std::endl;
+		(void)info;
+		//std::cout << "connection " << info->conn_id << " connected" << std::endl;
 		return 0;
 	}
 	int onDefaultDisconnect(JmyEventInfo* info) {
-		std::cout << "connection " << info->conn_id << " disconnected" << std::endl;
+		(void)info;
+		//std::cout << "connection " << info->conn_id << " disconnected" << std::endl;
 		return 0;
 	}
 	int onDefaultTick(JmyEventInfo* info) {
-		std::cout << "connection " << info->conn_id << " tick" << std::endl;
+		(void)info;
+		//std::cout << "connection " << info->conn_id << " tick" << std::endl;
 		return 0;
 	}
 	int onDefaultTimer(JmyEventInfo* info) {
-		std::cout << "connection " << info->conn_id << " timer" << std::endl;
+		(void)info;
+		//std::cout << "connection " << info->conn_id << " timer" << std::endl;
 		return 0;
 	}
 	int onDefaultEvent(JmyEventInfo* info) {
-		std::cout << "connection " << info->conn_id << " event(" << info->event_id << ")" << std::endl;
+		(void)info;
+		//std::cout << "connection " << info->conn_id << " event(" << info->event_id << ")" << std::endl;
 		return 0;
 	}
 

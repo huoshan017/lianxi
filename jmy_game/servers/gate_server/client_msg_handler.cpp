@@ -18,7 +18,7 @@ void ClientMsgHandler::send_error(JmyMsgInfo* info, ProtoErrorType error)
 
 int ClientMsgHandler::processEnterGame(JmyMsgInfo* info)
 {
-	MsgC2TEnterGameRequest request;
+	MsgCL2GT_EnterGameRequest request;
 	if (!request.ParseFromArray(info->data, info->len)) {
 		send_error(info, PROTO_ERROR_LOGIN_DATA_INVALID);
 		return -1;

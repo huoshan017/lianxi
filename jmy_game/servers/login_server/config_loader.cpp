@@ -106,6 +106,33 @@ bool ConfigLoader::loadJson(const char* jsonpath)
 		return false;
 	}
 	config_.listen_gate_enable_reconnect = doc_["listen_gate_enable_reconnect"].GetBool();
+
+	// connect_config_ip
+	if (!doc_["connect_config_ip"].IsString()) {
+		ServerLogError("connect_config_ip type is string");
+		return false;
+	}
+	config_.connect_config_ip = doc_["connect_config_ip"].GetString();
+
+	// connect_config_port
+	if (!doc_["connect_config_port"].IsInt()) {
+		ServerLogError("connect_config_port type is int");
+		return false;
+	}
+	config_.connect_config_port = (short)doc_["connect_config_port"].GetInt();
+
+	// connect_config_enable_reconnect
+	if (!doc_["connect_config_enable_reconnect"].IsBool()) {
+		ServerLogError("connect_config_enable_reconnect type is bool");
+		return false;
+	}
+	config_.connect_config_enable_reconnect = doc_["connect_config_enable_reconnect"].GetBool();
+
+	// log_conf_path
+	if (!doc_["log_conf_path"].IsString()) {
+		ServerLogError("log_conf_path type is not string");
+		return false;
+	}
 	jsonpath_ = jsonpath;
 	
 	ServerLogInfo("load %s success", jsonpath);

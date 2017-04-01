@@ -15,6 +15,7 @@ JmyTcpServer::JmyTcpServer() :
 {
 	acceptor_ = std::make_shared<ip::tcp::acceptor>(service_);
 	handler_ = std::make_shared<JmyDataHandler>();
+	event_handler_ = std::make_shared<JmyEventHandler>();
 #if USE_CONNECTOR_AND_SESSION
 	session_mgr_ = std::make_shared<JmyTcpSessionMgr>();
 #endif
@@ -33,6 +34,7 @@ JmyTcpServer::JmyTcpServer(short port) :
 {
 	acceptor_ = std::make_shared<ip::tcp::acceptor>(service_, ip::tcp::endpoint(ip::tcp::v4(), port));
 	handler_ = std::make_shared<JmyDataHandler>();
+	event_handler_ = std::make_shared<JmyEventHandler>();
 #if USE_CONNECTOR_AND_SESSION
 	session_mgr_ = std::make_shared<JmyTcpSessionMgr>();
 #endif
@@ -49,6 +51,10 @@ bool JmyTcpServer::loadConfig(const JmyServerConfig& conf)
 	conf_ = conf;
 	bool res = handler_->loadMsgHandle(conf.conn_conf.handlers, conf.conn_conf.nhandlers);
 	if (!res) return false;
+	event_handler_->setBaseHandlers(conf.conn_conf.base_event_handlers);
+	if (conf.conn_conf.other_event_handlers && conf.conn_conf.other_event_nhandlers) {
+		event_handler_->init(conf.conn_conf.other_event_handlers, conf.conn_conf.other_event_nhandlers);
+	}
 #if USE_CONNECTOR_AND_SESSION
 	res = session_mgr_->init(conf.max_conn, service_);
 #else
@@ -166,6 +172,7 @@ int JmyTcpServer::accept_new()
 	conn->getSock() = std::move(curr_conn_.getSock());
 	conn->getSock().set_option(ip::tcp::no_delay(true));
 	conn->setDataHandler(handler_);
+	conn->setEventHandler(event_handler_);
 	std::shared_ptr<JmyConnectionBuffer> buffer;
 	if (!buffer_mgr_.getOneBuffer(buffer)) {
 		LibJmyLogError("get free buffer failed");

@@ -53,6 +53,8 @@ int ConnMsgHandler::processGateConnect(JmyMsgInfo* info)
 		ServerLogError("send connect config_server response message failed");
 		return -1;
 	}
+
+	ServerLogInfo("gate_server(%d) connected", gate_id);
 	return 0;
 }
 
@@ -101,5 +103,6 @@ int ConnMsgHandler::processLoginConnect(JmyMsgInfo* info)
 		ServerLogError("send connect config_server response message failed");
 		return -1;
 	}
+	ServerLogInfo("login_server(%d) connected", login_id);
 	return 0;
 }

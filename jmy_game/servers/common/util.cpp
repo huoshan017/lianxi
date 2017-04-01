@@ -1,19 +1,47 @@
 #include "util.h"
 #include "../libjmy/jmy_tcp_connection.h"
+#include "../libjmy/jmy_log.h"
 
-JmyTcpConnection* get_connection(JmyMsgInfo* info)
+bool global_log_init(const char* logconfpath)
 {
-	JmyTcpConnectionMgr* conn_mgr = (JmyTcpConnectionMgr*)info->param;
+	if (!JmyLogInit(logconfpath)) {
+		std::cout << "failed to init log file: " << logconfpath << std::endl;
+		return false;
+	}
+	if (!JmyLogOpenLib(s_libjmy_log_cate)) {
+		std::cout << "failed to create lib log category: " << s_libjmy_log_cate << std::endl;
+		return false;
+	}
+	if (!JmyLogOpen(s_server_log_cate)) {
+		std::cout << "failed to create server log category: " << s_server_log_cate << std::endl;
+		return false;
+	}
+	return true;
+}
+
+JmyTcpConnection* get_connection(int conn_id, JmyTcpConnectionMgr* conn_mgr)
+{
 	if (!conn_mgr) {
 		ServerLogError("connection manager pointer is null");
 		return nullptr;
 	}
-	JmyTcpConnection* conn = conn_mgr->get(info->session_id);
+	JmyTcpConnection* conn = conn_mgr->get(conn_id);
 	if (!conn) {
-		ServerLogError("not found connection by session_id(%d)", info->session_id);
-		return nullptr;
+		ServerLogError("not found connection by session_id(%d)", conn_id);
 	}
 	return conn;
+}
+
+JmyTcpConnection* get_connection(JmyMsgInfo* info)
+{
+	JmyTcpConnectionMgr* conn_mgr = (JmyTcpConnectionMgr*)info->param;
+	return get_connection(info->session_id, conn_mgr);
+}
+
+JmyTcpConnection* get_connection(JmyEventInfo* info)
+{
+	JmyTcpConnectionMgr* conn_mgr = (JmyTcpConnectionMgr*)info->param;
+	return get_connection(info->conn_id, conn_mgr);
 }
 
 char* get_session_code(char* session_buf, int buf_len)

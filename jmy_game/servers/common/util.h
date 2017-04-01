@@ -23,9 +23,16 @@
 #define ServerLogFatal(...) \
 	JmyLogFatal(s_server_log_cate, __VA_ARGS__)
 
+bool global_log_init(const char* logconfpath);
+
+class JmyTcpConnection;
+class JmyTcpConnectionMgr;
+JmyTcpConnection* get_connection(int conn_id, JmyTcpConnectionMgr* conn_mgr);
 
 struct JmyMsgInfo;
-class JmyTcpConnection;
 JmyTcpConnection* get_connection(JmyMsgInfo*);
+
+struct JmyEventInfo;
+JmyTcpConnection* get_connection(JmyEventInfo*);
 
 char* get_session_code(char*, int);

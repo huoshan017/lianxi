@@ -47,6 +47,13 @@ struct JmyEventInfo {
 
 typedef int (*jmy_event_handler)(JmyEventInfo*);
 
+struct JmyBaseEventHandlers {
+	jmy_event_handler conn_handler;
+	jmy_event_handler disconn_handler;
+	jmy_event_handler tick_handler;
+	jmy_event_handler timer_handler;
+};
+
 struct JmyId2EventHandler {
 	int event_id;
 	jmy_event_handler handler;
@@ -135,6 +142,9 @@ struct JmyConnectionConfig {
 	JmyReconnectConfig reconn_conf;
 	JmyId2MsgHandler* handlers;
 	int nhandlers;
+	JmyBaseEventHandlers base_event_handlers;
+	JmyId2EventHandler* other_event_handlers;
+	int other_event_nhandlers;
 	bool no_delay;
 };
 
@@ -176,6 +186,13 @@ struct JmyConnectorConfig {
 	}
 };
 #else
+// configure for client
+struct JmyClientConfig {
+	JmyConnectionConfig conn_conf;
+	char* conn_ip;
+	short conn_port;
+};
+
 // configure for clients
 struct JmyClientsConfig {
 	JmyConnectionConfig conn_conf;

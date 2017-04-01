@@ -11,7 +11,7 @@ JmyConnectionBufferMgr::~JmyConnectionBufferMgr()
 	clear();
 }
 
-bool JmyConnectionBufferMgr::init(int max_size, std::shared_ptr<JmySessionBufferPool> buff_pool)
+bool JmyConnectionBufferMgr::init(int max_size)
 {
 	conn_buff_vec_ = (std::shared_ptr<JmyConnectionBuffer>*)jmy_mem_malloc(sizeof(std::shared_ptr<JmyConnectionBuffer>)*max_size);
 	for (int i=0; i<max_size; ++i) {
@@ -20,8 +20,14 @@ bool JmyConnectionBufferMgr::init(int max_size, std::shared_ptr<JmySessionBuffer
 		conn_buff_vec_[i]->state = JMY_CONN_BUFFER_STATE_IDLE;
 		free_queue_.push_back(conn_buff_vec_[i]);
 	}
-	buff_pool_ = buff_pool;
 	max_size_ = max_size;
+	return true;
+}
+
+bool JmyConnectionBufferMgr::init(int max_size, std::shared_ptr<JmySessionBufferPool> buff_pool)
+{
+	if (!init(max_size)) return false;
+	buff_pool_ = buff_pool;
 	return true;
 }
 
