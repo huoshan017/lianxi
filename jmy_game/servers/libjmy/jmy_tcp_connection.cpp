@@ -124,11 +124,15 @@ void JmyTcpConnection::start()
 			start();
 		} else {
 			int ev = err.value();
-			if (ev == 10053 || ev == 10054) {
+			if (ev == boost::system::errc::no_such_file_or_directory) {
+				LibJmyLogInfo("peer is closed");
+			} else {
+				if (ev == 10053 || ev == 10054) {
 
+				}
+				LibJmyLogError("read some data failed, err: %d", err.value());
 			}
 			force_close();
-			LibJmyLogError("read some data failed, err: %d", err.value());
 		}
 	});
 

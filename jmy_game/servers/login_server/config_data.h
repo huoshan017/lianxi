@@ -7,6 +7,8 @@
 #include "client_event_handler.h"
 #include "gate_msg_handler.h"
 #include "gate_event_handler.h"
+#include "conn_config_msg_handler.h"
+#include "conn_config_event_handler.h"
 
 /* client handler config */
 static JmyId2MsgHandler s_client_handlers[] = {
@@ -65,8 +67,13 @@ static JmyServerConfig s_gate_config = {
 
 /* connect config handler config */
 static JmyId2MsgHandler s_conn_config_handlers[] = {
+	{ MSGID_CS2LS_CONNECT_RESPONSE, ConnConfigMsgHandler::processConnectResponse },
 };
 static JmyBaseEventHandlers s_conn_config_base_event_handlers = {
+	ConnConfigEventHandler::onConnect,
+	ConnConfigEventHandler::onDisconnect,
+	ConnConfigEventHandler::onTick,
+	ConnConfigEventHandler::onTimer,
 };
 static JmyConnectionConfig s_conn_conn_config = {
 	{ 1024*64, 1024*64, 0, 0, false, true },

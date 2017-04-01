@@ -58,6 +58,10 @@ int main(int argc, char* argv[])
 
 	// connect config server
 	JmyTcpClientMaster client_master(main_server.getService());
+	if (!client_master.init(2)) {
+		ServerLogError("client master init failed");
+		return -1;
+	}
 	JmyTcpClient* config_client = client_master.generate();
 	if (!config_client) {
 		ServerLogError("generate client to connect config server failed");
