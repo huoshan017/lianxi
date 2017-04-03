@@ -9,7 +9,6 @@
 #  ifndef JEMALLOC_NO_DEMANGLE
 #    define JEMALLOC_NO_DEMANGLE
 #  endif
-#  define yes jet_yes
 #  define malloc_conf jet_malloc_conf
 #  define malloc_message jet_malloc_message
 #  define malloc jet_malloc
@@ -42,7 +41,6 @@
  * and/or --with-jemalloc-prefix.
  */
 #ifndef JEMALLOC_NO_DEMANGLE
-#  undef jet_yes
 #  undef jet_malloc_conf
 #  undef jet_malloc_message
 #  undef jet_malloc

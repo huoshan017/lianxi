@@ -23,6 +23,7 @@
  *   NLBINS: Number of bins supported by the lookup table.
  *   NBINS: Number of small size class bins.
  *   NSIZES: Number of size classes.
+ *   LG_CEIL_NSIZES: Number of bits required to store NSIZES.
  *   NPSIZES: Number of size classes that are a multiple of (1U << LG_PAGE).
  *   LG_TINY_MAXCLASS: Lg of maximum tiny size class.
  *   LOOKUP_MAXCLASS: Maximum size class included in lookup table.
@@ -175,6 +176,7 @@
 #define NLBINS			32
 #define NBINS			39
 #define NSIZES			107
+#define LG_CEIL_NSIZES		7
 #define NPSIZES			71
 #define LG_TINY_MAXCLASS	"NA"
 #define LOOKUP_MAXCLASS		((((size_t)1) << 11) + (((size_t)4) << 9))
@@ -322,6 +324,7 @@
 #define NLBINS			29
 #define NBINS			36
 #define NSIZES			104
+#define LG_CEIL_NSIZES		7
 #define NPSIZES			71
 #define LG_TINY_MAXCLASS	3
 #define LOOKUP_MAXCLASS		((((size_t)1) << 11) + (((size_t)4) << 9))
@@ -467,6 +470,7 @@
 #define NLBINS			28
 #define NBINS			35
 #define NSIZES			103
+#define LG_CEIL_NSIZES		7
 #define NPSIZES			71
 #define LG_TINY_MAXCLASS	"NA"
 #define LOOKUP_MAXCLASS		((((size_t)1) << 11) + (((size_t)4) << 9))
@@ -777,6 +781,7 @@
 #define NLBINS			32
 #define NBINS			39
 #define NSIZES			235
+#define LG_CEIL_NSIZES		8
 #define NPSIZES			199
 #define LG_TINY_MAXCLASS	"NA"
 #define LOOKUP_MAXCLASS		((((size_t)1) << 11) + (((size_t)4) << 9))
@@ -1084,6 +1089,7 @@
 #define NLBINS			29
 #define NBINS			36
 #define NSIZES			232
+#define LG_CEIL_NSIZES		8
 #define NPSIZES			199
 #define LG_TINY_MAXCLASS	3
 #define LOOKUP_MAXCLASS		((((size_t)1) << 11) + (((size_t)4) << 9))
@@ -1389,6 +1395,7 @@
 #define NLBINS			28
 #define NBINS			35
 #define NSIZES			231
+#define LG_CEIL_NSIZES		8
 #define NPSIZES			199
 #define LG_TINY_MAXCLASS	"NA"
 #define LOOKUP_MAXCLASS		((((size_t)1) << 11) + (((size_t)4) << 9))

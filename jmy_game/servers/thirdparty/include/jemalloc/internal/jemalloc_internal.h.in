@@ -535,9 +535,6 @@ void	jemalloc_postfork_child(void);
 #include "jemalloc/internal/tsd_inlines.h"
 #include "jemalloc/internal/witness_inlines.h"
 #include "jemalloc/internal/mutex_inlines.h"
-#include "jemalloc/internal/rtree_inlines.h"
-#include "jemalloc/internal/extent_inlines.h"
-#include "jemalloc/internal/base_inlines.h"
 
 #ifndef JEMALLOC_ENABLE_INLINE
 pszind_t	psz2ind(size_t psz);
@@ -565,7 +562,6 @@ ticker_t	*decay_ticker_get(tsd_t *tsd, unsigned ind);
 malloc_cpuid_t	malloc_getcpu(void);
 unsigned	percpu_arena_choose(void);
 unsigned	percpu_arena_ind_limit(void);
-
 #endif
 
 #if (defined(JEMALLOC_ENABLE_INLINE) || defined(JEMALLOC_C_))
@@ -882,8 +878,6 @@ percpu_arena_ind_limit(void) {
 	}
 }
 
-
-
 JEMALLOC_INLINE arena_tdata_t *
 arena_tdata_get(tsd_t *tsd, unsigned ind, bool refresh_if_missing) {
 	arena_tdata_t *tdata;
@@ -938,6 +932,8 @@ decay_ticker_get(tsd_t *tsd, unsigned ind) {
 }
 #endif
 
+#include "jemalloc/internal/rtree_inlines.h"
+#include "jemalloc/internal/base_inlines.h"
 #include "jemalloc/internal/bitmap_inlines.h"
 /*
  * Include portions of arena code interleaved with tcache code in order to
@@ -945,6 +941,7 @@ decay_ticker_get(tsd_t *tsd, unsigned ind) {
  */
 #include "jemalloc/internal/prof_inlines_a.h"
 #include "jemalloc/internal/arena_inlines_a.h"
+#include "jemalloc/internal/extent_inlines.h"
 
 #ifndef JEMALLOC_ENABLE_INLINE
 extent_t	*iealloc(tsdn_t *tsdn, const void *ptr);
@@ -997,7 +994,11 @@ arena_ichoose(tsd_t *tsd, arena_t *arena) {
 
 JEMALLOC_ALWAYS_INLINE extent_t *
 iealloc(tsdn_t *tsdn, const void *ptr) {
-	return extent_lookup(tsdn, ptr, true);
+	rtree_ctx_t rtree_ctx_fallback;
+	rtree_ctx_t *rtree_ctx = tsdn_rtree_ctx(tsdn, &rtree_ctx_fallback);
+
+	return rtree_extent_read(tsdn, &extents_rtree, rtree_ctx,
+	    (uintptr_t)ptr, true);
 }
 #endif
 
@@ -1006,32 +1007,32 @@ iealloc(tsdn_t *tsdn, const void *ptr) {
 #include "jemalloc/internal/hash_inlines.h"
 
 #ifndef JEMALLOC_ENABLE_INLINE
-arena_t	*iaalloc(tsdn_t *tsdn, const void *ptr);
-size_t	isalloc(tsdn_t *tsdn, const extent_t *extent, const void *ptr);
-void	*iallocztm(tsdn_t *tsdn, size_t size, szind_t ind, bool zero,
+arena_t *iaalloc(tsdn_t *tsdn, const void *ptr);
+size_t isalloc(tsdn_t *tsdn, const void *ptr);
+void *iallocztm(tsdn_t *tsdn, size_t size, szind_t ind, bool zero,
     tcache_t *tcache, bool is_internal, arena_t *arena, bool slow_path);
-void	*ialloc(tsd_t *tsd, size_t size, szind_t ind, bool zero,
+void *ialloc(tsd_t *tsd, size_t size, szind_t ind, bool zero,
     bool slow_path);
-void	*ipallocztm(tsdn_t *tsdn, size_t usize, size_t alignment, bool zero,
+void *ipallocztm(tsdn_t *tsdn, size_t usize, size_t alignment, bool zero,
     tcache_t *tcache, bool is_internal, arena_t *arena);
-void	*ipalloct(tsdn_t *tsdn, size_t usize, size_t alignment, bool zero,
+void *ipalloct(tsdn_t *tsdn, size_t usize, size_t alignment, bool zero,
     tcache_t *tcache, arena_t *arena);
-void	*ipalloc(tsd_t *tsd, size_t usize, size_t alignment, bool zero);
-size_t	ivsalloc(tsdn_t *tsdn, const void *ptr);
-void	idalloctm(tsdn_t *tsdn, extent_t *extent, void *ptr, tcache_t *tcache,
-    bool is_internal, bool slow_path);
-void	idalloc(tsd_t *tsd, extent_t *extent, void *ptr);
-void	isdalloct(tsdn_t *tsdn, extent_t *extent, void *ptr, size_t size,
-    tcache_t *tcache, bool slow_path);
-void	*iralloct_realign(tsdn_t *tsdn, extent_t *extent, void *ptr,
-    size_t oldsize, size_t size, size_t extra, size_t alignment, bool zero,
-    tcache_t *tcache, arena_t *arena);
-void	*iralloct(tsdn_t *tsdn, extent_t *extent, void *ptr, size_t oldsize,
-    size_t size, size_t alignment, bool zero, tcache_t *tcache, arena_t *arena);
-void	*iralloc(tsd_t *tsd, extent_t *extent, void *ptr, size_t oldsize,
-    size_t size, size_t alignment, bool zero);
-bool	ixalloc(tsdn_t *tsdn, extent_t *extent, void *ptr, size_t oldsize,
-    size_t size, size_t extra, size_t alignment, bool zero);
+void *ipalloc(tsd_t *tsd, size_t usize, size_t alignment, bool zero);
+size_t ivsalloc(tsdn_t *tsdn, const void *ptr);
+void idalloctm(tsdn_t *tsdn, void *ptr, tcache_t *tcache, bool is_internal,
+    bool slow_path);
+void idalloc(tsd_t *tsd, void *ptr);
+void isdalloct(tsdn_t *tsdn, void *ptr, size_t size, tcache_t *tcache,
+    bool slow_path);
+void *iralloct_realign(tsdn_t *tsdn, void *ptr, size_t oldsize, size_t size,
+    size_t extra, size_t alignment, bool zero, tcache_t *tcache,
+    arena_t *arena);
+void *iralloct(tsdn_t *tsdn, void *ptr, size_t oldsize, size_t size,
+    size_t alignment, bool zero, tcache_t *tcache, arena_t *arena);
+void *iralloc(tsd_t *tsd, void *ptr, size_t oldsize, size_t size,
+    size_t alignment, bool zero);
+bool ixalloc(tsdn_t *tsdn, void *ptr, size_t oldsize, size_t size, size_t extra,
+    size_t alignment, bool zero);
 #endif
 
 #if (defined(JEMALLOC_ENABLE_INLINE) || defined(JEMALLOC_C_))
@@ -1042,18 +1043,11 @@ iaalloc(tsdn_t *tsdn, const void *ptr) {
 	return arena_aalloc(tsdn, ptr);
 }
 
-/*
- * Typical usage:
- *   tsdn_t *tsdn = [...]
- *   void *ptr = [...]
- *   extent_t *extent = iealloc(tsdn, ptr);
- *   size_t sz = isalloc(tsdn, extent, ptr);
- */
 JEMALLOC_ALWAYS_INLINE size_t
-isalloc(tsdn_t *tsdn, const extent_t *extent, const void *ptr) {
+isalloc(tsdn_t *tsdn, const void *ptr) {
 	assert(ptr != NULL);
 
-	return arena_salloc(tsdn, extent, ptr);
+	return arena_salloc(tsdn, ptr);
 }
 
 JEMALLOC_ALWAYS_INLINE void *
@@ -1069,8 +1063,7 @@ iallocztm(tsdn_t *tsdn, size_t size, szind_t ind, bool zero, tcache_t *tcache,
 
 	ret = arena_malloc(tsdn, arena, size, ind, zero, tcache, slow_path);
 	if (config_stats && is_internal && likely(ret != NULL)) {
-		arena_internal_add(iaalloc(tsdn, ret), isalloc(tsdn,
-		    iealloc(tsdn, ret), ret));
+		arena_internal_add(iaalloc(tsdn, ret), isalloc(tsdn, ret));
 	}
 	return ret;
 }
@@ -1096,8 +1089,7 @@ ipallocztm(tsdn_t *tsdn, size_t usize, size_t alignment, bool zero,
 	ret = arena_palloc(tsdn, arena, usize, alignment, zero, tcache);
 	assert(ALIGNMENT_ADDR2BASE(ret, alignment) == ret);
 	if (config_stats && is_internal && likely(ret != NULL)) {
-		arena_internal_add(iaalloc(tsdn, ret), isalloc(tsdn,
-		    iealloc(tsdn, ret), ret));
+		arena_internal_add(iaalloc(tsdn, ret), isalloc(tsdn, ret));
 	}
 	return ret;
 }
@@ -1116,59 +1108,39 @@ ipalloc(tsd_t *tsd, size_t usize, size_t alignment, bool zero) {
 
 JEMALLOC_ALWAYS_INLINE size_t
 ivsalloc(tsdn_t *tsdn, const void *ptr) {
-	extent_t *extent;
-
-	/*
-	 * Return 0 if ptr is not within an extent managed by jemalloc.  This
-	 * function has two extra costs relative to isalloc():
-	 * - The extent_lookup() call cannot claim to be a dependent lookup,
-	 *   which induces rtree lookup load dependencies.
-	 * - The lookup may fail, so there is an extra branch to check for
-	 *   failure.
-	 * */
-	extent = extent_lookup(tsdn, ptr, false);
-	if (extent == NULL) {
-		return 0;
-	}
-	assert(extent_state_get(extent) == extent_state_active);
-	/* Only slab members should be looked up via interior pointers. */
-	assert(extent_addr_get(extent) == ptr || extent_slab_get(extent));
-
-	return isalloc(tsdn, extent, ptr);
+	return arena_vsalloc(tsdn, ptr);
 }
 
 JEMALLOC_ALWAYS_INLINE void
-idalloctm(tsdn_t *tsdn, extent_t *extent, void *ptr, tcache_t *tcache,
-    bool is_internal, bool slow_path) {
+idalloctm(tsdn_t *tsdn, void *ptr, tcache_t *tcache, bool is_internal,
+    bool slow_path) {
 	assert(ptr != NULL);
 	assert(!is_internal || tcache == NULL);
 	assert(!is_internal || arena_ind_get(iaalloc(tsdn, ptr)) <
 	    narenas_auto);
 	witness_assert_depth_to_rank(tsdn, WITNESS_RANK_CORE, 0);
 	if (config_stats && is_internal) {
-		arena_internal_sub(iaalloc(tsdn, ptr), isalloc(tsdn, extent,
-		    ptr));
+		arena_internal_sub(iaalloc(tsdn, ptr), isalloc(tsdn, ptr));
 	}
 
-	arena_dalloc(tsdn, extent, ptr, tcache, slow_path);
+	arena_dalloc(tsdn, ptr, tcache, slow_path);
 }
 
 JEMALLOC_ALWAYS_INLINE void
-idalloc(tsd_t *tsd, extent_t *extent, void *ptr) {
-	idalloctm(tsd_tsdn(tsd), extent, ptr, tcache_get(tsd, false), false,
-	    true);
+idalloc(tsd_t *tsd, void *ptr) {
+	idalloctm(tsd_tsdn(tsd), ptr, tcache_get(tsd, false), false, true);
 }
 
 JEMALLOC_ALWAYS_INLINE void
-isdalloct(tsdn_t *tsdn, extent_t *extent, void *ptr, size_t size,
+isdalloct(tsdn_t *tsdn, void *ptr, size_t size,
     tcache_t *tcache, bool slow_path) {
 	witness_assert_depth_to_rank(tsdn, WITNESS_RANK_CORE, 0);
-	arena_sdalloc(tsdn, extent, ptr, size, tcache, slow_path);
+	arena_sdalloc(tsdn, ptr, size, tcache, slow_path);
 }
 
 JEMALLOC_ALWAYS_INLINE void *
-iralloct_realign(tsdn_t *tsdn, extent_t *extent, void *ptr, size_t oldsize,
-    size_t size, size_t extra, size_t alignment, bool zero, tcache_t *tcache,
+iralloct_realign(tsdn_t *tsdn, void *ptr, size_t oldsize, size_t size,
+    size_t extra, size_t alignment, bool zero, tcache_t *tcache,
     arena_t *arena) {
 	witness_assert_depth_to_rank(tsdn, WITNESS_RANK_CORE, 0);
 	void *p;
@@ -1199,13 +1171,13 @@ iralloct_realign(tsdn_t *tsdn, extent_t *extent, void *ptr, size_t oldsize,
 	 */
 	copysize = (size < oldsize) ? size : oldsize;
 	memcpy(p, ptr, copysize);
-	isdalloct(tsdn, extent, ptr, oldsize, tcache, true);
+	isdalloct(tsdn, ptr, oldsize, tcache, true);
 	return p;
 }
 
 JEMALLOC_ALWAYS_INLINE void *
-iralloct(tsdn_t *tsdn, extent_t *extent, void *ptr, size_t oldsize, size_t size,
-    size_t alignment, bool zero, tcache_t *tcache, arena_t *arena) {
+iralloct(tsdn_t *tsdn, void *ptr, size_t oldsize, size_t size, size_t alignment,
+    bool zero, tcache_t *tcache, arena_t *arena) {
 	assert(ptr != NULL);
 	assert(size != 0);
 	witness_assert_depth_to_rank(tsdn, WITNESS_RANK_CORE, 0);
@@ -1216,24 +1188,24 @@ iralloct(tsdn_t *tsdn, extent_t *extent, void *ptr, size_t oldsize, size_t size,
 		 * Existing object alignment is inadequate; allocate new space
 		 * and copy.
 		 */
-		return iralloct_realign(tsdn, extent, ptr, oldsize, size, 0,
-		    alignment, zero, tcache, arena);
+		return iralloct_realign(tsdn, ptr, oldsize, size, 0, alignment,
+		    zero, tcache, arena);
 	}
 
-	return arena_ralloc(tsdn, arena, extent, ptr, oldsize, size, alignment,
-	    zero, tcache);
+	return arena_ralloc(tsdn, arena, ptr, oldsize, size, alignment, zero,
+	    tcache);
 }
 
 JEMALLOC_ALWAYS_INLINE void *
-iralloc(tsd_t *tsd, extent_t *extent, void *ptr, size_t oldsize, size_t size,
-    size_t alignment, bool zero) {
-	return iralloct(tsd_tsdn(tsd), extent, ptr, oldsize, size, alignment,
-	    zero, tcache_get(tsd, true), NULL);
+iralloc(tsd_t *tsd, void *ptr, size_t oldsize, size_t size, size_t alignment,
+    bool zero) {
+	return iralloct(tsd_tsdn(tsd), ptr, oldsize, size, alignment, zero,
+	    tcache_get(tsd, true), NULL);
 }
 
 JEMALLOC_ALWAYS_INLINE bool
-ixalloc(tsdn_t *tsdn, extent_t *extent, void *ptr, size_t oldsize, size_t size,
-    size_t extra, size_t alignment, bool zero) {
+ixalloc(tsdn_t *tsdn, void *ptr, size_t oldsize, size_t size, size_t extra,
+    size_t alignment, bool zero) {
 	assert(ptr != NULL);
 	assert(size != 0);
 	witness_assert_depth_to_rank(tsdn, WITNESS_RANK_CORE, 0);
@@ -1244,8 +1216,7 @@ ixalloc(tsdn_t *tsdn, extent_t *extent, void *ptr, size_t oldsize, size_t size,
 		return true;
 	}
 
-	return arena_ralloc_no_move(tsdn, extent, ptr, oldsize, size, extra,
-	    zero);
+	return arena_ralloc_no_move(tsdn, ptr, oldsize, size, extra, zero);
 }
 #endif
 

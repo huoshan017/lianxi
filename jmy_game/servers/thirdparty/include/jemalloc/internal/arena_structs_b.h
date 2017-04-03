@@ -40,13 +40,16 @@ struct arena_decay_s {
 	/* Synchronizes all non-atomic fields. */
 	malloc_mutex_t		mtx;
 	/*
+	 * True if a thread is currently purging the extents associated with
+	 * this decay structure.
+	 */
+	bool			purging;
+	/*
 	 * Approximate time in seconds from the creation of a set of unused
 	 * dirty pages until an equivalent set of unused dirty pages is purged
 	 * and/or reused.
-	 *
-	 * Synchronization: atomic.
 	 */
-	ssize_t			time;
+	atomic_zd_t		time;
 	/* time / SMOOTHSTEP_NSTEPS. */
 	nstime_t		interval;
 	/*
@@ -68,10 +71,10 @@ struct arena_decay_s {
 	 */
 	nstime_t		deadline;
 	/*
-	 * Number of dirty pages at beginning of current epoch.  During epoch
-	 * advancement we use the delta between arena->decay.ndirty and
-	 * extents_npages_get(&arena->extents_cached) to determine how many
-	 * dirty pages, if any, were generated.
+	 * Number of unpurged pages at beginning of current epoch.  During epoch
+	 * advancement we use the delta between arena->decay_*.nunpurged and
+	 * extents_npages_get(&arena->extents_*) to determine how many dirty
+	 * pages, if any, were generated.
 	 */
 	size_t			nunpurged;
 	/*
@@ -81,6 +84,14 @@ struct arena_decay_s {
 	 * relative to epoch.
 	 */
 	size_t			backlog[SMOOTHSTEP_NSTEPS];
+
+	/*
+	 * Pointer to associated stats.  These stats are embedded directly in
+	 * the arena's stats due to how stats structures are shared between the
+	 * arena and ctl code.
+	 *
+	 * Synchronization: Same as associated arena's stats field. */
+	decay_stats_t		*stats;
 };
 
 struct arena_bin_s {
@@ -175,13 +186,6 @@ struct arena_s {
 	size_t			nactive;
 
 	/*
-	 * Decay-based purging state.
-	 *
-	 * Synchronization: lock.
-	 */
-	arena_decay_t		decay;
-
-	/*
 	 * Extant large allocations.
 	 *
 	 * Synchronization: large_mtx.
@@ -196,15 +200,18 @@ struct arena_s {
 	 *
 	 * Synchronization: internal.
 	 */
-	extents_t		extents_cached;
+	extents_t		extents_dirty;
+	extents_t		extents_muzzy;
 	extents_t		extents_retained;
 
 	/*
-	 * True if a thread is currently executing arena_purge_to_limit().
+	 * Decay-based purging state, responsible for scheduling extent state
+	 * transitions.
 	 *
-	 * Synchronization: decay.mtx.
+	 * Synchronization: internal.
 	 */
-	bool			purging;
+	arena_decay_t		decay_dirty; /* dirty --> muzzy */
+	arena_decay_t		decay_muzzy; /* muzzy --> retained */
 
 	/*
 	 * Next extent size class in a growing series to use when satisfying a
