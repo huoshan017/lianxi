@@ -244,7 +244,7 @@ bool jmy_id_to_session_info(int session_id, JmySessionInfo& info)
 
 int jmy_session_info_to_id(const JmySessionInfo& info)
 {
-	return (int)((info.type<<24)&0xff000000 + (info.session_id&0x00ffffff));
+	return (int)(((info.type<<24)&0xff000000) + (info.session_id&0x00ffffff));
 }
 
 unsigned short jmy_ack_id_add(unsigned short curr_id, unsigned short increment)

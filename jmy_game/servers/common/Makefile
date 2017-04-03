@@ -1,11 +1,11 @@
-CC = clang++
+CC = g++
 AR = ar
 
-THIRD_DIR = $(PWD)../../libjmy/thirdparty
-THIRD_INC = $(THIRD_DIR)
+THIRD_DIR = $(PWD)/../libjmy/thirdparty
+THIRD_INC = $(THIRD_DIR)/include
 INCLUDES = -I$(PWD) -I$(THIRD_INC)
 
-CCFLAGS = -g -Wall -O0 -std=c++11 -DJEMALLOC_NO_DEMANGLE
+CCFLAGS = -g -Wall -O0 -std=c++11 -DJEMALLOC_NO_DEMANGLE -fPIC
 OBJDIR = $(PWD)/obj
 TARGET = libcommon.a
 TARGET_DIR = $(PWD)/lib

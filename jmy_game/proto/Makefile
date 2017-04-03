@@ -1,6 +1,6 @@
-CC = clang++
+CC = g++
 AR = ar
-CCFLAGS = -g -Wall -O0 -std=c++11 
+CCFLAGS = -g -Wall -O0 -std=c++11  -fPIC
 OBJDIR = $(PWD)/obj
 
 TARGET = libproto.a

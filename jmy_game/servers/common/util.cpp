@@ -1,6 +1,7 @@
 #include "util.h"
 #include "../libjmy/jmy_tcp_connection.h"
 #include "../libjmy/jmy_log.h"
+#include <random>
 
 bool global_log_init(const char* logconfpath)
 {
