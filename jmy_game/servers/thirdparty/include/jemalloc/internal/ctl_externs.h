@@ -1,6 +1,9 @@
 #ifndef JEMALLOC_INTERNAL_CTL_EXTERNS_H
 #define JEMALLOC_INTERNAL_CTL_EXTERNS_H
 
+/* Maximum ctl tree depth. */
+#define CTL_MAX_DEPTH	7
+
 int	ctl_byname(tsd_t *tsd, const char *name, void *oldp, size_t *oldlenp,
     void *newp, size_t newlen);
 int	ctl_nametomib(tsdn_t *tsdn, const char *name, size_t *mibp,

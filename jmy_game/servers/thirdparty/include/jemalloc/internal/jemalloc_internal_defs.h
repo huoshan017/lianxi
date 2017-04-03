@@ -6,8 +6,8 @@
  * public APIs to be prefixed.  This makes it possible, with some care, to use
  * multiple allocators simultaneously.
  */
-#define JEMALLOC_PREFIX "yes"
-#define JEMALLOC_CPREFIX "YES"
+/* #undef JEMALLOC_PREFIX */
+/* #undef JEMALLOC_CPREFIX */
 
 /*
  * JEMALLOC_PRIVATE_NAMESPACE is used as a prefix for all library-private APIs.
@@ -266,12 +266,17 @@
  *
  *   madvise(..., MADV_FREE) : This marks pages as being unused, such that they
  *                             will be discarded rather than swapped out.
- *   madvise(..., MADV_DONTNEED) : This immediately discards pages, such that
- *                                 new pages will be demand-zeroed if the
- *                                 address region is later touched.
+ *   madvise(..., MADV_DONTNEED) : If JEMALLOC_PURGE_MADVISE_DONTNEED_ZEROS is
+ *                                 defined, this immediately discards pages,
+ *                                 such that new pages will be demand-zeroed if
+ *                                 the address region is later touched;
+ *                                 otherwise this behaves similarly to
+ *                                 MADV_FREE, though typically with higher
+ *                                 system overhead.
  */
-/* #undef JEMALLOC_PURGE_MADVISE_FREE */
+#define JEMALLOC_PURGE_MADVISE_FREE 
 #define JEMALLOC_PURGE_MADVISE_DONTNEED 
+#define JEMALLOC_PURGE_MADVISE_DONTNEED_ZEROS 1
 
 /*
  * Defined if transparent huge pages are supported via the MADV_[NO]HUGEPAGE
