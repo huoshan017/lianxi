@@ -2,7 +2,7 @@
 #if defined(__cplusplus)
 extern "C" {
 #endif
-#include "thirdparty/include/jemalloc/jemalloc.h"
+#include "../thirdparty/include/jemalloc/jemalloc.h"
 #if defined(__cplusplus)
 }
 #endif

@@ -1,7 +1,7 @@
 CC = g++
 AR = ar
 
-THIRD_DIR = $(PWD)/../libjmy/thirdparty
+THIRD_DIR = $(PWD)/../thirdparty
 THIRD_INC = $(THIRD_DIR)/include
 INCLUDES = -I$(PWD) -I$(THIRD_INC)
 

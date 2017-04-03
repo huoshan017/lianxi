@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../libjmy/thirdparty/include/rapidjson/document.h"
-#include "../libjmy/thirdparty/include/rapidjson/stringbuffer.h"
-#include "../libjmy/thirdparty/include/rapidjson/writer.h"
+#include "../thirdparty/include/rapidjson/document.h"
+#include "../thirdparty/include/rapidjson/stringbuffer.h"
+#include "../thirdparty/include/rapidjson/writer.h"
 
 class ConfigLoader
 {

@@ -20,7 +20,7 @@ $(TARGET_LIB): $(OBJS)
 	$(AR) -crs $(TARGET_LIB) $^
 
 $(OBJS) : $(OBJDIR)/%.o : $(SRCS_DIR)/%.cc
-	$(CC) $(CCFLAGS) -c $< -o $@ -I../servers/libjmy/thirdparty/include
+	$(CC) $(CCFLAGS) -c $< -o $@ -I../servers/thirdparty/include
 
 clean:
 	rm -fr $(OBJS) $(TARGET_LIB) $(SRCS) $(SRCS_DIR)/*.h

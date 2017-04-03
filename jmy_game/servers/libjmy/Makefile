@@ -2,7 +2,7 @@ CC = g++
 AR = ar
 CCFLAGS = -g -Wall -O0 -std=c++11 -DJEMALLOC_NO_DEMANGLE -fPIC
 
-THIRD_DIR = $(PWD)/thirdparty
+THIRD_DIR = $(PWD)/../thirdparty
 THIRD_INC = $(THIRD_DIR)/include
 INCLUDES = -I$(PWD) -I$(THIRD_INC)
 

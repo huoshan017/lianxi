@@ -3,7 +3,7 @@
 #if defined (__cplusplus)
 extern "C" {
 #endif
-#include "thirdparty/include/zlog/zlog.h"
+#include "../thirdparty/include/zlog/zlog.h"
 #if defined (__cplusplus)
 }
 #endif

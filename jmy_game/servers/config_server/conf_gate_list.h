@@ -1,9 +1,9 @@
 #pragma once
 
 #include "../libjmy/jmy_singleton.hpp"
-#include "../libjmy/thirdparty/include/rapidjson/document.h"
-#include "../libjmy/thirdparty/include/rapidjson/stringbuffer.h"
-#include "../libjmy/thirdparty/include/rapidjson/writer.h"
+#include "../thirdparty/include/rapidjson/document.h"
+#include "../thirdparty/include/rapidjson/stringbuffer.h"
+#include "../thirdparty/include/rapidjson/writer.h"
 #include <list>
 #include <array>
 

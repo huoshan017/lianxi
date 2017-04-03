@@ -9,12 +9,15 @@
 // handle client config
 static JmyId2MsgHandler s_client_handlers[] = {
 };
+static JmyBaseEventHandlers s_client_base_event_handlers = {
+};
 static JmyServerConfig s_client_config = {
 	{
 		{ 2048, 2048, 0, 0, false, true},
 		{ 10000, 10 },
 		s_client_handlers,
 		sizeof(s_client_handlers)/sizeof(s_client_handlers[0]),
+		s_client_base_event_handlers,
 		true
 	},
 	(char*)"127.0.0.1",
