@@ -3,6 +3,7 @@
 #include "../libjmy/jmy_const.h"
 #include "../common/agent.h"
 #include <string>
+#include <unordered_map>
 #include <set>
 
 struct LoginAgentData {
@@ -23,7 +24,7 @@ typedef AgentManager<int, GateAgentData, int> GateAgentManager;
 
 struct JmyMsgInfo;
 struct JmyEventInfo;
-class ConnConfigHandler
+class ConnHandler
 {
 public:
 	static int processLoginConnect(JmyMsgInfo*);
@@ -34,13 +35,15 @@ public:
 	static int onTimer(JmyEventInfo*);
 
 private:
-	static int genMsgLoginList();
+	static int check_conn(int conn_id);
+	static int update_conn(int conn_id, int agent_id);
 	static int genMsgGateList();
-private:
 
+private:
 	static char tmp_[MAX_SEND_BUFFER_SIZE];
 	static LoginAgentManager login_mgr_;
 	static GateAgentManager gate_mgr_;
+	static std::unordered_map<int, int> conn2agent_map_;
 	static std::set<int> login_id_set_;
 	static std::set<int> gate_id_set_;
 };

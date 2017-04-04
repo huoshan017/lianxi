@@ -182,6 +182,13 @@ int JmyTcpServer::accept_new()
 	conn->setBuffer(buffer);
 	conn->start();
 	conns_.push_back(conn);
+	// handle accept event
+	JmyEventInfo evt;
+	evt.event_id = JMY_EVENT_CONNECT;
+	evt.conn_id = id;
+	evt.param = (void*)&conn_mgr_;
+	evt.param_l = 0;
+	event_handler_->onConnect(&evt);
 	ip::tcp::endpoint ep = conn->getSock().remote_endpoint();
 	LibJmyLogInfo("new connection(%d, %s:%d) start", conn->getId(), ep.address().to_string().c_str(), ep.port());
 #endif
