@@ -9,7 +9,11 @@ PROTO_DIR = $(TOP_DIR)/../proto
 PROTO_LIB = $(PROTO_DIR)/lib
 THIRD_DIR = $(TOP_DIR)/thirdparty
 THIRD_INC = $(THIRD_DIR)/include
-THIRD_LIB = $(THIRD_DIR)/lib
+ifeq ($(IS_DEBIAN), 1)
+	THIRD_LIB = $(THIRD_DIR)/lib/debian_8.7.x/lib
+else
+	THIRD_LIB = $(THIRD_DIR)/lib
+endif
 BOOST_LIB = $(THIRD_LIB)/boost
 ZLOG_LIB = $(THIRD_LIB)/zlog
 JEMALLOC_LIB = $(THIRD_LIB)/jemalloc
