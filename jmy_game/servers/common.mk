@@ -34,7 +34,6 @@ OBJS = $(patsubst %.cpp, $(OBJ_DIR)/%.o, $(SRCS))
 all: init $(EXE)  
 init:
 	mkdir -p $(OBJ_DIR) $(SERVER_BINDIR)
-	echo $(DISTRIBUTOR_ID)
 
 $(EXE): $(OBJS) 
 	$(CC) $^ -o $@ $(INCLUDES) $(LIBS) $(CCFLAGS) \
