@@ -1,5 +1,8 @@
 CC = g++
 CCFLAGS = -g -Wall -O0 -std=c++11 -DJEMALLOC_NO_DEMANGLE -fPIC
+DISTRIBUTOR_STR = $(shell lsb_release -i)
+DISTRIBUTOR_PREFIX = Distributor ID:
+DISTRIBUTOR_ID = $(filter-out $(DISTRIBUTOR_PREFIX), $(DISTRIBUTOR_STR))
 
 JMY_DIR = $(TOP_DIR)/libjmy
 JMY_LIB = $(JMY_DIR)/lib
@@ -9,7 +12,7 @@ PROTO_DIR = $(TOP_DIR)/../proto
 PROTO_LIB = $(PROTO_DIR)/lib
 THIRD_DIR = $(TOP_DIR)/thirdparty
 THIRD_INC = $(THIRD_DIR)/include
-ifeq ($(IS_DEBIAN), 1)
+ifeq ($(DISTRIBUTOR_ID), Debian)
 	THIRD_LIB = $(THIRD_DIR)/lib/debian_8.7.x/lib
 else
 	THIRD_LIB = $(THIRD_DIR)/lib
@@ -31,6 +34,7 @@ OBJS = $(patsubst %.cpp, $(OBJ_DIR)/%.o, $(SRCS))
 all: init $(EXE)  
 init:
 	mkdir -p $(OBJ_DIR) $(SERVER_BINDIR)
+	echo $(DISTRIBUTOR_ID)
 
 $(EXE): $(OBJS) 
 	$(CC) $^ -o $@ $(INCLUDES) $(LIBS) $(CCFLAGS) \
