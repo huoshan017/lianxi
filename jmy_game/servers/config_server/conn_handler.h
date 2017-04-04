@@ -22,16 +22,22 @@ typedef Agent<GateAgentData, int> GateAgent;
 typedef AgentManager<int, GateAgentData, int> GateAgentManager;
 
 struct JmyMsgInfo;
-class ConnMsgHandler
+struct JmyEventInfo;
+class ConnConfigHandler
 {
 public:
 	static int processLoginConnect(JmyMsgInfo*);
 	static int processGateConnect(JmyMsgInfo*);
+	static int onConnect(JmyEventInfo*);
+	static int onDisconnect(JmyEventInfo*);
+	static int onTick(JmyEventInfo*);
+	static int onTimer(JmyEventInfo*);
 
 private:
 	static int genMsgLoginList();
 	static int genMsgGateList();
 private:
+
 	static char tmp_[MAX_SEND_BUFFER_SIZE];
 	static LoginAgentManager login_mgr_;
 	static GateAgentManager gate_mgr_;

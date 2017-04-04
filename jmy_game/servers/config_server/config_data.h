@@ -3,18 +3,17 @@
 #include "../../proto/src/common.pb.h"
 #include "../../proto/src/server.pb.h"
 #include "../libjmy/jmy_datatype.h"
-#include "conn_msg_handler.h"
-#include "conn_event_handler.h"
+#include "conn_config_handler.h"
 
 static JmyId2MsgHandler s_conn_handlers[] = {
-	{ MSGID_LS2CS_CONNECT_REQUEST, ConnMsgHandler::processLoginConnect },
-	{ MSGID_GT2CS_CONNECT_REQUEST, ConnMsgHandler::processGateConnect },
+	{ MSGID_LS2CS_CONNECT_REQUEST, ConnConfigHandler::processLoginConnect },
+	{ MSGID_GT2CS_CONNECT_REQUEST, ConnConfigHandler::processGateConnect },
 };
 static JmyBaseEventHandlers s_conn_base_event_handlers = {
-	ConnEventHandler::onConnect,
-	ConnEventHandler::onDisconnect,
-	ConnEventHandler::onTick,
-	ConnEventHandler::onTimer
+	ConnConfigHandler::onConnect,
+	ConnConfigHandler::onDisconnect,
+	ConnConfigHandler::onTick,
+	ConnConfigHandler::onTimer
 };
 static JmyServerConfig s_conn_config = {
 	{

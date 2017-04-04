@@ -1,14 +1,14 @@
-#include "gate_msg_handler.h"
+#include "gate_handler.h"
 #include "../common/util.h"
 #include "../../proto/src/common.pb.h"
 #include "../../proto/src/error.pb.h"
 #include "../../proto/src/server.pb.h"
-#include "client_msg_handler.h"
+#include "client_handler.h"
 
-char GateMsgHandler::tmp_[MAX_SEND_BUFFER_SIZE];
-GateAgentManager GateMsgHandler::gate_mgr_;
+char GateHandler::tmp_[MAX_SEND_BUFFER_SIZE];
+GateAgentManager GateHandler::gate_mgr_;
 
-int GateMsgHandler::processConnect(JmyMsgInfo* info)
+int GateHandler::processConnect(JmyMsgInfo* info)
 {
 	JmyTcpConnection* conn = get_connection(info);
 	if (!conn) {
@@ -30,7 +30,7 @@ int GateMsgHandler::processConnect(JmyMsgInfo* info)
 	return 0;
 }
 
-int GateMsgHandler::processSelectedServerResponse(JmyMsgInfo* info)
+int GateHandler::processSelectedServerResponse(JmyMsgInfo* info)
 {
 	GateAgent* agent = gate_mgr_.getAgent(info->session_id);
 	if (!agent) {
@@ -56,5 +56,25 @@ int GateMsgHandler::processSelectedServerResponse(JmyMsgInfo* info)
 	if (client_agent->close() < 0)
 		return -1;
 
+	return 0;
+}
+
+int GateHandler::onConnect(JmyEventInfo* info)
+{
+	return 0;
+}
+
+int GateHandler::onDisconnect(JmyEventInfo* info)
+{
+	return 0;
+}
+
+int GateHandler::onTick(JmyEventInfo* info)
+{
+	return 0;
+}
+
+int GateHandler::onTimer(JmyEventInfo* info)
+{
 	return 0;
 }

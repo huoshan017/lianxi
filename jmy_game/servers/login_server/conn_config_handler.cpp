@@ -1,12 +1,23 @@
-#include "conn_config_event_handler.h"
+#include "conn_config_handler.h"
+#include "../libjmy/jmy_datatype.h"
 #include "../libjmy/jmy_tcp_connection.h"
-#include "../../proto/src/server.pb.h"
 #include "../common/util.h"
+#include "../../proto/src/server.pb.h"
 #include "config_loader.h"
 
-char ConnConfigEventHandler::tmp_[MAX_SEND_BUFFER_SIZE];
+char ConnConfigHandler::tmp_[MAX_SEND_BUFFER_SIZE];
 
-int ConnConfigEventHandler::onConnect(JmyEventInfo* info)
+int ConnConfigHandler::processConnectResponse(JmyMsgInfo* info)
+{
+	MsgCS2LS_ConnectResponse response;
+	if (!response.SerializeToArray(info->data, info->len)) {
+		ServerLogError("serilize config_server to login_server connect response message failed");		
+		return -1;
+	}	
+	return 0;
+}
+
+int ConnConfigHandler::onConnect(JmyEventInfo* info)
 {
 	JmyTcpConnection* conn = get_connection(info);
 	if (!conn) {
@@ -23,7 +34,7 @@ int ConnConfigEventHandler::onConnect(JmyEventInfo* info)
 		return -1;
 	}
 
-	if (conn->send(MSGID_CS2LS_CONNECT_RESPONSE, tmp_, request.ByteSize()) < 0) {
+	if (conn->send(MSGID_LS2CS_CONNECT_REQUEST, tmp_, request.ByteSize()) < 0) {
 		ServerLogError("send connect response to config_server failed");
 		return -1;
 	}
@@ -32,20 +43,20 @@ int ConnConfigEventHandler::onConnect(JmyEventInfo* info)
 	return 0;
 }
 
-int ConnConfigEventHandler::onDisconnect(JmyEventInfo* info)
+int ConnConfigHandler::onDisconnect(JmyEventInfo* info)
 {
 	(void)info;
 	ServerLogInfo("login_server(%d) ondisconnected to config_server", SERVER_CONFIG_FILE.id);
 	return 0;
 }
 
-int ConnConfigEventHandler::onTick(JmyEventInfo* info)
+int ConnConfigHandler::onTick(JmyEventInfo* info)
 {
 	(void)info;
 	return 0;
 }
 
-int ConnConfigEventHandler::onTimer(JmyEventInfo* info)
+int ConnConfigHandler::onTimer(JmyEventInfo* info)
 {
 	(void)info;
 	return 0;

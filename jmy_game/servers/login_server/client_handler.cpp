@@ -1,14 +1,14 @@
-#include "client_msg_handler.h"
+#include "client_handler.h"
 #include "../libjmy/jmy.h"
 #include "../common/util.h"
 #include "../../proto/src/server.pb.h"
 #include "user.h"
 #include <random>
 
-char ClientMsgHandler::tmp_[MAX_SEND_BUFFER_SIZE];
-ClientAgentManager ClientMsgHandler::client_mgr_;
+char ClientHandler::tmp_[MAX_SEND_BUFFER_SIZE];
+ClientAgentManager ClientHandler::client_mgr_;
 
-void ClientMsgHandler::send_error(JmyMsgInfo* info, ProtoErrorType error) {
+void ClientHandler::send_error(JmyMsgInfo* info, ProtoErrorType error) {
 	JmyTcpConnection* conn = get_connection(info);
 	if (!conn) return;
 	MsgError response;
@@ -16,7 +16,7 @@ void ClientMsgHandler::send_error(JmyMsgInfo* info, ProtoErrorType error) {
 	conn->send(MSGID_LS2CL_LOGIN_RESPONSE, tmp_, response.ByteSize());
 }
 
-int ClientMsgHandler::processLogin(JmyMsgInfo* info)
+int ClientHandler::processLogin(JmyMsgInfo* info)
 {
 	MsgCL2LS_LoginRequest request;
 	if (!request.ParseFromArray(info->data, info->len)) {
@@ -44,7 +44,7 @@ int ClientMsgHandler::processLogin(JmyMsgInfo* info)
 	return 0;
 }
 
-int ClientMsgHandler::processSelectServer(JmyMsgInfo* info)
+int ClientHandler::processSelectServer(JmyMsgInfo* info)
 {
 	MsgCL2LS_SelectServerRequest request;
 	if (!request.ParseFromArray(info->data, info->len)) {
@@ -69,7 +69,32 @@ int ClientMsgHandler::processSelectServer(JmyMsgInfo* info)
 	return 0;
 }
 
-ClientAgent* ClientMsgHandler::getClientAgent(const std::string& account)
+ClientAgent* ClientHandler::getClientAgent(const std::string& account)
 {
 	return client_mgr_.getAgent(account);
+}
+
+int ClientHandler::onConnect(JmyEventInfo* info)
+{
+	JmyTcpConnection* conn = get_connection(info);
+	if (!conn) return -1;
+	return 0;
+}
+
+int ClientHandler::onDisconnect(JmyEventInfo* info)
+{
+	(void)info;
+	return 0;
+}
+
+int ClientHandler::onTick(JmyEventInfo* info)
+{
+	(void)info;
+	return 0;
+}
+
+int ClientHandler::onTimer(JmyEventInfo* info)
+{
+	(void)info;
+	return 0;
 }

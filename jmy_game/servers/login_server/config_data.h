@@ -3,23 +3,20 @@
 #include "../../proto/src/common.pb.h"
 #include "../../proto/src/server.pb.h"
 #include "../libjmy/jmy_datatype.h"
-#include "client_msg_handler.h"
-#include "client_event_handler.h"
-#include "gate_msg_handler.h"
-#include "gate_event_handler.h"
-#include "conn_config_msg_handler.h"
-#include "conn_config_event_handler.h"
+#include "client_handler.h"
+#include "gate_handler.h"
+#include "conn_config_handler.h"
 
 /* client handler config */
 static JmyId2MsgHandler s_client_handlers[] = {
-	{ MSGID_CL2LS_LOGIN_REQUEST, ClientMsgHandler::processLogin },
-	{ MSGID_CL2LS_SELECT_SERVER_REQUEST, ClientMsgHandler::processSelectServer },
+	{ MSGID_CL2LS_LOGIN_REQUEST, ClientHandler::processLogin },
+	{ MSGID_CL2LS_SELECT_SERVER_REQUEST, ClientHandler::processSelectServer },
 };
 static JmyBaseEventHandlers s_client_base_event_handlers = {
-	ClientEventHandler::onConnect,
-	ClientEventHandler::onDisconnect,
-	ClientEventHandler::onTick,
-	ClientEventHandler::onTimer,
+	ClientHandler::onConnect,
+	ClientHandler::onDisconnect,
+	ClientHandler::onTick,
+	ClientHandler::onTimer,
 };
 static JmyConnectionConfig s_client_conn_config = {
 	{ 2048, 2048, 0, 0, false, true},
@@ -40,14 +37,14 @@ static JmyServerConfig s_client_config = {
 
 /* gate handler config */
 static JmyId2MsgHandler s_gate_handlers[] = {
-	{ MSGID_GT2LS_CONNECT_REQUEST, GateMsgHandler::processConnect },
-	{ MSGID_GT2LS_SELECTED_SERVER_RESPONSE, GateMsgHandler::processSelectedServerResponse },
+	{ MSGID_GT2LS_CONNECT_REQUEST, GateHandler::processConnect },
+	{ MSGID_GT2LS_SELECTED_SERVER_RESPONSE, GateHandler::processSelectedServerResponse },
 };
 static JmyBaseEventHandlers s_gate_base_event_handlers = {
-	GateEventHandler::onConnect,
-	GateEventHandler::onDisconnect,
-	GateEventHandler::onTick,
-	GateEventHandler::onTimer,
+	GateHandler::onConnect,
+	GateHandler::onDisconnect,
+	GateHandler::onTick,
+	GateHandler::onTimer,
 };
 static JmyConnectionConfig s_gate_conn_config = {
 	{ 1024*64, 1024*64, 0, 0, false, true },
@@ -67,13 +64,13 @@ static JmyServerConfig s_gate_config = {
 
 /* connect config handler config */
 static JmyId2MsgHandler s_conn_config_handlers[] = {
-	{ MSGID_CS2LS_CONNECT_RESPONSE, ConnConfigMsgHandler::processConnectResponse },
+	{ MSGID_CS2LS_CONNECT_RESPONSE, ConnConfigHandler::processConnectResponse },
 };
 static JmyBaseEventHandlers s_conn_config_base_event_handlers = {
-	ConnConfigEventHandler::onConnect,
-	ConnConfigEventHandler::onDisconnect,
-	ConnConfigEventHandler::onTick,
-	ConnConfigEventHandler::onTimer,
+	ConnConfigHandler::onConnect,
+	ConnConfigHandler::onDisconnect,
+	ConnConfigHandler::onTick,
+	ConnConfigHandler::onTimer,
 };
 static JmyConnectionConfig s_conn_conn_config = {
 	{ 1024*64, 1024*64, 0, 0, false, true },

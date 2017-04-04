@@ -13,12 +13,17 @@ typedef Agent<ClientData, int> ClientAgent;
 typedef AgentManager<std::string, ClientData, int> ClientAgentManager;
 
 struct JmyMsgInfo;
+struct JmyEventInfo;
 class JmyTcpConnection;
-class ClientMsgHandler
+class ClientHandler
 {
 public:
 	static int processLogin(JmyMsgInfo*);
 	static int processSelectServer(JmyMsgInfo*);
+	static int onConnect(JmyEventInfo*);
+	static int onDisconnect(JmyEventInfo*);
+	static int onTick(JmyEventInfo*);
+	static int onTimer(JmyEventInfo*);	
 	static ClientAgentManager& getClientManager() { return client_mgr_; }
 	static ClientAgent* getClientAgent(const std::string& account);
 
@@ -29,4 +34,4 @@ private:
 	static ClientAgentManager client_mgr_;
 };
 
-#define CLIENT_MGR (ClientMsgHandler::getClientManager())
+#define CLIENT_MGR (ClientHandler::getClientManager())

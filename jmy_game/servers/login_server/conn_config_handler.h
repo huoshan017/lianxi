@@ -2,14 +2,16 @@
 
 #include "../libjmy/jmy_const.h"
 
+struct JmyMsgInfo;
 struct JmyEventInfo;
-class ConnConfigEventHandler
+class ConnConfigHandler
 {
 public:
+	static int processConnectResponse(JmyMsgInfo*);
 	static int onConnect(JmyEventInfo*);
 	static int onDisconnect(JmyEventInfo*);
 	static int onTick(JmyEventInfo*);
-	static int onTimer(JmyEventInfo*);
+	static int onTimer(JmyEventInfo*);	
 
 private:
 	static char tmp_[MAX_SEND_BUFFER_SIZE];

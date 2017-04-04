@@ -13,11 +13,16 @@ typedef Agent<GateData, int> GateAgent;
 typedef AgentManagerPerf<GateData, int, 100> GateAgentManager;
 
 struct JmyMsgInfo;
-class GateMsgHandler
+struct JmyEventInfo;
+class GateHandler
 {
 public:
 	static int processConnect(JmyMsgInfo* info);
 	static int processSelectedServerResponse(JmyMsgInfo* info);
+	static int onConnect(JmyEventInfo*);
+	static int onDisconnect(JmyEventInfo*);
+	static int onTick(JmyEventInfo*);
+	static int onTimer(JmyEventInfo*);	
 	static GateAgentManager& getGateManager() { return gate_mgr_; }
 
 private:
@@ -25,4 +30,4 @@ private:
 	static GateAgentManager gate_mgr_;
 };
 
-#define GATE_MGR (GateMsgHandler::getGateManager())
+#define GATE_MGR (GateHandler::getGateManager())

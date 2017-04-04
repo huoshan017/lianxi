@@ -125,7 +125,7 @@ void JmyTcpConnection::start()
 		} else {
 			int ev = err.value();
 			if (ev == boost::system::errc::no_such_file_or_directory) {
-				LibJmyLogInfo("peer is closed");
+				LibJmyLogInfo("peer(%s:%d) is closed", sock_.remote_endpoint().address().to_string().c_str(), sock_.remote_endpoint().port());
 			} else {
 				if (ev == 10053 || ev == 10054) {
 

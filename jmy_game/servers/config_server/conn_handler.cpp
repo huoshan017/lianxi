@@ -1,15 +1,15 @@
-#include "conn_msg_handler.h"
+#include "conn_config_handler.h"
 #include "../common/util.h"
 #include "../../proto/src/server.pb.h"
 #include "conf_gate_list.h"
 
-char ConnMsgHandler::tmp_[MAX_SEND_BUFFER_SIZE];
-LoginAgentManager ConnMsgHandler::login_mgr_;
-GateAgentManager ConnMsgHandler::gate_mgr_;
-std::set<int> ConnMsgHandler::login_id_set_;
-std::set<int> ConnMsgHandler::gate_id_set_;
+char ConnConfigHandler::tmp_[MAX_SEND_BUFFER_SIZE];
+LoginAgentManager ConnConfigHandler::login_mgr_;
+GateAgentManager ConnConfigHandler::gate_mgr_;
+std::set<int> ConnConfigHandler::login_id_set_;
+std::set<int> ConnConfigHandler::gate_id_set_;
 
-int ConnMsgHandler::processGateConnect(JmyMsgInfo* info)
+int ConnConfigHandler::processGateConnect(JmyMsgInfo* info)
 {
 	JmyTcpConnection* conn = get_connection(info);
 	if (!conn) return -1;
@@ -58,7 +58,7 @@ int ConnMsgHandler::processGateConnect(JmyMsgInfo* info)
 	return 0;
 }
 
-int ConnMsgHandler::processLoginConnect(JmyMsgInfo* info)
+int ConnConfigHandler::processLoginConnect(JmyMsgInfo* info)
 {
 	MsgLS2CS_ConnectRequest request;
 	if (!request.ParseFromArray(info->data, info->len)) {
@@ -104,5 +104,30 @@ int ConnMsgHandler::processLoginConnect(JmyMsgInfo* info)
 		return -1;
 	}
 	ServerLogInfo("login_server(%d) connected", login_id);
+	return 0;
+}
+
+int ConnConfigHandler::onConnect(JmyEventInfo* info)
+{
+	JmyTcpConnection* conn = get_connection(info);
+	if (!conn) return -1;
+	return 0;
+}
+
+int ConnConfigHandler::onDisconnect(JmyEventInfo* info)
+{
+	(void)info;
+	return 0;
+}
+
+int ConnConfigHandler::onTick(JmyEventInfo* info)
+{
+	(void)info;
+	return 0;
+}
+
+int ConnConfigHandler::onTimer(JmyEventInfo* info)
+{
+	(void)info;
 	return 0;
 }
