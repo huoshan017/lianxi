@@ -5,16 +5,16 @@ enum MsgIdType {
 	MSGID_NONE								= 0;
 	MSGID_ERROR								= 1;
 	/* Client <-> LoginServer */
-	MSGID_CL2LS_LOGIN_REQUEST				= 100000; // login request
-	MSGID_LS2CL_LOGIN_RESPONSE				= 100001; // login response
-	MSGID_CL2LS_SELECT_SERVER_REQUEST		= 100002; // select server
-	MSGID_LS2CL_SELECT_SERVER_RESPONSE		= 100003; // select server response
+	MSGID_CL2LS_LOGIN_REQUEST				= 10000; // login request
+	MSGID_LS2CL_LOGIN_RESPONSE				= 10001; // login response
+	MSGID_CL2LS_SELECT_SERVER_REQUEST		= 10002; // select server
+	MSGID_LS2CL_SELECT_SERVER_RESPONSE		= 10003; // select server response
 	/* Client <-> GateServer */
-	MSGID_CL2GT_ENTER_GAME_REQUEST			= 100004; // enter game request
-	MSGID_GT2CL_ENTER_GAME_RESPONSE			= 100005; // enter game response
-	MSGID_GT2CL_ENTER_GAME_COMPLETE_NOTIFY	= 100006; // enter game complete notify
-	MSGID_CL2GT_RECONNECT_REQUEST			= 101000; // reconnect gate server
-	MSGID_GT2CL_RECONNECT_RESPONSE			= 101001; // reconnect response
+	MSGID_CL2GT_ENTER_GAME_REQUEST			= 10020; // enter game request
+	MSGID_GT2CL_ENTER_GAME_RESPONSE			= 10021; // enter game response
+	MSGID_GT2CL_ENTER_GAME_COMPLETE_NOTIFY	= 10022; // enter game complete notify
+	MSGID_CL2GT_RECONNECT_REQUEST			= 10023; // reconnect gate server
+	MSGID_GT2CL_RECONNECT_RESPONSE			= 10024; // reconnect response
 }
 
 message MsgError {
