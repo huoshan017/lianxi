@@ -75,8 +75,8 @@ static JmyBaseEventHandlers s_conn_config_base_event_handlers = {
 static JmyConnectionConfig s_conn_conn_config = {
 	{ 1024*64, 1024*64, 0, 0, false, true },
 	{ 1000, 10 },
-	s_gate_handlers,
-	sizeof(s_gate_handlers)/sizeof(s_gate_handlers[0]),
+	s_conn_config_handlers,
+	sizeof(s_conn_config_handlers)/sizeof(s_conn_config_handlers[0]),
 	s_conn_config_base_event_handlers,
 	nullptr, 0,
 	true

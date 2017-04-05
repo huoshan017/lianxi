@@ -45,6 +45,8 @@ bool ConfGateList::loadJson(const char* jsonpath)
 	int server_id = 0;
 	std::string server_ip;
 	short server_port = 0;
+	std::string platform;
+	std::string channel_code;
 	size_t s = doc_.Size();
 	for (size_t i=0; i<s; ++i) {
 		rapidjson::Value& a = doc_[i];
@@ -68,16 +70,32 @@ bool ConfGateList::loadJson(const char* jsonpath)
 			return false;
 		}
 		server_port = (short)a["server_port"].GetInt();
+		if (a.HasMember("platform")) {
+			if (!a["platform"].IsString()) {
+				std::cout << "server platform type is not string" << std::endl;
+				return false;
+			}
+			platform = a["platform"].GetString();
+		}
+		if (a.HasMember("channel_code")) {
+			if (!a["channel_code"].IsString()) {
+				std::cout << "server channel_code type is not string" << std::endl;
+				return false;
+			}
+			channel_code = a["channel_code"].GetString();
+		}
 
-		GateData* data = gate_array_[gate_count_];
+		MsgGateConfData* data = gate_array_[gate_count_];
 		if (!data) {
-			data = jmy_mem_malloc<GateData>();
+			data = jmy_mem_malloc<MsgGateConfData>();
 			gate_array_[gate_count_++] = data;
-		}	
-		data->id = server_id;
-		data->name = server_name;
-		data->ip = server_ip;
-		data->port = server_port;
+		}
+		data->set_id(server_id);
+		data->set_name(server_name);
+		data->set_ip(server_ip);
+		data->set_port(server_port);
+		data->set_platform(platform);
+		data->set_channel_code(channel_code);
 	}
 
 	return true;
@@ -106,7 +124,7 @@ void ConfGateList::reset()
 	gate_count_ = 0;
 }
 
-ConfGateList::GateData* ConfGateList::get(int index)
+MsgGateConfData* ConfGateList::get(int index)
 {
 	if (index >= (int)gate_count_)
 		return nullptr;

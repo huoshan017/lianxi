@@ -16,21 +16,21 @@ enum AgentStateType {
 
 class JmyTcpConnectionMgr;
 
-template <typename data_type, typename id_type>
+template <typename data_type, typename conn_id_type>
 class Agent
 {
 public:
-	typedef typename std::enable_if<std::is_integral<id_type>::value, id_type>::type int_id_type;
+	typedef typename std::enable_if<std::is_integral<conn_id_type>::value, conn_id_type>::type int_conn_id_type;
 
 	Agent() : data_(), id_(0), mgr_(nullptr), state_(AGENT_STATE_NONE) {}
 	~Agent() {}
-	void init(int_id_type id, JmyTcpConnectionMgr* mgr) {
+	void init(int_conn_id_type id, JmyTcpConnectionMgr* mgr) {
 		id_ = id;
 		mgr_ = mgr;
 		state_ = AGENT_STATE_NONE;
 	}
 
-	int_id_type getId() const { return id_; }
+	int_conn_id_type getId() const { return id_; }
 	AgentStateType getState() const { return state_; }
 	void setState(AgentStateType state) { state_ = state; }
 	data_type& getData() { return data_; }
@@ -61,25 +61,34 @@ public:
 		return 0;
 	}
 
+	int force_close() {
+		JmyTcpConnection* conn = mgr_->get(id_);
+		if (!conn) return -1;
+		conn->force_close();
+		return 0;
+	}
+
 private:
 	data_type data_;
-	int_id_type id_;
+	int_conn_id_type id_;
 	JmyTcpConnectionMgr* mgr_;
 	AgentStateType state_;
 };
 
-template <typename key_type, typename data_type, typename id_type>
+template <typename key_type, typename data_type, typename conn_id_type>
 class AgentManager 
 {
 public:
-	typedef Agent<data_type, id_type> agent_type;
-	typedef typename agent_type::int_id_type int_id_type;
+	typedef Agent<data_type, conn_id_type> agent_type;
+	typedef typename agent_type::int_conn_id_type int_conn_id_type;
 	typedef std::unordered_map<key_type, agent_type*> key2agent_map_type;
-	typedef std::unordered_map<int_id_type, key_type> id2key_map_type;
-	typedef std::unordered_map<key_type, int_id_type> key2id_map_type;
+	typedef std::unordered_map<int_conn_id_type, key_type> id2key_map_type;
+	typedef std::unordered_map<key_type, int_conn_id_type> key2id_map_type;
 
 	AgentManager() {}
 	~AgentManager() { clear(); }
+
+	size_t getAgentSize() { return key2agents_.size(); }
 
 	void clear() {
 		typename key2agent_map_type::iterator it = key2agents_.begin();
@@ -92,7 +101,7 @@ public:
 		id2keys_.clear();
 	}
 
-	agent_type* newAgent(const key_type& key, JmyTcpConnectionMgr* mgr, int_id_type id) {
+	agent_type* newAgent(const key_type& key, JmyTcpConnectionMgr* mgr, int_conn_id_type id) {
 		typename key2agent_map_type::iterator it = key2agents_.find(key);
 		if (it != key2agents_.end()) { return nullptr; }
 		agent_type* agent = jmy_mem_malloc<agent_type>();
@@ -109,26 +118,37 @@ public:
 		return it->second;
 	}
 
-	agent_type* getAgentById(int_id_type id) {
+	agent_type* getAgentByConnId(int_conn_id_type id) {
 		typename id2key_map_type::iterator it = id2keys_.find(id);
 		if (it == id2keys_.end()) { return nullptr; }
 		return getAgent(it->second);
 	}
 
+	bool getKeyByConnId(int_conn_id_type id, key_type& key) {
+		typename id2key_map_type::iterator it = id2keys_.find(id);
+		if (it == id2keys_.end()) { return false; }
+		key = it->second;
+		return true;
+	}
+
 	bool deleteAgent(key_type key) {
-		typename key2agent_map_type::iterator it = key2agents_.find(key);
-		if (it == key2agents_.end()) { return false; }
+		//typename key2agent_map_type::iterator it = key2agents_.find(key);
+		//if (it == key2agents_.end()) { return false; }
+		agent_type* agent = getAgent(key);
+		if (!agent) {
+			return false;
+		}
+		jmy_mem_free(agent);
+		key2agents_.erase(key);
 		typename key2id_map_type::iterator kit = key2ids_.find(key);
 		if (kit != key2ids_.end()) {
 			id2keys_.erase(kit->second);
 			key2ids_.erase(kit);
 		}
-		jmy_mem_free(it->second);
-		key2agents_.erase(it);
 		return true;
 	}
 
-	bool deleteAgentById(int_id_type id) {
+	bool deleteAgentByConnId(int_conn_id_type id) {
 		typename id2key_map_type::iterator it = id2keys_.find(id);
 		if (it == id2keys_.end()) { return false; }
 		if (!deleteAgent(it->second)) { return false; }
@@ -143,7 +163,7 @@ public:
 		return true;
 	}
 
-	bool setAgentStateById(int_id_type id, AgentStateType state) {
+	bool setAgentStateByConnId(int_conn_id_type id, AgentStateType state) {
 		typename id2key_map_type::iterator it = id2keys_.find(id);
 		if (it == id2keys_.end()) { return false; }
 		return setAgentState(it->second, state);
@@ -155,15 +175,22 @@ protected:
 	key2id_map_type key2ids_;
 };
 
-template <typename data_type, typename id_type, size_t max_id>
+// conn_id_type is connection id, id_type is that index
+template <typename data_type, typename conn_id_type, typename id_type, id_type max_id, id_type min_id = 1>
 class AgentManagerPerf
 {
 public:
-	typedef Agent<data_type, id_type> agent_type;
-	typedef typename agent_type::int_id_type int_id_type;
-	typedef std::array<agent_type*, max_id+1> agent_array_type;
-	AgentManagerPerf() : agent_count_(0) { init(); }
+	typedef typename std::enable_if<std::is_integral<id_type>::value, id_type>::type int_id_type;
+	typedef Agent<data_type, conn_id_type> agent_type;
+	typedef typename agent_type::int_conn_id_type int_conn_id_type;
+	typedef std::array<agent_type*, max_id-min_id+1> agent_array_type;
+	typedef std::unordered_map<int_conn_id_type, int_id_type> conn2agent_type;
+	typedef std::unordered_map<int_id_type, int_conn_id_type> agent2conn_type;
+
+	AgentManagerPerf() : agent_count_(0), min_id_(min_id) { init(); }
 	~AgentManagerPerf() { clear(); }
+
+	size_t getAgentSize() { return agent_count_; }
 
 	void init() {
 		typename agent_array_type::iterator it = agents_.begin();
@@ -181,25 +208,43 @@ public:
 				*it = nullptr;
 			}
 		}
+		conn2agent_ids_.clear();
+		agent2conn_ids_.clear();
 	}
 
-	agent_type* newAgent(int_id_type id, JmyTcpConnectionMgr* mgr) {
+	agent_type* newAgent(int_id_type id, JmyTcpConnectionMgr* mgr, int_conn_id_type conn_id) {
 		agent_type* agent = getAgent(id);
 		if (!agent) {
 			return nullptr;
 		}
 		agent = jmy_mem_malloc<agent_type>();
-		agent->init(id, mgr);
-		agents_[id] = agent;
+		agent->init(conn_id, mgr);
+		agents_[id-min_id_] = agent;
 		agent_count_ += 1;
+		conn2agent_ids_.insert(std::make_pair(conn_id, id));
+		agent2conn_ids_.insert(std::make_pair(id, conn_id));
 		return agent;
 	}
 
 	agent_type* getAgent(int_id_type id) {
-		if (id > agents_.size()-1) {
+		if (id<min_id_ || (id-min_id_) > (int_id_type)(agents_.size()-1)) {
 			return nullptr;
 		}
-		return agents_.at(id);
+		return agents_.at(id-min_id_);
+	}
+
+	agent_type* getAgentByConnId(int_conn_id_type conn_id) {
+		typename conn2agent_type::iterator it = conn2agent_ids_.find(conn_id);
+		if (it == conn2agent_ids_.end())
+			return nullptr;
+		return getAgent(it->second);
+	}
+
+	bool getIdByConnId(int_conn_id_type conn_id, int_id_type& id) {
+		typename conn2agent_type::iterator it = conn2agent_ids_.find(conn_id);
+		if (it == conn2agent_ids_.end()) { return false; }
+		id = it->second;
+		return true;
 	}
 
 	bool deleteAgent(int_id_type id) {
@@ -211,9 +256,22 @@ public:
 		if (agent_count_ == 0) {
 			return false;
 		}
-		agents_[id] = nullptr;
+		agents_[id-min_id_] = nullptr;
 		agent_count_ -= 1;
+
+		typename agent2conn_type::iterator it = agent2conn_ids_.find(id);
+		if (it != agent2conn_ids_.end()) {
+			conn2agent_ids_.erase(it->second);
+			agent2conn_ids_.erase(it);
+		}
 		return true;
+	}
+
+	bool deleteAgentByConnId(int_conn_id_type conn_id) {
+		typename conn2agent_type::iterator it = conn2agent_ids_.find(conn_id);
+		if (it == conn2agent_ids_.end())
+			return false;
+		return deleteAgent(it->second);
 	}
 
 	bool setAgentState(int_id_type id, AgentStateType state) {
@@ -223,8 +281,18 @@ public:
 		}
 		agent->setState(state);
 	}
+	
+	bool setAgentStateByConnId(int_conn_id_type conn_id, AgentStateType state) {
+		typename conn2agent_type::iterator it = conn2agent_ids_.find(conn_id);
+		if (it == conn2agent_ids_.end())
+			return false;
+		return setAgentState(it->second, state);
+	}
 
 protected:
 	agent_array_type agents_;
 	size_t agent_count_;
+	int_id_type min_id_;
+	conn2agent_type conn2agent_ids_;
+	agent2conn_type agent2conn_ids_;
 };

@@ -7,7 +7,6 @@
 #include <string>
 
 struct ClientData {
-	std::string account;
 };
 typedef Agent<ClientData, int> ClientAgent;
 typedef AgentManager<std::string, ClientData, int> ClientAgentManager;
@@ -24,6 +23,7 @@ public:
 	static int onDisconnect(JmyEventInfo*);
 	static int onTick(JmyEventInfo*);
 	static int onTimer(JmyEventInfo*);	
+
 	static ClientAgentManager& getClientManager() { return client_mgr_; }
 	static ClientAgent* getClientAgent(const std::string& account);
 

@@ -21,6 +21,7 @@ T* jmy_mem_malloc(Args&&... args) {
 
 template <typename T>
 void jmy_mem_free(T* p) {
+	p->~T();
 	jmy_mem_free((void*)p);
 }
 

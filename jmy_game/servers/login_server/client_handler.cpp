@@ -2,6 +2,7 @@
 #include "../libjmy/jmy.h"
 #include "../common/util.h"
 #include "../../proto/src/server.pb.h"
+#include "config_loader.h"
 #include "user.h"
 #include <random>
 
@@ -53,15 +54,21 @@ int ClientHandler::processSelectServer(JmyMsgInfo* info)
 		return -1;
 	}
 
-	ClientAgent* user = client_mgr_.getAgentById(info->session_id);
+	ClientAgent* user = client_mgr_.getAgentByConnId(info->session_id);
 	if (!user) {
 		send_error(info, PROTO_ERROR_LOGIN_ACCOUNT_OR_PASSWORD_INVALID);
 		ServerLogError("cant find user by id(%d)", info->session_id);
 		return -1;
 	}
 
+	std::string account;
+	if (!client_mgr_.getKeyByConnId(info->session_id, account)) {
+		ServerLogError("cant get account by conn_id(%d)", info->session_id);
+		return -1;
+	}
+
 	MsgLS2GT_SelectedServerNotify notify;
-	notify.set_account(user->getData().account);
+	notify.set_account(account);
 	notify.SerializeToArray(tmp_, sizeof(tmp_));
 	user->sendMsg(MSGID_LS2CL_SELECT_SERVER_RESPONSE, tmp_, notify.ByteSize());
 	ServerLogInfo("user(%d) select server", user->getId());
@@ -76,14 +83,31 @@ ClientAgent* ClientHandler::getClientAgent(const std::string& account)
 
 int ClientHandler::onConnect(JmyEventInfo* info)
 {
+	(void)info;
+	int curr_conn = (int)client_mgr_.getAgentSize();
+	if (curr_conn < SERVER_CONFIG_FILE.max_conn) {
+		return 0;
+	}
 	JmyTcpConnection* conn = get_connection(info);
-	if (!conn) return -1;
+	if (!conn) {
+		ServerLogError("cant get connection by event info(conn_id:%d)", info->conn_id);
+		return -1;
+	}
+	conn->force_close();
+	ServerLogWarn("client connection count(%d) is max", curr_conn);
 	return 0;
 }
 
 int ClientHandler::onDisconnect(JmyEventInfo* info)
 {
 	(void)info;
+	ClientAgent* agent = client_mgr_.getAgentByConnId(info->conn_id);
+	if (!agent) {
+		ServerLogError("cant get client agent with conn_id(%d)", info->conn_id);
+		return -1;
+	}
+	client_mgr_.deleteAgentByConnId(info->conn_id);
+	ServerLogInfo("connection %d ondisconnect", info->conn_id);
 	return 0;
 }
 

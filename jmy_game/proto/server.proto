@@ -13,20 +13,26 @@ enum MsgIdTypeServer {
 	/* GateServer <-> ConfigServer */
 	MSGID_GT2CS_CONNECT_REQUEST				= 20100;
 	MSGID_CS2GT_CONNECT_RESPONSE			= 20101;
+	MSGID_CS2GT_NEW_LOGIN_NOTIFY			= 20102;
+	//MSGID_CS2GT_REMOVE_LOGIN_NOTIFY			= 20103;
 
 	/* LoginServer <-> ConfigServer */
 	MSGID_LS2CS_CONNECT_REQUEST				= 20110;
 	MSGID_CS2LS_CONNECT_RESPONSE			= 20111;
+	MSGID_CS2LS_GATE_CONF_LIST_NOTIFY		= 20112;
+	//MSGID_CS2LS_NEW_GATE_NOTIFY				= 20113;
+	//MSGID_CS2LS_REMOVE_GATE_NOTIFY			= 20114;
 
 	/* GateServer <-> GameServer */
 	MSGID_GS2GT_CONNECT_REQUEST				= 20200;
 	MSGID_GT2GS_CONNECT_RESPONSE			= 20201;
 }
 
+/*** LoginServer <-> GateServer ***/
 // gate -> login  [MSGID_GT2LS_CONNECT_REQUEST]  gate connect login request
 message MsgGT2LS_ConnectRequest {
 	int32 gate_server_id = 1;
- 	bytes gate_server_ip = 2;
+ 	string gate_server_ip = 2;
 	int32 gate_server_port = 3;
 }
 
@@ -43,18 +49,19 @@ message MsgLS2GT_SelectedServerNotify {
 // gate -> login  [MSGID_GT2LS_SELECTED_SERVER_RESPONSE]  response for selected server
 message MsgGT2LS_SelectedServerResponse {
 	bytes account = 1;
-	bytes session_code = 2;
+	string session_code = 2;
 }
 
+/*** ConfigServer <-> GateServer ***/
 // gate -> config  [MSGID_GT2CS_CONNECT_REQUEST]  gate connect config request
 message MsgGT2CS_ConnectRequest {
 	int32 gate_id = 1;
-	bytes gate_ip = 2;
+	string gate_ip = 2;
 	int32 gate_port = 3;
 }
 
 message MsgLoginInfoData {
-	bytes login_ip = 1;
+	string login_ip = 1;
 	int32 login_port = 2;
 }
 
@@ -63,6 +70,17 @@ message MsgCS2GT_ConnectResponse {
 	repeated MsgLoginInfoData login_list = 1;
 }
 
+// config -> gate  [MSGID_CS2GT_NEW_LOGIN_NOTIFY]
+message MsgCS2GT_NewLoginNotify {
+	int32 login_id = 1;
+}
+
+// config -> gate  [MSGID_CS2GT_REMOVE_LOGIN_NOTIFY]
+//message MsgCS2GT_RemoveLoginNotify {
+//	int32 login_id = 1;
+//}
+
+/*** ConfigServer <-> LoginServer ***/
 // login -> config  [MSGID_LS2CS_CONNECT_REQUEST]
 message MsgLS2CS_ConnectRequest {
 	int32 login_id = 1;
@@ -70,15 +88,31 @@ message MsgLS2CS_ConnectRequest {
 	int32 login_port = 3;
 }
 
-message MsgGateInfoData {
-	int32 gate_id = 1;
-	bytes gate_ip = 2;
-	int32 gate_port = 3;
-	int32 platform = 4;
-	int32 channel_code = 5;
+message MsgGateConfData {
+	bytes name = 1;
+	int32 id = 2;
+	string ip = 3;
+	int32 port = 4;
+	string platform = 5;
+	string channel_code = 6;
 }
 
 // config -> login  [MSGID_CS2LS_CONNECT_RESPONSE]
 message MsgCS2LS_ConnectResponse {
-	repeated MsgGateInfoData gate_list = 1;
+	repeated MsgGateConfData gate_list = 1;
+}
+
+// config -> login  [MSGID_CS2LS_NEW_GATE_NOTIFY]
+//message MsgCS2LS_NewGateNotify {
+//	int32 gate_id = 1;
+//}
+
+// config -> login  [MSGID_CS2LS_REMOVE_GATE_NOTIFY]
+//message MsgCS2LS_RemoveGateNotify {
+//	int32 gate_id = 1;
+//}
+
+// config -> login  [MSGID_CS2LS_GATE_CONF_LIST_NOTIFY]
+message MsgCS2LS_GateConfListNotify {
+	repeated MsgGateConfData gate_list = 1;
 }

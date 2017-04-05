@@ -2,15 +2,17 @@
 
 #include "../libjmy/jmy_const.h"
 #include "../common/agent.h"
+#include "../common/defines.h"
 #include <string>
+#include <unordered_map>
 
 struct GateData {
-	int gate_id;
+	int id;
 	std::string ip;
 	short port;
 };
 typedef Agent<GateData, int> GateAgent;
-typedef AgentManagerPerf<GateData, int, 100> GateAgentManager;
+typedef AgentManagerPerf<GateData, int, int, GATE_SERVER_MAX_ID, GATE_SERVER_MIN_ID> GateAgentManager;
 
 struct JmyMsgInfo;
 struct JmyEventInfo;
@@ -23,7 +25,9 @@ public:
 	static int onDisconnect(JmyEventInfo*);
 	static int onTick(JmyEventInfo*);
 	static int onTimer(JmyEventInfo*);	
+
 	static GateAgentManager& getGateManager() { return gate_mgr_; }
+	static const GateData* getGateData(int gate_id);
 
 private:
 	static char tmp_[MAX_SEND_BUFFER_SIZE];
