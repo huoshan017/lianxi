@@ -28,9 +28,9 @@ public:
 		int listen_game_max_conn;
 		bool listen_game_enable_reconnect;
 
-		std::string connect_login_ip;
-		short connect_login_port;
-		bool connect_login_enable_reconnect;
+		std::string connect_config_ip;
+		short connect_config_port;
+		bool connect_config_enable_reconnect;
 	};
 
 	const ServerConfig& getServerConfig() { return config_;  }

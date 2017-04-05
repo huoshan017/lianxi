@@ -99,26 +99,26 @@ bool ConfigLoader::loadJson(const char* jsonpath)
 	}
 	config_.listen_game_max_conn = doc_["listen_game_max_conn"].GetInt();
 
-	// connect_login_ip
-	if (!doc_["connect_login_ip"].IsString()) {
-		std::cout << "connect_login_ip type is not bool" << std::endl;
+	// connect_config_ip
+	if (!doc_["connect_config_ip"].IsString()) {
+		std::cout << "connect_config_ip type is not bool" << std::endl;
 		return false;
 	}
-	config_.connect_login_ip = doc_["connect_login_ip"].GetString();
+	config_.connect_config_ip = doc_["connect_config_ip"].GetString();
 
-	// connect_login_port
-	if (!doc_["connect_login_port"].IsInt()) {
-		std::cout << "connect_login_port type is not int" << std::endl;
+	// connect_config_port
+	if (!doc_["connect_config_port"].IsInt()) {
+		std::cout << "connect_config_port type is not int" << std::endl;
 		return false;
 	}
-	config_.connect_login_port = doc_["connect_login_port"].GetInt();
+	config_.connect_config_port = doc_["connect_config_port"].GetInt();
 
-	// connect_login_enable_reconnect
-	if (!doc_["connect_login_enable_reconnect"].IsBool()) {
-		std::cout << "connect_login_enable_reconnect type is not bool" << std::endl;
+	// connect_config_enable_reconnect
+	if (!doc_["connect_config_enable_reconnect"].IsBool()) {
+		std::cout << "connect_config_enable_reconnect type is not bool" << std::endl;
 		return false;
 	}
-	config_.connect_login_enable_reconnect = doc_["connect_login_enable_reconnect"].GetBool();
+	config_.connect_config_enable_reconnect = doc_["connect_config_enable_reconnect"].GetBool();
 	jsonpath_ = jsonpath;
 	
 	std::cout << "load " << jsonpath << " success" << std::endl;

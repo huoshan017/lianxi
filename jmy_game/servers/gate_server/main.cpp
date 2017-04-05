@@ -62,19 +62,19 @@ int main(int argc, char* argv[])
 
 	// connection to login server
 	JmyTcpConnectionMgr conn_mgr(main_server.getService());
-	JmyTcpConnection* login_conn = conn_mgr.getFree(config.id);
-	if (!login_conn) {
+	JmyTcpConnection* config_conn = conn_mgr.getFree(config.id);
+	if (!config_conn) {
 		ServerLogError("get free connection with id(%d) failed", config.id);
 		return -1;
 	}
-	login_conn->asynConnect(config.connect_login_ip.c_str(), config.connect_login_port);
-	while (!login_conn->isConnected()) {
+	config_conn->asynConnect(config.connect_config_ip.c_str(), config.connect_config_port);
+	while (!config_conn->isConnected()) {
 		std::this_thread::sleep_for(std::chrono::microseconds(100));
 	}
 
 	while (main_server.run() >= 0) {
-		if (login_conn->isConnected()) {
-			if (login_conn->run() < 0) {
+		if (config_conn->isConnected()) {
+			if (config_conn->run() < 0) {
 				ServerLogInfo("login connection run failed");
 			}
 		}

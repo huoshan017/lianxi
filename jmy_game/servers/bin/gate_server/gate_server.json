@@ -11,7 +11,7 @@
 	"listen_game_max_conn" : 100,
 	"listen_game_enable_reconnect" : false,
 
-	"connect_login_ip" : "192.168.3.250",
-	"connect_login_port" : 20000,
-	"connect_login_enable_reconnect" : false
+	"connect_config_ip" : "192.168.3.250",
+	"connect_config_port" : 20000,
+	"connect_config_enable_reconnect" : false
 }
