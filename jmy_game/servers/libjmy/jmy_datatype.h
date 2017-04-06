@@ -130,8 +130,8 @@ struct JmyBufferConfig {
 	bool use_send_buff_list;
 };
 
-// configure for reconnect
-struct JmyReconnectConfig {
+// configure for retransmission
+struct JmyRetransmissionConfig {
 	unsigned short max_cached_send_count;	// if the size of send messages great to the value, that is meant network has problem
 	unsigned short ack_recv_count;			// acknowlege the count of receiving messages
 };
@@ -139,7 +139,7 @@ struct JmyReconnectConfig {
 // connection configure
 struct JmyConnectionConfig {
 	JmyBufferConfig buff_conf;
-	JmyReconnectConfig reconn_conf;
+	JmyRetransmissionConfig* retran_conf;
 	JmyId2MsgHandler* handlers;
 	int nhandlers;
 	JmyBaseEventHandlers base_event_handlers;
@@ -190,14 +190,15 @@ struct JmyConnectorConfig {
 struct JmyClientConfig {
 	JmyConnectionConfig conn_conf;
 	char* conn_ip;
-	short conn_port;
+	unsigned short conn_port;
+	bool is_reconnect;
 };
 
 // configure for clients
 struct JmyClientsConfig {
 	JmyConnectionConfig conn_conf;
 	char* conn_ip;
-	short conn_port;
+	unsigned short conn_port;
 	unsigned int max_conn;
 };
 #endif
@@ -210,7 +211,7 @@ struct JmyServerConfig {
 	JmyConnectionConfig conn_conf;
 #endif
 	char* listen_ip;
-	short listen_port;
+	unsigned short listen_port;
 	unsigned int max_conn;
 };
 

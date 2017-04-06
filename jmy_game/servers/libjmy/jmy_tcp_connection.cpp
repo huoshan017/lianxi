@@ -284,16 +284,19 @@ int JmyTcpConnection::handle_recv()
 	}
 
 	// ack recv data count
-	if (buffer_->total_reconn_info.recv_count + count >= mgr_.getConf().reconn_conf.ack_recv_count) {
-		JmyAckInfo ack_info;
-		ack_info.ack_count = buffer_->total_reconn_info.recv_count + count;
-		if (this->sendAck(&ack_info) < 0) {
-			LibJmyLogError("send ack failed");
-			return -1;
+	JmyRetransmissionConfig* rc = mgr_.getConf().retran_conf;
+	if (rc) {
+		if (buffer_->total_reconn_info.recv_count + count >= rc->ack_recv_count) {
+			JmyAckInfo ack_info;
+			ack_info.ack_count = buffer_->total_reconn_info.recv_count + count;
+			if (this->sendAck(&ack_info) < 0) {
+				LibJmyLogError("send ack failed");
+				return -1;
+			}
+			buffer_->total_reconn_info.recv_count = 0;
+		} else {
+			buffer_->total_reconn_info.recv_count += count;
 		}
-		buffer_->total_reconn_info.recv_count = 0;
-	} else {
-		buffer_->total_reconn_info.recv_count += count;
 	}
 	return count;
 }
@@ -347,7 +350,8 @@ int JmyTcpConnection::handle_send()
 				JmyPacketType pt = (JmyPacketType)buffer_->send_buff_list.readLen(bytes_transferred);
 				if (pt > 0) {
 					// check send data count
-					if (buffer_->total_reconn_info.send_count+1 >= mgr_.getConf().reconn_conf.max_cached_send_count) {
+					JmyRetransmissionConfig* rc = mgr_.getConf().retran_conf;
+					if (rc && buffer_->total_reconn_info.send_count+1 >= rc->max_cached_send_count) {
 						force_close();
 						LibJmyLogError("cached send buffer count is max");
 						return;

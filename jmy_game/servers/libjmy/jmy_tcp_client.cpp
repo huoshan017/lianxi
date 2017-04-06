@@ -31,6 +31,16 @@ void JmyTcpClient::reset()
 		conn_->reset();
 }
 
+bool JmyTcpClient::connect(const char* ip, unsigned short port, bool non_blocking)
+{
+	if (non_blocking) {
+		conn_->asynConnect(ip, port);
+	} else {
+		return conn_->connect(ip, port);
+	}
+	return true;
+}
+
 bool JmyTcpClient::start(const JmyClientConfig& conf, bool non_blocking)
 {
 	std::shared_ptr<JmyDataHandler> data_handler = std::make_shared<JmyDataHandler>();
@@ -41,7 +51,7 @@ bool JmyTcpClient::start(const JmyClientConfig& conf, bool non_blocking)
 		conn_->setDataHandler(data_handler);
 	}
 
-	std::shared_ptr<JmyEventHandler> event_handler = std::make_shared<JmyEventHandler>();
+	std::shared_ptr<JmyEventHandlerManager> event_handler = std::make_shared<JmyEventHandlerManager>();
 	event_handler->setBaseHandlers(conf.conn_conf.base_event_handlers);
 	if (conf.conn_conf.other_event_handlers && conf.conn_conf.other_event_nhandlers) {
 		event_handler->init(conf.conn_conf.other_event_handlers, conf.conn_conf.other_event_nhandlers);
@@ -52,12 +62,15 @@ bool JmyTcpClient::start(const JmyClientConfig& conf, bool non_blocking)
 	buffer->init(conf.conn_conf.buff_conf);
 	conn_->setBuffer(buffer);
 
-	if (non_blocking) {
-		conn_->asynConnect(conf.conn_ip, conf.conn_port);
-	} else {
-		return conn_->connect(conf.conn_ip, conf.conn_port);
+	return connect(conf.conn_ip, conf.conn_port, non_blocking);
+}
+
+bool JmyTcpClient::reconnect(const JmyClientConfig& conf, bool non_blocking)
+{
+	if (conn_->getConnState() != JMY_CONN_STATE_NOT_CONNECT) {
+		return false;
 	}
-	return true;
+	return connect(conf.conn_ip, conf.conn_port, non_blocking);
 }
 
 int JmyTcpClient::send(int msg_id, const char* data, unsigned int len)
@@ -127,7 +140,6 @@ JmyTcpClient* JmyTcpClientMaster::generate()
 			LibJmyLogError("insert connection failed");
 			return nullptr;
 		}
-		LibJmyLogDebug("get free conn");
 		id = conn->getId();
 		LibJmyLogInfo("connection id = %d", id);
 	} else {

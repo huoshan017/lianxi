@@ -3,7 +3,8 @@
 #include "jmy_session_buffer_pool.h"
 #include "jmy_log.h"
 
-JmyTcpServer::JmyTcpServer() :
+JmyTcpServer::JmyTcpServer(io_service& service) :
+	service_(service),
 	sock_(service_),
 #if USE_CONNECTOR_AND_SESSION
 	curr_session_(service_),
@@ -15,14 +16,15 @@ JmyTcpServer::JmyTcpServer() :
 {
 	acceptor_ = std::make_shared<ip::tcp::acceptor>(service_);
 	handler_ = std::make_shared<JmyDataHandler>();
-	event_handler_ = std::make_shared<JmyEventHandler>();
+	event_handler_ = std::make_shared<JmyEventHandlerManager>();
 #if USE_CONNECTOR_AND_SESSION
 	session_mgr_ = std::make_shared<JmyTcpSessionMgr>();
 #endif
 	buff_pool_ = std::make_shared<JmySessionBufferPool>();
 }
 
-JmyTcpServer::JmyTcpServer(short port) :
+JmyTcpServer::JmyTcpServer(io_service& service, short port) :
+	service_(service),
 	sock_(service_),
 #if USE_CONNECTOR_AND_SESSION
 	curr_session_(service_),
@@ -34,7 +36,7 @@ JmyTcpServer::JmyTcpServer(short port) :
 {
 	acceptor_ = std::make_shared<ip::tcp::acceptor>(service_, ip::tcp::endpoint(ip::tcp::v4(), port));
 	handler_ = std::make_shared<JmyDataHandler>();
-	event_handler_ = std::make_shared<JmyEventHandler>();
+	event_handler_ = std::make_shared<JmyEventHandlerManager>();
 #if USE_CONNECTOR_AND_SESSION
 	session_mgr_ = std::make_shared<JmyTcpSessionMgr>();
 #endif

@@ -39,7 +39,7 @@ public:
 	// set data handler
 	void setDataHandler(std::shared_ptr<JmyDataHandler> handler) { data_handler_ = handler; }
 	// set event handler
-	void setEventHandler(std::shared_ptr<JmyEventHandler> handler) { event_handler_ = handler; }
+	void setEventHandler(std::shared_ptr<JmyEventHandlerManager> handler) { event_handler_ = handler; }
 	std::shared_ptr<JmyConnectionBuffer> getBuffer() const { return buffer_; }
 	// set buffer
 	void setBuffer(std::shared_ptr<JmyConnectionBuffer> buffer) { buffer_ = buffer; }
@@ -71,7 +71,7 @@ protected:
 	bool sending_data_;											// is sending data
 	std::chrono::system_clock::time_point active_close_start_;	// active close time start
 	std::shared_ptr<JmyDataHandler> data_handler_;				// data handler
-	std::shared_ptr<JmyEventHandler> event_handler_;			// event handler
+	std::shared_ptr<JmyEventHandlerManager> event_handler_;			// event handler
 	std::shared_ptr<JmyConnectionBuffer> buffer_;				// recv and send buffer
 	std::chrono::system_clock::time_point last_run_tick_;
 	void* unused_data_;											// extra data when need to use

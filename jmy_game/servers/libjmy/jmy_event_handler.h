@@ -5,13 +5,13 @@
 #include <cassert>
 #include <iostream>
 
-class JmyEventHandler
+class JmyEventHandlerManager
 {
 public:
-	JmyEventHandler() {
+	JmyEventHandlerManager() {
 		std::memset(handlers_, 0, sizeof(handlers_));
 	}
-	~JmyEventHandler() {
+	~JmyEventHandlerManager() {
 	}
 
 	void setHandler(int event_id, jmy_event_handler handler) {

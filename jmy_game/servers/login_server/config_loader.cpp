@@ -63,7 +63,7 @@ bool ConfigLoader::loadJson(const char* jsonpath)
 		ServerLogError("server_port type is not int");
 		return false;
 	}
-	config_.port = (short)doc_["server_port"].GetInt();
+	config_.port = (unsigned short)doc_["server_port"].GetInt();
 
 	// max_conn
 	if (!doc_["max_conn"].IsInt()) {
@@ -91,7 +91,7 @@ bool ConfigLoader::loadJson(const char* jsonpath)
 		ServerLogError("listen_gate_port type is not int");
 		return false;
 	}
-	config_.listen_gate_port = doc_["listen_gate_port"].GetInt();
+	config_.listen_gate_port = (unsigned short)doc_["listen_gate_port"].GetInt();
 
 	// listen_gate_max_conn
 	if (!doc_["listen_gate_max_conn"].IsInt()) {
@@ -119,7 +119,7 @@ bool ConfigLoader::loadJson(const char* jsonpath)
 		ServerLogError("connect_config_port type is int");
 		return false;
 	}
-	config_.connect_config_port = (short)doc_["connect_config_port"].GetInt();
+	config_.connect_config_port = (unsigned short)doc_["connect_config_port"].GetInt();
 
 	// connect_config_enable_reconnect
 	if (!doc_["connect_config_enable_reconnect"].IsBool()) {

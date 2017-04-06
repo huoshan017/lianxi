@@ -19,17 +19,17 @@ public:
 		std::string name;
 		int id;
 		std::string ip;
-		short port;
+		unsigned short port;
 		int max_conn;
 		bool enable_reconnect;
 
 		std::string listen_gate_ip;
-		short listen_gate_port;
+		unsigned short listen_gate_port;
 		int listen_gate_max_conn;
 		bool listen_gate_enable_reconnect;
 
 		std::string connect_config_ip;
-		short connect_config_port;
+		unsigned short connect_config_port;
 		bool connect_config_enable_reconnect;
 
 		std::string log_conf_path;

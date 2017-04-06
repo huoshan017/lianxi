@@ -62,7 +62,7 @@ bool ConfigLoader::loadJson(const char* jsonpath)
 		std::cout << "server_port type is not int" << std::endl;
 		return false;
 	}
-	config_.port = (short)doc_["server_port"].GetInt();
+	config_.port = (unsigned short)doc_["server_port"].GetInt();
 
 	// max_conn
 	if (!doc_["max_conn"].IsInt()) {

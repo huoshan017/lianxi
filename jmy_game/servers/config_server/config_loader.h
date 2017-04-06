@@ -18,7 +18,7 @@ public:
 		std::string name;
 		int id;
 		std::string ip;
-		short port;
+		unsigned short port;
 		int max_conn;
 		bool enable_reconnect;
 

@@ -20,8 +20,8 @@ using namespace boost::asio;
 class JmyTcpServer
 {
 public:
-	JmyTcpServer();
-	JmyTcpServer(short port);
+	JmyTcpServer(io_service& service);
+	JmyTcpServer(io_service& service, short port);
 	~JmyTcpServer();
 
 	bool loadConfig(const JmyServerConfig& conf);
@@ -31,6 +31,7 @@ public:
 	int run();
 
 	io_service& getService() { return service_; }
+	const JmyServerConfig& getConfig() const { return conf_; }
 
 private:
 	int do_accept();
@@ -41,14 +42,14 @@ private:
 	int run_conns();
 
 private:
-	io_service service_;
+	io_service& service_;
 	ip::tcp::socket sock_;
 #if USE_THREAD
 	std::shared_ptr<std::thread> thread_;
 #endif
 	std::shared_ptr<ip::tcp::acceptor> acceptor_;
 	std::shared_ptr<JmyDataHandler> handler_;
-	std::shared_ptr<JmyEventHandler> event_handler_;
+	std::shared_ptr<JmyEventHandlerManager> event_handler_;
 #if USE_CONNECTOR_AND_SESSION
 	std::shared_ptr<JmyTcpSessionMgr> session_mgr_;
 	JmyTcpSession curr_session_;

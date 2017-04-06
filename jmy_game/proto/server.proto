@@ -38,6 +38,7 @@ message MsgGT2LS_ConnectRequest {
 
 // login -> gate  [MSGID_LS2GT_CONNECT_RESPONSE]  response for gate connect login request
 message MsgLS2GT_ConnectResponse {
+	int32 login_id = 1;
 }
 
 // login -> gate  [MSGID_LS2GT_SELECTED_SERVER_NOTIFY]  selected server
@@ -63,6 +64,7 @@ message MsgGT2CS_ConnectRequest {
 message MsgLoginInfoData {
 	string login_ip = 1;
 	int32 login_port = 2;
+	int32 login_id = 3;
 }
 
 // config -> gate  [MSGID_CS2GT_CONNECT_RESPONSE]
@@ -72,7 +74,7 @@ message MsgCS2GT_ConnectResponse {
 
 // config -> gate  [MSGID_CS2GT_NEW_LOGIN_NOTIFY]
 message MsgCS2GT_NewLoginNotify {
-	int32 login_id = 1;
+	MsgLoginInfoData login_data = 1;
 }
 
 // config -> gate  [MSGID_CS2GT_REMOVE_LOGIN_NOTIFY]

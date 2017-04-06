@@ -6,7 +6,6 @@
 #include "config_loader.h"
 #include "config_data.h"
 
-#define LogConfPath "./log.conf"
 #define ServerConfPath "./login_server.json"
 
 int main(int argc, char* argv[])
@@ -80,6 +79,8 @@ int main(int argc, char* argv[])
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 
+	client_master.recycle(config_client);
+	client_master.close();
 	listen_gate_server.close();
 	main_server.close();
 	return 0;

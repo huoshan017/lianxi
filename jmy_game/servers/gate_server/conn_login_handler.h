@@ -15,14 +15,10 @@ enum { ENTER_GAME_SESSION_CODE_LENGTH = 16 };
 
 struct JmyMsgInfo;
 struct JmyEventInfo;
-class LoginHandler
+class ConnLoginHandler
 {
 public:
-	struct AccountData {
-		std::string session_code;
-	};
-	typedef std::unordered_map<std::string, AccountData*> account2data_type;
-
+	static int processConnectResponse(JmyMsgInfo* info);
 	static int processSelectedServerNotify(JmyMsgInfo* info);
 	static int onConnect(JmyEventInfo* info);
 	static int onDisconnect(JmyEventInfo* info);
@@ -31,14 +27,12 @@ public:
 
 	static LoginAgentManager& getLoginManager() { return login_mgr_; }
 
-	static AccountData* getAccountData(const std::string& account);
-	static bool removeAccountData(const std::string& account);
+	static bool checkAccountSession(const std::string& account, const std::string& session_code);
 
 private:
 	static char tmp_[MAX_SEND_BUFFER_SIZE];
 	static LoginAgentManager login_mgr_;
-	static account2data_type account2datas_;
 	static char session_code_buff_[ENTER_GAME_SESSION_CODE_LENGTH];
 };
 
-#define LOGIN_MGR (LoginHandler::getLoginManager())
+#define LOGIN_MGR (ConnLoginHandler::getLoginManager())

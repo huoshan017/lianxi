@@ -17,13 +17,18 @@ public:
 	void reset();
 
 	bool start(const JmyClientConfig& conf, bool non_blocking = true);
+	bool reconnect(const JmyClientConfig& conf, bool no_blocking = true);
 	int send(int msg_id, const char* data, unsigned int len);
 	int run();
 
 	JmyConnState getState() const { return conn_->getConnState(); }
+	bool isNotConnect() const { return conn_->getConnState() == JMY_CONN_STATE_NOT_CONNECT; }
 	bool isConnected() const { return conn_->isConnected(); }
 	bool isDisconnected() const { return conn_->isDisconnect(); }
 	bool isConnecting() const { return conn_->getConnState() == JMY_CONN_STATE_CONNECTING; }
+
+private:
+	bool connect(const char* ip, unsigned short port, bool non_blocking = true);
 
 private:
 	JmyTcpConnection* conn_;

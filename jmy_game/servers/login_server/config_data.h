@@ -7,6 +7,11 @@
 #include "gate_handler.h"
 #include "conn_config_handler.h"
 
+static JmyRetransmissionConfig s_retran_config = {
+	RETRANSMISSION_MAX_CACHED_SEND_BUFFER_COUNT,
+	RETRANSMISSION_ACK_RECV_COUNT
+};
+
 /* client handler config */
 static JmyId2MsgHandler s_client_handlers[] = {
 	{ MSGID_CL2LS_LOGIN_REQUEST, ClientHandler::processLogin },
@@ -19,12 +24,12 @@ static JmyBaseEventHandlers s_client_base_event_handlers = {
 	ClientHandler::onTimer,
 };
 static JmyConnectionConfig s_client_conn_config = {
-	{ 2048, 2048, 0, 0, false, true},
-	{ 10000, 10 },
+	{ 2048, 2048, 0, 0, false, true },
+	(JmyRetransmissionConfig*)nullptr, //&s_retran_config,
 	s_client_handlers,
 	sizeof(s_client_handlers)/sizeof(s_client_handlers[0]),
 	s_client_base_event_handlers,
-	nullptr, 0,
+	(JmyId2EventHandler*)nullptr, 0,
 	true
 };
 static JmyServerConfig s_client_config = {
@@ -48,7 +53,7 @@ static JmyBaseEventHandlers s_gate_base_event_handlers = {
 };
 static JmyConnectionConfig s_gate_conn_config = {
 	{ 1024*64, 1024*64, 0, 0, false, true },
-	{ 1000, 10 },
+	&s_retran_config,
 	s_gate_handlers,
 	sizeof(s_gate_handlers)/sizeof(s_gate_handlers[0]),
 	s_gate_base_event_handlers,
@@ -74,7 +79,7 @@ static JmyBaseEventHandlers s_conn_config_base_event_handlers = {
 };
 static JmyConnectionConfig s_conn_conn_config = {
 	{ 1024*64, 1024*64, 0, 0, false, true },
-	{ 1000, 10 },
+	&s_retran_config,
 	s_conn_config_handlers,
 	sizeof(s_conn_config_handlers)/sizeof(s_conn_config_handlers[0]),
 	s_conn_config_base_event_handlers,
@@ -84,5 +89,6 @@ static JmyConnectionConfig s_conn_conn_config = {
 static JmyClientConfig s_conn_config = {
 	s_conn_conn_config,
 	(char*)"0.0.0.0",
-	20000
+	20000,
+	true,
 };
