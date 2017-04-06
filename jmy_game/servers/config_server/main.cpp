@@ -15,30 +15,23 @@ int main(int argc, char* argv[])
 
 	ConfigLoader config_loader;
 	if (!config_loader.loadJson(ServerConfPath)) {
-		std::cout << "failed to load server config " << ServerConfPath << std::endl;
+		ServerLogError("failed to load server config %s", ServerConfPath);
 		return -1;
 	}
 
-	const ConfigLoader::ServerConfig& config = config_loader.getServerConfig();
-	const char* log_conf = config.log_conf_path.c_str();
-	if (!JmyLogInit(log_conf)) {
-		std::cout << "failed to init log file: " << log_conf << std::endl;
-		return -1;
-	}
-	if (!JmyLogOpenLib(s_libjmy_log_cate)) {
-		std::cout << "failed to create lib log category: " << s_libjmy_log_cate << std::endl;
-		return -1;
-	}
-	if (!JmyLogOpen(s_server_log_cate)) {
-		std::cout << "failed to create server log category: " << s_server_log_cate << std::endl;
+	const ConfigLoader::ServerConfig& config_file = config_loader.getServerConfig();
+
+	if (!global_log_init(config_file.log_conf_path.c_str())) {
+		ServerLogError("failed to init log with path %s", config_file.log_conf_path.c_str());
 		return -1;
 	}
 
+	boost::asio::io_service service;
 	// listen login and gate
-	JmyTcpServer main_server;
-	s_conn_config.max_conn = config.max_conn;
-	s_conn_config.listen_port = config.port;
-	s_conn_config.listen_ip = (char*)(config.ip.c_str());
+	JmyTcpServer main_server(service);
+	s_conn_config.max_conn = config_file.max_conn;
+	s_conn_config.listen_port = config_file.port;
+	s_conn_config.listen_ip = (char*)(config_file.ip.c_str());
 	if (!main_server.loadConfig(s_conn_config)) {
 		ServerLogError("failed to load login config");
 		return -1;

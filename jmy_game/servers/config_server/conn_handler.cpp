@@ -55,10 +55,12 @@ int ConnHandler::broadcast_msg_to_gate(int msg_id, char* data, int len)
 	return 0;
 }
 
-int ConnHandler::broadcast_new_login_to_gate(int login_id)
+int ConnHandler::broadcast_new_login_to_gate(int login_id, const char* login_ip, unsigned short login_port)
 {
 	MsgCS2GT_NewLoginNotify notify;
-	notify.set_login_id(login_id);
+	notify.mutable_login_data()->set_login_id(login_id);
+	notify.mutable_login_data()->set_login_ip(login_ip);
+	notify.mutable_login_data()->set_login_port(login_port);
 	if (!notify.SerializeToArray(tmp_, sizeof(tmp_)))
 		return -1;
 	
@@ -225,7 +227,7 @@ int ConnHandler::processLoginConnect(JmyMsgInfo* info)
 	}
 
 	// notify gate new login
-	if (broadcast_new_login_to_gate(login_id) < 0)
+	if (broadcast_new_login_to_gate(login_id, login_data.ip.c_str(), login_data.port) < 0)
 		return -1;
 
 	ServerLogInfo("login_server(id:%d, ip:%s, port:%d) connected", 

@@ -68,6 +68,9 @@ bool GateServer::init(const char* conf_path)
 
 	if (!client_set_.addClient(config_client)) {
 		config_client->close();
+		client_master_.recycle(config_client);
+		ServerLogError("add client to client_set failed");
+		return false;
 	}
 
 	ServerLogInfo("GateServer inited");

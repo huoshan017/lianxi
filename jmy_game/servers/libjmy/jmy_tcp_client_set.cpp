@@ -24,7 +24,7 @@ void JmyTcpClientSet::clear()
 bool JmyTcpClientSet::addClient(JmyTcpClient* client)
 {
 	std::set<JmyTcpClient*>::iterator it = clients_.find(client);
-	if (it == clients_.end())
+	if (it != clients_.end())
 		return false;
 	clients_.insert(client);
 	return true;
@@ -51,7 +51,6 @@ void JmyTcpClientSet::run()
 			} else if (c->isNotConnect()) {
 				c->reconnect(conf_);
 			} else if (c->isConnecting()) {
-				continue;
 			}
 		}
 		c->run();
