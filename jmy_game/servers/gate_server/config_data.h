@@ -64,7 +64,8 @@ static JmyServerConfig s_game_config = {
 // handle connection to config_server config
 static JmyId2MsgHandler s_config_handlers[] = {
 	{ MSGID_CS2GT_CONNECT_RESPONSE, ConnConfigHandler::processConnectResponse },
-	{ MSGID_CS2GT_NEW_LOGIN_NOTIFY, ConnConfigHandler::processNewLoginNotify }
+	{ MSGID_CS2GT_NEW_LOGIN_NOTIFY, ConnConfigHandler::processNewLoginNotify },
+	{ MSGID_CS2GT_REMOVE_LOGIN_NOTIFY, ConnConfigHandler::processRemoveLoginNotify }
 };
 static JmyBaseEventHandlers s_config_base_event_handlers = {
 	ConnConfigHandler::onConnect,

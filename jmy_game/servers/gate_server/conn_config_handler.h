@@ -9,6 +9,7 @@ class ConnConfigHandler
 public:
 	static int processConnectResponse(JmyMsgInfo*);
 	static int processNewLoginNotify(JmyMsgInfo*);
+	static int processRemoveLoginNotify(JmyMsgInfo*);
 	static int onConnect(JmyEventInfo*);
 	static int onDisconnect(JmyEventInfo*);
 	static int onTick(JmyEventInfo*);

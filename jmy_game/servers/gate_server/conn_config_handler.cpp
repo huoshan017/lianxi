@@ -24,8 +24,11 @@ int ConnConfigHandler::processConnectResponse(JmyMsgInfo* info)
 		s_login_config.conn_port = (unsigned short)info.login_port();
 		if (!GATE_SERVER->startClient(s_login_config)) {
 			ServerLogError("start client to connect login_server(ip:%s, port:%d) failed", info.login_ip().c_str(), info.login_port());
+		} else {
+			ServerLogInfo("start client to connect login_server(ip:%s, port:%d)", info.login_ip().c_str(), info.login_port());
 		}
 	}
+	ServerLogInfo("processed connect config_server response");
 	return 0;
 }
 
@@ -46,6 +49,11 @@ int ConnConfigHandler::processNewLoginNotify(JmyMsgInfo* info)
 	return 0;
 }
 
+int ConnConfigHandler::processRemoveLoginNotify(JmyMsgInfo* info)
+{
+	return 0;
+}
+
 int ConnConfigHandler::onConnect(JmyEventInfo* info)
 {
 	JmyTcpConnection* conn = get_connection(info);
@@ -62,12 +70,13 @@ int ConnConfigHandler::onConnect(JmyEventInfo* info)
 		ServerLogError("send MsgGT2CS_ConnectRequest(id:%d, ip:%s, port:%d) failed", CONFIG_FILE.id, CONFIG_FILE.ip.c_str(), CONFIG_FILE.port);
 		return -1;
 	}
-	ServerLogInfo("new connection with conn_id(%d)", info->conn_id);
+	ServerLogInfo("new connection to config_server with conn_id(%d)", info->conn_id);
 	return 0;
 }
 
 int ConnConfigHandler::onDisconnect(JmyEventInfo* info)
 {
+	ServerLogInfo("connection to config_server with conn_id(%d) disconnected", info->conn_id);
 	return 0;
 }
 

@@ -14,7 +14,7 @@ enum MsgIdTypeServer {
 	MSGID_GT2CS_CONNECT_REQUEST				= 20100;
 	MSGID_CS2GT_CONNECT_RESPONSE			= 20101;
 	MSGID_CS2GT_NEW_LOGIN_NOTIFY			= 20102;
-	//MSGID_CS2GT_REMOVE_LOGIN_NOTIFY			= 20103;
+	MSGID_CS2GT_REMOVE_LOGIN_NOTIFY			= 20103;
 
 	/* LoginServer <-> ConfigServer */
 	MSGID_LS2CS_CONNECT_REQUEST				= 20110;
@@ -78,9 +78,9 @@ message MsgCS2GT_NewLoginNotify {
 }
 
 // config -> gate  [MSGID_CS2GT_REMOVE_LOGIN_NOTIFY]
-//message MsgCS2GT_RemoveLoginNotify {
-//	int32 login_id = 1;
-//}
+message MsgCS2GT_RemoveLoginNotify {
+	int32 login_id = 1;
+}
 
 /*** ConfigServer <-> LoginServer ***/
 // login -> config  [MSGID_LS2CS_CONNECT_REQUEST]
