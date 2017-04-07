@@ -4,9 +4,11 @@
 #include "../common/util.h"
 #include <iostream>
 #include "config_loader.h"
+#include "conf_gate_list.h"
 #include "config_data.h"
 
 #define ServerConfPath "./config_server.json"
+#define ConfGateListPath "./server_list.json"
 
 int main(int argc, char* argv[])
 {
@@ -23,6 +25,11 @@ int main(int argc, char* argv[])
 
 	if (!global_log_init(config_file.log_conf_path.c_str())) {
 		ServerLogError("failed to init log with path %s", config_file.log_conf_path.c_str());
+		return -1;
+	}
+
+	if (!CONF_GATE_LIST->loadJson(ConfGateListPath)) {
+		ServerLogError("failed to load gate_list_conf(%s) file", ConfGateListPath);
 		return -1;
 	}
 

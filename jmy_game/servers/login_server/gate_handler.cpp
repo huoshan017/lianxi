@@ -8,63 +8,6 @@
 char GateHandler::tmp_[MAX_SEND_BUFFER_SIZE];
 GateAgentManager GateHandler::gate_mgr_;
 
-int GateHandler::processConnect(JmyMsgInfo* info)
-{
-	MsgGT2LS_ConnectRequest request;
-	if (!request.ParseFromArray(info->data, info->len)) {
-		ServerLogError("parse MsgGT2LS_ConnectRequest failed");
-		return -1;
-	}
-
-	int gate_id = request.gate_server_id();
-	GateAgent* agent = gate_mgr_.newAgent(gate_id, (JmyTcpConnectionMgr*)info->param, info->session_id);
-	if (!agent) {
-		ServerLogError("cant create new gate agent with id(%d)", info->session_id);
-		return -1;
-	}
-
-	// new gate agent data
-	GateData& data = agent->getData();
-	data.id = gate_id;
-	data.ip = request.gate_server_ip();
-	data.port = request.gate_server_port();
-
-	MsgLS2GT_ConnectResponse response;
-	response.SerializeToArray(tmp_, sizeof(tmp_));
-	agent->sendMsg(MSGID_LS2GT_CONNECT_RESPONSE, tmp_, response.ByteSize());
-	return 0;
-}
-
-// selected server response from gate server, back message to client
-int GateHandler::processSelectedServerResponse(JmyMsgInfo* info)
-{
-	GateAgent* agent = gate_mgr_.getAgentByConnId(info->session_id);
-	if (!agent) {
-		ServerLogError("cant get gate agent with id(%d)", info->session_id);
-		return -1;
-	}
-
-	MsgGT2LS_SelectedServerResponse res;
-	res.ParseFromArray(info->data, info->len);
-	ClientAgent* client_agent = CLIENT_MGR.getAgent(res.account());
-	if (!client_agent) {
-		ServerLogError("cant get client agent with account(%s)", res.account().c_str());
-		return -1;
-	}
-	
-	MsgLS2CL_SelectServerResponse response;
-	response.set_session_code(res.session_code());
-	response.SerializeToArray(tmp_, sizeof(tmp_));
-	if (client_agent->sendMsg(MSGID_LS2CL_SELECT_SERVER_RESPONSE, tmp_, response.ByteSize()) < 0)
-		return -1;
-
-	// select server complete, close client
-	if (client_agent->close() < 0)
-		return -1;
-
-	return 0;
-}
-
 int GateHandler::onConnect(JmyEventInfo* info)
 {
 	(void)info;
@@ -101,4 +44,61 @@ const GateData* GateHandler::getGateData(int gate_id)
 	if (!agent)
 		return nullptr;
 	return &agent->getData();
+}
+
+int GateHandler::processConnectLogin(JmyMsgInfo* info)
+{
+	MsgGT2LS_ConnectLoginRequest request;
+	if (!request.ParseFromArray(info->data, info->len)) {
+		ServerLogError("parse MsgGT2LS_ConnectLoginRequest failed");
+		return -1;
+	}
+
+	int gate_id = request.gate_server_id();
+	GateAgent* agent = gate_mgr_.newAgent(gate_id, (JmyTcpConnectionMgr*)info->param, info->session_id);
+	if (!agent) {
+		ServerLogError("cant create new gate agent with id(%d)", info->session_id);
+		return -1;
+	}
+
+	// new gate agent data
+	GateData& data = agent->getData();
+	data.id = gate_id;
+	data.ip = request.gate_server_ip();
+	data.port = request.gate_server_port();
+
+	MsgLS2GT_ConnectLoginResponse response;
+	response.SerializeToArray(tmp_, sizeof(tmp_));
+	agent->sendMsg(MSGID_LS2GT_CONNECT_LOGIN_RESPONSE, tmp_, response.ByteSize());
+	return 0;
+}
+
+// selected server response from gate server, back message to client
+int GateHandler::processSelectedServerResponse(JmyMsgInfo* info)
+{
+	GateAgent* agent = gate_mgr_.getAgentByConnId(info->session_id);
+	if (!agent) {
+		ServerLogError("cant get gate agent with id(%d)", info->session_id);
+		return -1;
+	}
+
+	MsgGT2LS_SelectedServerResponse res;
+	res.ParseFromArray(info->data, info->len);
+	ClientAgent* client_agent = CLIENT_MGR.getAgent(res.account());
+	if (!client_agent) {
+		ServerLogError("cant get client agent with account(%s)", res.account().c_str());
+		return -1;
+	}
+	
+	MsgLS2CL_SelectServerResponse response;
+	response.set_session_code(res.session_code());
+	response.SerializeToArray(tmp_, sizeof(tmp_));
+	if (client_agent->sendMsg(MSGID_LS2CL_SELECT_SERVER_RESPONSE, tmp_, response.ByteSize()) < 0)
+		return -1;
+
+	// select server complete, close client
+	if (client_agent->close() < 0)
+		return -1;
+
+	return 0;
 }

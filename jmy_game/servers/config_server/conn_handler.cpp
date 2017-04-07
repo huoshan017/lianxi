@@ -10,6 +10,68 @@ std::unordered_map<int, int> ConnHandler::conn2agent_map_;
 std::set<int> ConnHandler::login_conn_id_set_;
 std::set<int> ConnHandler::gate_conn_id_set_;
 
+int ConnHandler::onConnect(JmyEventInfo* info)
+{
+	std::unordered_map<int, int>::iterator it = conn2agent_map_.find(info->conn_id);
+	if (it != conn2agent_map_.end()) {
+		ServerLogError("already has connection %d", info->conn_id);
+		return -1;
+	}
+	conn2agent_map_.insert(std::make_pair(info->conn_id, 0));
+	ServerLogInfo("connection %d connected", info->conn_id);
+	return 0;
+}
+
+int ConnHandler::onDisconnect(JmyEventInfo* info)
+{
+	std::unordered_map<int, int>::iterator it = conn2agent_map_.find(info->conn_id);
+	if (it == conn2agent_map_.end()) {
+		ServerLogError("not found connection %d to disconnect", info->conn_id);
+		return -1;
+	}
+
+	conn2agent_map_.erase(it);
+	if (login_conn_id_set_.find(info->conn_id) != login_conn_id_set_.end()) {
+		LoginAgent* login_agent = login_mgr_.getAgent(it->second);
+		if (!login_agent) {
+			ServerLogError("not found login agent with login_id(%d) conn_id(%d)", it->second, info->conn_id);
+			return -1;
+		}
+		login_mgr_.deleteAgent(it->second);
+		//if (broadcast_remove_login_to_gate(it->second) < 0)
+		//	return -1;
+		ServerLogInfo("remove login agent with login_id(%d) conn_id(%d)", it->second, info->conn_id);
+	} else if (gate_conn_id_set_.find(info->conn_id) != gate_conn_id_set_.end()) {
+		GateAgent* gate_agent = gate_mgr_.getAgent(it->second);
+		if (!gate_agent) {
+			ServerLogError("not found gate agent with gate_id(%d) conn_id(%d)", it->second, info->conn_id);
+			return -1;
+		}
+		gate_mgr_.deleteAgent(it->second);
+		//if (broadcast_remove_gate_to_login(it->second) < 0)
+		//	return -1;
+		ServerLogInfo("remove gate agent with gate_id(%d) conn_id(%d)", it->second, info->conn_id);
+	} else {
+		ServerLogInfo("connection %d not found agent", info->conn_id);
+		return -1;
+	}
+
+	ServerLogInfo("connection conn_id(%d) disconnected", info->conn_id);
+	return 0;
+}
+
+int ConnHandler::onTick(JmyEventInfo* info)
+{
+	(void)info;
+	return 0;
+}
+
+int ConnHandler::onTimer(JmyEventInfo* info)
+{
+	(void)info;
+	return 0;
+}
+
 int ConnHandler::check_conn(int conn_id)
 {
 	std::unordered_map<int, int>::iterator it = conn2agent_map_.find(conn_id);
@@ -51,6 +113,7 @@ int ConnHandler::broadcast_msg_to_gate(int msg_id, char* data, int len)
 		}
 		if (agent->sendMsg(msg_id, data, len) < 0)
 			return -1;
+		ServerLogInfo("broadcast message(%d) to login_server(%d)", msg_id, c2a_it->second);
 	}
 	return 0;
 }
@@ -67,7 +130,6 @@ int ConnHandler::broadcast_new_login_to_gate(int login_id, const char* login_ip,
 	return broadcast_msg_to_gate(MSGID_CS2GT_NEW_LOGIN_NOTIFY, tmp_, notify.ByteSize());
 }
 
-#if 0
 int ConnHandler::broadcast_remove_login_to_gate(int login_id)
 {
 	MsgCS2GT_RemoveLoginNotify notify;
@@ -78,6 +140,7 @@ int ConnHandler::broadcast_remove_login_to_gate(int login_id)
 	return broadcast_msg_to_gate(MSGID_CS2GT_REMOVE_LOGIN_NOTIFY, tmp_, notify.ByteSize());
 }
 
+#if 0
 int ConnHandler::broadcast_msg_to_login(int msg_id, char* data, int len)
 {
 	std::unordered_map<int, int>::iterator c2a_it;
@@ -125,7 +188,7 @@ int ConnHandler::processGateConnect(JmyMsgInfo* info)
 	if (check_conn(info->session_id) < 0)
 		return -1;
 
-	MsgGT2CS_ConnectRequest request;
+	MsgGT2CS_ConnectConfigRequest request;
 	request.ParseFromArray(info->data, info->len);	
 	int gate_id = (int)request.gate_id();
 	GateAgent* agent = gate_mgr_.getAgent(gate_id);
@@ -147,11 +210,11 @@ int ConnHandler::processGateConnect(JmyMsgInfo* info)
 	update_conn(info->session_id, gate_id);
 	gate_conn_id_set_.insert(info->session_id);
 
-	MsgCS2GT_ConnectResponse response;
+	MsgCS2GT_ConnectConfigResponse response;
 	// return logins ip and port list to gate server
 	std::set<int>::iterator it = login_conn_id_set_.begin();
 	for (; it!=login_conn_id_set_.end(); ++it) {
-		LoginAgent* login_agent = login_mgr_.getAgent(*it);
+		LoginAgent* login_agent = login_mgr_.getAgentByConnId(*it);
 		if (!login_agent) continue;
 		LoginAgentData& login_data = login_agent->getData();
 		MsgLoginInfoData* data = response.add_login_list();
@@ -163,14 +226,10 @@ int ConnHandler::processGateConnect(JmyMsgInfo* info)
 		ServerLogError("serialize connect config_server response message failed");
 		return -1;
 	}
-	if (agent->sendMsg(MSGID_CS2GT_CONNECT_RESPONSE, tmp_, response.ByteSize()) < 0) {
+	if (agent->sendMsg(MSGID_CS2GT_CONNECT_CONFIG_RESPONSE, tmp_, response.ByteSize()) < 0) {
 		ServerLogError("send connect config_server response message failed");
 		return -1;
 	}
-
-	// broad to login servers
-	//if (broadcast_new_gate_to_login(gate_id) < 0)
-	//	return -1;
 
 	ServerLogInfo("gate_server(%d) connected", gate_id);
 	return 0;
@@ -181,7 +240,7 @@ int ConnHandler::processLoginConnect(JmyMsgInfo* info)
 	if (check_conn(info->session_id) < 0)
 		return -1;
 
-	MsgLS2CS_ConnectRequest request;
+	MsgLS2CS_ConnectConfigRequest request;
 	if (!request.ParseFromArray(info->data, info->len)) {
 		ServerLogError("parse connect config_server request message failed");
 		return -1;
@@ -206,7 +265,7 @@ int ConnHandler::processLoginConnect(JmyMsgInfo* info)
 	update_conn(info->session_id, login_id);
 	login_conn_id_set_.insert(info->session_id);	
 
-	MsgCS2LS_ConnectResponse response;
+	MsgCS2LS_ConnectConfigResponse response;
 	// get gate server list info from server_list.json
 	// and send this list to client for select gate server
 	size_t s = CONF_GATE_LIST->getSize();
@@ -221,7 +280,7 @@ int ConnHandler::processLoginConnect(JmyMsgInfo* info)
 		return -1;
 	}
 
-	if (agent->sendMsg(MSGID_CS2LS_CONNECT_RESPONSE, tmp_, response.ByteSize()) < 0) {
+	if (agent->sendMsg(MSGID_CS2LS_CONNECT_CONFIG_RESPONSE, tmp_, response.ByteSize()) < 0) {
 		ServerLogError("send connect config_server response message failed");
 		return -1;
 	}
@@ -232,67 +291,5 @@ int ConnHandler::processLoginConnect(JmyMsgInfo* info)
 
 	ServerLogInfo("login_server(id:%d, ip:%s, port:%d) connected", 
 			login_id, login_data.ip.c_str(), login_data.port);
-	return 0;
-}
-
-int ConnHandler::onConnect(JmyEventInfo* info)
-{
-	std::unordered_map<int, int>::iterator it = conn2agent_map_.find(info->conn_id);
-	if (it != conn2agent_map_.end()) {
-		ServerLogError("already has connection %d", info->conn_id);
-		return -1;
-	}
-	conn2agent_map_.insert(std::make_pair(info->conn_id, 0));
-	ServerLogInfo("connection %d connected", info->conn_id);
-	return 0;
-}
-
-int ConnHandler::onDisconnect(JmyEventInfo* info)
-{
-	std::unordered_map<int, int>::iterator it = conn2agent_map_.find(info->conn_id);
-	if (it == conn2agent_map_.end()) {
-		ServerLogError("not found connection %d to disconnect", info->conn_id);
-		return -1;
-	}
-
-	conn2agent_map_.erase(it);
-	if (login_conn_id_set_.find(info->conn_id) != login_conn_id_set_.end()) {
-		LoginAgent* login_agent = login_mgr_.getAgent(it->second);
-		if (!login_agent) {
-			ServerLogError("not found login agent with login_id(%d) conn_id(%d)", it->second, info->conn_id);
-			return -1;
-		}
-		login_mgr_.deleteAgent(it->second);
-		//if (broadcast_remove_login_to_gate(it->second) < 0)
-		//	return -1;
-		ServerLogInfo("remove login agent with login_id(%d) conn_id(%d)", it->second, info->conn_id);
-	} else if (gate_conn_id_set_.find(info->conn_id) != gate_conn_id_set_.end()) {
-		GateAgent* gate_agent = gate_mgr_.getAgent(it->second);
-		if (!gate_agent) {
-			ServerLogError("not found gate agent with gate_id(%d) conn_id(%d)", it->second, info->conn_id);
-			return -1;
-		}
-		gate_mgr_.deleteAgent(it->second);
-		//if (broadcast_remove_gate_to_login(it->second) < 0)
-		//	return -1;
-		ServerLogInfo("remove gate agent with gate_id(%d) conn_id(%d)", it->second, info->conn_id);
-	} else {
-		ServerLogError("connection %d not found agent", info->conn_id);
-		return -1;
-	}
-
-	ServerLogInfo("connection conn_id(%d) disconnected", info->conn_id);
-	return 0;
-}
-
-int ConnHandler::onTick(JmyEventInfo* info)
-{
-	(void)info;
-	return 0;
-}
-
-int ConnHandler::onTimer(JmyEventInfo* info)
-{
-	(void)info;
 	return 0;
 }

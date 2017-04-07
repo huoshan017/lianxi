@@ -37,7 +37,7 @@ static JmyServerConfig s_client_config = {
 
 // handle game_server config
 static JmyId2MsgHandler s_game_handlers[] = {
-	{ MSGID_GS2GT_CONNECT_REQUEST, GameHandler::processConnectRequest },
+	{ MSGID_GS2GT_CONNECT_GATE_REQUEST, GameHandler::processConnectGateRequest },
 };
 static JmyBaseEventHandlers s_game_base_event_handlers = {
 	GameHandler::onConnect,
@@ -63,7 +63,7 @@ static JmyServerConfig s_game_config = {
 
 // handle connection to config_server config
 static JmyId2MsgHandler s_config_handlers[] = {
-	{ MSGID_CS2GT_CONNECT_RESPONSE, ConnConfigHandler::processConnectResponse },
+	{ MSGID_CS2GT_CONNECT_CONFIG_RESPONSE, ConnConfigHandler::processConnectConfigResponse },
 	{ MSGID_CS2GT_NEW_LOGIN_NOTIFY, ConnConfigHandler::processNewLoginNotify },
 	{ MSGID_CS2GT_REMOVE_LOGIN_NOTIFY, ConnConfigHandler::processRemoveLoginNotify }
 };
@@ -90,6 +90,7 @@ static JmyClientConfig s_config_config = {
 
 // handle connection to login_server config
 static JmyId2MsgHandler s_login_handlers[] = {
+	{ MSGID_LS2GT_CONNECT_LOGIN_RESPONSE, ConnLoginHandler::processConnectLoginResponse },
 	{ MSGID_LS2GT_SELECTED_SERVER_NOTIFY, ConnLoginHandler::processSelectedServerNotify }
 };
 static JmyBaseEventHandlers s_login_base_event_handlers = {

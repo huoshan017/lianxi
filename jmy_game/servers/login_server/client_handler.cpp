@@ -9,6 +9,48 @@
 char ClientHandler::tmp_[MAX_SEND_BUFFER_SIZE];
 ClientAgentManager ClientHandler::client_mgr_;
 
+int ClientHandler::onConnect(JmyEventInfo* info)
+{
+	(void)info;
+	int curr_conn = (int)client_mgr_.getAgentSize();
+	if (curr_conn < SERVER_CONFIG_FILE.max_conn) {
+		return 0;
+	}
+	JmyTcpConnection* conn = get_connection(info);
+	if (!conn) {
+		ServerLogError("cant get connection by event info(conn_id:%d)", info->conn_id);
+		return -1;
+	}
+	conn->force_close();
+	ServerLogWarn("client connection count(%d) is max", curr_conn);
+	return 0;
+}
+
+int ClientHandler::onDisconnect(JmyEventInfo* info)
+{
+	(void)info;
+	ClientAgent* agent = client_mgr_.getAgentByConnId(info->conn_id);
+	if (!agent) {
+		ServerLogError("cant get client agent with conn_id(%d)", info->conn_id);
+		return -1;
+	}
+	client_mgr_.deleteAgentByConnId(info->conn_id);
+	ServerLogInfo("connection %d ondisconnect", info->conn_id);
+	return 0;
+}
+
+int ClientHandler::onTick(JmyEventInfo* info)
+{
+	(void)info;
+	return 0;
+}
+
+int ClientHandler::onTimer(JmyEventInfo* info)
+{
+	(void)info;
+	return 0;
+}
+
 void ClientHandler::send_error(JmyMsgInfo* info, ProtoErrorType error) {
 	JmyTcpConnection* conn = get_connection(info);
 	if (!conn) return;
@@ -79,46 +121,4 @@ int ClientHandler::processSelectServer(JmyMsgInfo* info)
 ClientAgent* ClientHandler::getClientAgent(const std::string& account)
 {
 	return client_mgr_.getAgent(account);
-}
-
-int ClientHandler::onConnect(JmyEventInfo* info)
-{
-	(void)info;
-	int curr_conn = (int)client_mgr_.getAgentSize();
-	if (curr_conn < SERVER_CONFIG_FILE.max_conn) {
-		return 0;
-	}
-	JmyTcpConnection* conn = get_connection(info);
-	if (!conn) {
-		ServerLogError("cant get connection by event info(conn_id:%d)", info->conn_id);
-		return -1;
-	}
-	conn->force_close();
-	ServerLogWarn("client connection count(%d) is max", curr_conn);
-	return 0;
-}
-
-int ClientHandler::onDisconnect(JmyEventInfo* info)
-{
-	(void)info;
-	ClientAgent* agent = client_mgr_.getAgentByConnId(info->conn_id);
-	if (!agent) {
-		ServerLogError("cant get client agent with conn_id(%d)", info->conn_id);
-		return -1;
-	}
-	client_mgr_.deleteAgentByConnId(info->conn_id);
-	ServerLogInfo("connection %d ondisconnect", info->conn_id);
-	return 0;
-}
-
-int ClientHandler::onTick(JmyEventInfo* info)
-{
-	(void)info;
-	return 0;
-}
-
-int ClientHandler::onTimer(JmyEventInfo* info)
-{
-	(void)info;
-	return 0;
 }

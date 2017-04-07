@@ -18,7 +18,7 @@ struct JmyEventInfo;
 class ConnLoginHandler
 {
 public:
-	static int processConnectResponse(JmyMsgInfo* info);
+	static int processConnectLoginResponse(JmyMsgInfo* info);
 	static int processSelectedServerNotify(JmyMsgInfo* info);
 	static int onConnect(JmyEventInfo* info);
 	static int onDisconnect(JmyEventInfo* info);

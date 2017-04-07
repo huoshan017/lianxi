@@ -36,7 +36,7 @@ public:
 		std::string log_conf_path;
 	};
 
-	const ServerConfig& getServerConfig() { return config_;  }
+	const ServerConfig& getServerConfig() const { return config_;  }
 
 private:
 	rapidjson::Document doc_;

@@ -15,19 +15,19 @@ public:
 
 	bool init(const char* conf_path);
 	void close();
-	bool startClient(JmyClientConfig& config);
+	bool startLoginClient();
 	bool checkClientMaxCount(int curr_count);
 	bool checkGameMaxCount(int curr_count);
 
 	int run();
 
 private:
-	ConfigLoader config_loader_;
 	boost::asio::io_service service_;
 	JmyTcpServer main_server_;			// listen client server
 	JmyTcpServer listen_game_server_;	// listen game server
 	JmyTcpClientMaster client_master_;
-	JmyTcpClientSet client_set_;
+	JmyTcpClient* config_client_;
+	JmyTcpClientSet login_client_set_;
 };
 
 #define GATE_SERVER (GateServer::getInstance())

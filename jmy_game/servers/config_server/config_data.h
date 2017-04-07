@@ -11,8 +11,8 @@ static JmyRetransmissionConfig s_retran_config = {
 	RETRANSMISSION_ACK_RECV_COUNT
 };
 static JmyId2MsgHandler s_conn_handlers[] = {
-	{ MSGID_LS2CS_CONNECT_REQUEST, ConnHandler::processLoginConnect },
-	{ MSGID_GT2CS_CONNECT_REQUEST, ConnHandler::processGateConnect },
+	{ MSGID_LS2CS_CONNECT_CONFIG_REQUEST, ConnHandler::processLoginConnect },
+	{ MSGID_GT2CS_CONNECT_CONFIG_REQUEST, ConnHandler::processGateConnect },
 };
 static JmyBaseEventHandlers s_conn_base_event_handlers = {
 	ConnHandler::onConnect,

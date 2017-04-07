@@ -4,18 +4,65 @@
 #include "../common/util.h"
 #include "../../proto/src/server.pb.h"
 #include "client_handler.h"
+#include "config_loader.h"
 
 
 char ConnLoginHandler::tmp_[MAX_SEND_BUFFER_SIZE];
 LoginAgentManager ConnLoginHandler::login_mgr_;
 char ConnLoginHandler::session_code_buff_[ENTER_GAME_SESSION_CODE_LENGTH];
 
-// process connect login server response
-int ConnLoginHandler::processConnectResponse(JmyMsgInfo* info)
+int ConnLoginHandler::onConnect(JmyEventInfo* info)
 {
-	MsgLS2GT_ConnectResponse response;
+	MsgGT2LS_ConnectLoginRequest request;
+	request.set_gate_server_id(CONFIG_FILE.id);
+	request.set_gate_server_ip(CONFIG_FILE.ip.c_str());
+	request.set_gate_server_port(CONFIG_FILE.port);
+	if (!request.SerializeToArray(tmp_, sizeof(tmp_))) {
+		ServerLogError("serialize MsgGT2LS_ConnectLoginRequest failed");
+		return -1;
+	}
+
+	JmyTcpConnection* conn = get_connection(info);
+	if (!conn) return -1;
+	if (conn->send(MSGID_GT2LS_CONNECT_LOGIN_REQUEST, tmp_, request.ByteSize()) < 0) {
+		ServerLogError("send MsgGT2LS_ConnectLoginRequest failed");
+		return -1;
+	}
+
+	ServerLogInfo("onconnect to login_server");
+	return 0;
+}
+
+int ConnLoginHandler::onDisconnect(JmyEventInfo* info)
+{
+	LoginAgent* agent = login_mgr_.getAgentByConnId(info->conn_id);
+	if (!agent) {
+		ServerLogError("not found login agent with conn_id(%d)", info->conn_id);
+		return -1;
+	}
+	login_mgr_.deleteAgent(agent->getId());
+	ServerLogInfo("login agent with conn_id(%d) disconnected", info->conn_id);
+	return 0;
+}
+
+int ConnLoginHandler::onTick(JmyEventInfo* info)
+{
+	(void)info;
+	return 0;
+}
+
+int ConnLoginHandler::onTimer(JmyEventInfo* info)
+{
+	(void)info;
+	return 0;
+}
+
+// process connect login server response
+int ConnLoginHandler::processConnectLoginResponse(JmyMsgInfo* info)
+{
+	MsgLS2GT_ConnectLoginResponse response;
 	if (!response.ParseFromArray(info->data, info->len)) {
-		ServerLogError("parse MsgLS2GT_ConnectResponse failed");
+		ServerLogError("parse MsgLS2GT_ConnectLoginResponse failed");
 		return -1;
 	}
 	int login_id = response.login_id();
@@ -56,38 +103,6 @@ int ConnLoginHandler::processSelectedServerNotify(JmyMsgInfo* info)
 	response.set_session_code(session_code);
 	response.SerializeToArray(tmp_, sizeof(tmp_));
 	conn->send(MSGID_GT2LS_SELECTED_SERVER_RESPONSE, tmp_, response.ByteSize());
-	return 0;
-}
-
-int ConnLoginHandler::onConnect(JmyEventInfo* info)
-{
-	JmyTcpConnection* conn = get_connection(info);
-	if (!conn) return -1;
-	ServerLogInfo("onconnect to login_server");
-	return 0;
-}
-
-int ConnLoginHandler::onDisconnect(JmyEventInfo* info)
-{
-	LoginAgent* agent = login_mgr_.getAgentByConnId(info->conn_id);
-	if (!agent) {
-		ServerLogError("not found login agent with conn_id(%d)", info->conn_id);
-		return -1;
-	}
-	login_mgr_.deleteAgent(agent->getId());
-	ServerLogInfo("login agent with conn_id(%d) disconnected", info->conn_id);
-	return 0;
-}
-
-int ConnLoginHandler::onTick(JmyEventInfo* info)
-{
-	(void)info;
-	return 0;
-}
-
-int ConnLoginHandler::onTimer(JmyEventInfo* info)
-{
-	(void)info;
 	return 0;
 }
 

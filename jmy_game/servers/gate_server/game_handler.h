@@ -7,7 +7,7 @@ struct JmyEventInfo;
 class GameHandler
 {
 public:
-	static int processConnectRequest(JmyMsgInfo*);
+	static int processConnectGateRequest(JmyMsgInfo*);
 	static int onConnect(JmyEventInfo*);
 	static int onDisconnect(JmyEventInfo*);
 	static int onTick(JmyEventInfo*);

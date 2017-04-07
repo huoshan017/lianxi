@@ -57,6 +57,7 @@ bool ConfigLoader::loadJson(const char* jsonpath)
 		return false;
 	}
 	config_.id = doc_["server_id"].GetInt();
+	std::cout << "server_id is " << config_.id << std::endl;
 
 	// server_ip
 	if (!doc_.HasMember("server_ip")) {

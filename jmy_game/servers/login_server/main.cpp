@@ -1,5 +1,6 @@
 #include "../libjmy/jmy_tcp_server.h"
 #include "../libjmy/jmy_tcp_client.h"
+#include "../libjmy/jmy_tcp_client_set.h"
 #include "../libjmy/jmy_log.h"
 #include "../common/util.h"
 #include <iostream>
@@ -73,6 +74,7 @@ int main(int argc, char* argv[])
 		ServerLogError("start client to connect config server failed");
 		return -1;
 	}
+	JmyTcpClientSet client_set;
 
 	while (main_server.run() >= 0) {
 		listen_gate_server.run();

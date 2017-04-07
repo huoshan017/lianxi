@@ -42,7 +42,7 @@ static JmyServerConfig s_client_config = {
 
 /* gate handler config */
 static JmyId2MsgHandler s_gate_handlers[] = {
-	{ MSGID_GT2LS_CONNECT_REQUEST, GateHandler::processConnect },
+	{ MSGID_GT2LS_CONNECT_LOGIN_REQUEST, GateHandler::processConnectLogin },
 	{ MSGID_GT2LS_SELECTED_SERVER_RESPONSE, GateHandler::processSelectedServerResponse },
 };
 static JmyBaseEventHandlers s_gate_base_event_handlers = {
@@ -69,7 +69,7 @@ static JmyServerConfig s_gate_config = {
 
 /* connect config handler config */
 static JmyId2MsgHandler s_conn_config_handlers[] = {
-	{ MSGID_CS2LS_CONNECT_RESPONSE, ConnConfigHandler::processConnectResponse },
+	{ MSGID_CS2LS_CONNECT_CONFIG_RESPONSE, ConnConfigHandler::processConnectConfigResponse },
 };
 static JmyBaseEventHandlers s_conn_config_base_event_handlers = {
 	ConnConfigHandler::onConnect,

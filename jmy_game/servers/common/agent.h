@@ -106,6 +106,7 @@ public:
 		if (it != key2agents_.end()) { return nullptr; }
 		agent_type* agent = jmy_mem_malloc<agent_type>();
 		agent->init(id, mgr);
+		agent->setState(AGENT_STATE_VERIFIED);
 		key2agents_.insert(std::make_pair(key, agent));
 		id2keys_.insert(std::make_pair(id, key));
 		key2ids_.insert(std::make_pair(key, id));
@@ -219,6 +220,7 @@ public:
 		}
 		agent = jmy_mem_malloc<agent_type>();
 		agent->init(conn_id, mgr);
+		agent->setState(AGENT_STATE_VERIFIED);
 		agents_[id-min_id_] = agent;
 		agent_count_ += 1;
 		conn2agent_ids_.insert(std::make_pair(conn_id, id));

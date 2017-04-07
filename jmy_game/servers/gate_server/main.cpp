@@ -7,16 +7,10 @@ int main(int argc, char* argv[])
 	(void)argc;
 	(void)argv;
 
-	GateServer* server = new GateServer();
-	if (!server->init(ServerConfPath)) {
-		delete server;
+	if (!GATE_SERVER->init(ServerConfPath)) {
 		return -1;
 	}
-	if (server->run() < 0) {
-		delete server;
-		return -1;
-	}
-	server->close();
-	delete server;
+	GATE_SERVER->run();
+	GATE_SERVER->close();
 	return 0;
 }
