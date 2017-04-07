@@ -28,6 +28,7 @@ enum JmyConnState {
 	JMY_CONN_STATE_DISCONNECTED		= 5,
 };
 
+// buffer max count
 enum { JMY_CONN_BUFFER_MAX_COUNT	= 500000, };
 
 // event type enum
@@ -40,6 +41,11 @@ enum JmyEventType {
 	JMY_EVENT_MAX_COUNT,
 };
 
+// message id
+enum { JMY_MIN_MESSAGE_ID = 1 };
+enum { JMY_MAX_MESSAGE_ID = 65535 };
+
+// drop condition for buffer
 enum JmyBufferDropCondition {
 	JMY_DROP_CONDITION_GREAT_BUFFER_COUNT	= 0x0002,
 	JMY_DROP_CONDITION_GREAT_USED_BYTES		= 0x0004,

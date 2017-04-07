@@ -5,24 +5,24 @@ enum MsgIdType {
 	MSGID_NONE								= 0;
 	MSGID_ERROR								= 1;
 	/* Client <-> LoginServer */
-	MSGID_CL2LS_LOGIN_REQUEST				= 10000; // login request
-	MSGID_LS2CL_LOGIN_RESPONSE				= 10001; // login response
-	MSGID_CL2LS_SELECT_SERVER_REQUEST		= 10002; // select server
-	MSGID_LS2CL_SELECT_SERVER_RESPONSE		= 10003; // select server response
+	MSGID_C2S_LOGIN_REQUEST					= 10000; // login request
+	MSGID_S2C_LOGIN_RESPONSE				= 10001; // login response
+	MSGID_C2S_SELECT_SERVER_REQUEST			= 10002; // select server
+	MSGID_S2C_SELECT_SERVER_RESPONSE		= 10003; // select server response
 	/* Client <-> GateServer */
-	MSGID_CL2GT_ENTER_GAME_REQUEST			= 10020; // enter game request
-	MSGID_GT2CL_ENTER_GAME_RESPONSE			= 10021; // enter game response
-	MSGID_GT2CL_ENTER_GAME_COMPLETE_NOTIFY	= 10022; // enter game complete notify
-	MSGID_CL2GT_RECONNECT_REQUEST			= 10023; // reconnect gate server
-	MSGID_GT2CL_RECONNECT_RESPONSE			= 10024; // reconnect response
+	MSGID_C2S_ENTER_GAME_REQUEST			= 10020; // enter game request
+	MSGID_S2C_ENTER_GAME_RESPONSE			= 10021; // enter game response
+	MSGID_S2C_ENTER_GAME_COMPLETE_NOTIFY	= 10022; // enter game complete notify
+	MSGID_C2S_RECONNECT_REQUEST				= 10023; // reconnect gate server
+	MSGID_S2C_RECONNECT_RESPONSE			= 10024; // reconnect response
 }
 
 message MsgError {
 	ProtoErrorType error_code = 1;
 }
 
-// client -> login  [MSGID_CL2LS_LOGIN_REQUEST]  login request, send to login server
-message MsgCL2LS_LoginRequest {
+// client -> login  [MSGID_C2S_LOGIN_REQUEST]  login request, send to login server
+message MsgC2S_LoginRequest {
 	bytes account = 1;
 	bytes password = 2;
 }
@@ -34,45 +34,45 @@ message MsgServerInfo {
 	bool is_busy = 4;
 }
 
-// login -> client  [MSGID_LS2CL_LOGIN_RESPONSE]  login response
-message MsgLS2CL_LoginResponse {
+// login -> client  [MSGID_S2C_LOGIN_RESPONSE]  login response
+message MsgS2C_LoginResponse {
 	repeated MsgServerInfo servers = 1;
 }
 
-// client -> login  [MSGID_CL2LS_SELECT_SERVER_REQUEST]  request to select server, and then notify gate server
-message MsgCL2LS_SelectServerRequest {
+// client -> login  [MSGID_C2S_SELECT_SERVER_REQUEST]  request to select server, and then notify gate server
+message MsgC2S_SelectServerRequest {
 	int32 sel_id = 1;
 }
 
-// login -> client  [MSGID_LS2CL_SELECT_SERVER_RESPONSE]  after get response from gate server, to response client select result
-message MsgLS2CL_SelectServerResponse {
+// login -> client  [MSGID_S2C_SELECT_SERVER_RESPONSE]  after get response from gate server, to response client select result
+message MsgS2C_SelectServerResponse {
 	bytes session_code = 1;
 	bytes server_ip = 2;
 	int32 port = 3;
 }
 
-// client -> gate  [MSGID_CL2GT_ENTER_GAME_REQUEST]  request enter game, send to gate server
-message MsgCL2GT_EnterGameRequest {
+// client -> gate  [MSGID_C2S_ENTER_GAME_REQUEST]  request enter game, send to gate server
+message MsgC2S_EnterGameRequest {
 	bytes account = 1;
 	bytes session_code = 2;
 }
 
-// gate -> client  [MSGID_GT2CL_ENTER_GAME_RESPONSE]  response for enter game request
-message MsgGT2CL_EnterGameResponse {
+// gate -> client  [MSGID_S2C_ENTER_GAME_RESPONSE]  response for enter game request
+message MsgS2C_EnterGameResponse {
 	bytes reconnect_session = 1;
 }
 
-// gate -> client  [MSGID_GT2CL_ENTER_GAME_COMPLETE_NOTIFY]  enter game complete
-message MsgGT2CL_EnterGameCompleteNotify {
+// gate -> client  [MSGID_S2C_ENTER_GAME_COMPLETE_NOTIFY]  enter game complete
+message MsgS2C_EnterGameCompleteNotify {
 }
 
-// client -> gate  [MSGID_CL2GT_RECONNECT_REQUEST]  reconnect request
-message MsgCL2GT_ReconnectRequest {
+// client -> gate  [MSGID_C2S_RECONNECT_REQUEST]  reconnect request
+message MsgC2S_ReconnectRequest {
 	bytes account = 1;
 	bytes reconnect_session = 2;
 }
 
-// gate -> client  [MSGID_GT2CL_RECONNECT_RESPONSE]  response for reconnect request
-message MsgGT2CL_ReconnectResponse {
+// gate -> client  [MSGID_S2C_RECONNECT_RESPONSE]  response for reconnect request
+message MsgS2C_ReconnectResponse {
 	bytes reconnect_session = 1;
 }

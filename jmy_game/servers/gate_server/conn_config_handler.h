@@ -16,5 +16,5 @@ public:
 	static int onTimer(JmyEventInfo*);
 
 private:
-	static char tmp_[MAX_SEND_BUFFER_SIZE];
+	static char tmp_[JMY_MAX_MSG_SIZE];
 };

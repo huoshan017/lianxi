@@ -30,7 +30,7 @@ public:
 private:
 	static void send_error(JmyMsgInfo* info, ProtoErrorType error);
 private:
-	static char tmp_[MAX_SEND_BUFFER_SIZE];
+	static char tmp_[JMY_MAX_MSG_SIZE];
 	static ClientAgentManager client_mgr_;
 };
 

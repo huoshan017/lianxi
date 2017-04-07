@@ -3,7 +3,7 @@
 #include "../../proto/src/server.pb.h"
 #include "conf_gate_list.h"
 
-char ConnHandler::tmp_[MAX_SEND_BUFFER_SIZE];
+char ConnHandler::tmp_[JMY_MAX_MSG_SIZE];
 LoginAgentManager ConnHandler::login_mgr_;
 GateAgentManager ConnHandler::gate_mgr_;
 std::unordered_map<int, int> ConnHandler::conn2agent_map_;
@@ -38,8 +38,6 @@ int ConnHandler::onDisconnect(JmyEventInfo* info)
 			return -1;
 		}
 		login_mgr_.deleteAgent(it->second);
-		//if (broadcast_remove_login_to_gate(it->second) < 0)
-		//	return -1;
 		ServerLogInfo("remove login agent with login_id(%d) conn_id(%d)", it->second, info->conn_id);
 	} else if (gate_conn_id_set_.find(info->conn_id) != gate_conn_id_set_.end()) {
 		GateAgent* gate_agent = gate_mgr_.getAgent(it->second);
@@ -48,12 +46,10 @@ int ConnHandler::onDisconnect(JmyEventInfo* info)
 			return -1;
 		}
 		gate_mgr_.deleteAgent(it->second);
-		//if (broadcast_remove_gate_to_login(it->second) < 0)
-		//	return -1;
 		ServerLogInfo("remove gate agent with gate_id(%d) conn_id(%d)", it->second, info->conn_id);
 	} else {
 		ServerLogInfo("connection %d not found agent", info->conn_id);
-		return -1;
+		return 0;
 	}
 
 	ServerLogInfo("connection conn_id(%d) disconnected", info->conn_id);
@@ -160,26 +156,6 @@ int ConnHandler::broadcast_msg_to_login(int msg_id, char* data, int len)
 			return -1;
 	}
 	return 0;
-}
-
-int ConnHandler::broadcast_new_gate_to_login(int gate_id)
-{
-	MsgCS2LS_NewGateNotify notify;
-	notify.set_gate_id(gate_id);
-	if (!notify.SerializeToArray(tmp_, sizeof(tmp_)))
-		return -1;
-
-	return broadcast_msg_to_login(MSGID_CS2LS_NEW_GATE_NOTIFY, tmp_, notify.ByteSize());
-}
-
-int ConnHandler::broadcast_remove_gate_to_login(int gate_id)
-{
-	MsgCS2LS_RemoveGateNotify notify;
-	notify.set_gate_id(gate_id);
-	if (!notify.SerializeToArray(tmp_, sizeof(tmp_)))
-		return -1;
-
-	return broadcast_msg_to_login(MSGID_CS2LS_REMOVE_GATE_NOTIFY, tmp_, notify.ByteSize());
 }
 #endif
 

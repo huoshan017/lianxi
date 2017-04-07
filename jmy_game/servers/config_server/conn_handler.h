@@ -41,11 +41,9 @@ private:
 	static int broadcast_new_login_to_gate(int login_id, const char* ip, unsigned short port);
 	static int broadcast_remove_login_to_gate(int login_id);
 	//static int broadcast_msg_to_login(int msg_id, char* data, int len);
-	//static int broadcast_new_gate_to_login(int gate_id);
-	//static int broadcast_remove_gate_to_login(int gate_id);
 
 private:
-	static char tmp_[MAX_SEND_BUFFER_SIZE];
+	static char tmp_[JMY_MAX_MSG_SIZE];
 	static LoginAgentManager login_mgr_;
 	static GateAgentManager gate_mgr_;
 	static std::unordered_map<int, int> conn2agent_map_;

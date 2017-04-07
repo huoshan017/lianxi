@@ -106,3 +106,13 @@ message MsgCS2LS_ConnectConfigResponse {
 message MsgCS2LS_GateConfListNotify {
 	repeated MsgGateConfData gate_list = 1;
 }
+
+/* GateServer <-> GameServer */
+// game -> gate  [MSGID_GS2GT_CONNECT_GATE_REQUEST]
+message MsgGS2GT_ConnectGateRequest {
+	int32 game_id = 1;
+}
+
+// gate -> game  [MSGID_GT2GS_CONNECT_GATE_RESPONSE]
+message MsgGT2GS_ConnectGateResponse {
+}

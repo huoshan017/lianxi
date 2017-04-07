@@ -17,6 +17,7 @@ public:
 	~JmyDataHandler();
 	bool registerMsgHandle(JmyId2MsgHandler id2handler);
 	bool loadMsgHandle(const JmyId2MsgHandler id2handlers[], int size);
+	void setDefaultMsgHandler(jmy_msg_handler handler) { default_msg_handler_ = handler; }
 
 #if USE_CONN_PROTO
 	// conn
@@ -73,6 +74,7 @@ private:
 
 private:
 	std::unordered_map<int, jmy_msg_handler> msg_handler_map_;
+	jmy_msg_handler default_msg_handler_;
 	JmyPacketUnpackData unpack_data_;
 	JmyAckMsgInfo ack_info_;
 	JmyHeartbeatMsgInfo heartbeat_info_;

@@ -14,8 +14,8 @@ static JmyRetransmissionConfig s_retran_config = {
 
 /* client handler config */
 static JmyId2MsgHandler s_client_handlers[] = {
-	{ MSGID_CL2LS_LOGIN_REQUEST, ClientHandler::processLogin },
-	{ MSGID_CL2LS_SELECT_SERVER_REQUEST, ClientHandler::processSelectServer },
+	{ MSGID_C2S_LOGIN_REQUEST, ClientHandler::processLogin },
+	{ MSGID_C2S_SELECT_SERVER_REQUEST, ClientHandler::processSelectServer },
 };
 static JmyBaseEventHandlers s_client_base_event_handlers = {
 	ClientHandler::onConnect,
@@ -28,6 +28,7 @@ static JmyConnectionConfig s_client_conn_config = {
 	(JmyRetransmissionConfig*)nullptr, //&s_retran_config,
 	s_client_handlers,
 	sizeof(s_client_handlers)/sizeof(s_client_handlers[0]),
+	(jmy_msg_handler)nullptr,
 	s_client_base_event_handlers,
 	(JmyId2EventHandler*)nullptr, 0,
 	true
@@ -56,6 +57,7 @@ static JmyConnectionConfig s_gate_conn_config = {
 	&s_retran_config,
 	s_gate_handlers,
 	sizeof(s_gate_handlers)/sizeof(s_gate_handlers[0]),
+	(jmy_msg_handler)nullptr,
 	s_gate_base_event_handlers,
 	nullptr, 0,
 	true
@@ -82,6 +84,7 @@ static JmyConnectionConfig s_conn_conn_config = {
 	&s_retran_config,
 	s_conn_config_handlers,
 	sizeof(s_conn_config_handlers)/sizeof(s_conn_config_handlers[0]),
+	(jmy_msg_handler)nullptr,
 	s_conn_config_base_event_handlers,
 	nullptr, 0,
 	true

@@ -12,6 +12,8 @@ struct ClientData {
 typedef Agent<ClientData, int> ClientAgent;
 typedef AgentManager<std::string, ClientData, int> ClientAgentManager;
 
+enum { RECONN_SESSION_CODE_BUF_LENGTH = 16 };
+
 struct JmyMsgInfo;
 struct JmyEventInfo;
 class ClientHandler
@@ -19,6 +21,7 @@ class ClientHandler
 public:
 	static int processEnterGame(JmyMsgInfo*);
 	static int processReconnect(JmyMsgInfo*);
+	static int processDefault(JmyMsgInfo*);
 	static int onConnect(JmyEventInfo*);
 	static int onDisconnect(JmyEventInfo*);
 	static int onTick(JmyEventInfo*);
@@ -30,7 +33,7 @@ public:
 private:
 	static void send_error(JmyMsgInfo*, ProtoErrorType);
 private:
-	static char tmp_[MAX_SEND_BUFFER_SIZE];
+	static char tmp_[JMY_MAX_MSG_SIZE];
 	static ClientAgentManager client_mgr_;
 	static std::unordered_map<std::string, std::string> account2session_map_;
 };

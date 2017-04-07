@@ -22,7 +22,7 @@ public:
 
 private:
 	static std::list<MsgGateConfData> gate_conf_list_; 
-	static char tmp_[MAX_SEND_BUFFER_SIZE];
+	static char tmp_[JMY_MAX_MSG_SIZE];
 };
 
 #define GATE_CONF_LIST (ConnConfigHandler::getGateConfList())

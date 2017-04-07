@@ -30,7 +30,7 @@ public:
 	static const GateData* getGateData(int gate_id);
 
 private:
-	static char tmp_[MAX_SEND_BUFFER_SIZE];
+	static char tmp_[JMY_MAX_MSG_SIZE];
 	static GateAgentManager gate_mgr_;
 };
 

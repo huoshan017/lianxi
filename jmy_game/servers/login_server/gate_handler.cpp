@@ -5,7 +5,7 @@
 #include "../../proto/src/server.pb.h"
 #include "client_handler.h"
 
-char GateHandler::tmp_[MAX_SEND_BUFFER_SIZE];
+char GateHandler::tmp_[JMY_MAX_MSG_SIZE];
 GateAgentManager GateHandler::gate_mgr_;
 
 int GateHandler::onConnect(JmyEventInfo* info)
@@ -90,10 +90,10 @@ int GateHandler::processSelectedServerResponse(JmyMsgInfo* info)
 		return -1;
 	}
 	
-	MsgLS2CL_SelectServerResponse response;
+	MsgS2C_SelectServerResponse response;
 	response.set_session_code(res.session_code());
 	response.SerializeToArray(tmp_, sizeof(tmp_));
-	if (client_agent->sendMsg(MSGID_LS2CL_SELECT_SERVER_RESPONSE, tmp_, response.ByteSize()) < 0)
+	if (client_agent->sendMsg(MSGID_S2C_SELECT_SERVER_RESPONSE, tmp_, response.ByteSize()) < 0)
 		return -1;
 
 	// select server complete, close client

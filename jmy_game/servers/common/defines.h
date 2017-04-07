@@ -24,7 +24,7 @@ enum { CONFIG_SERVER_MAX_ID = 30001 };
 
 // config server id range
 enum { GAME_SERVER_MIN_ID = 40001 };
-enum { GAME_SERVER_MAX_ID = 41000 };
+enum { GAME_SERVER_MAX_ID = 40100 };
 
 // db server id range
 enum { DB_SERVER_MIN_ID = 50001 };

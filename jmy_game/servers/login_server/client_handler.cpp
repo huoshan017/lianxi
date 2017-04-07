@@ -6,7 +6,7 @@
 #include "user.h"
 #include <random>
 
-char ClientHandler::tmp_[MAX_SEND_BUFFER_SIZE];
+char ClientHandler::tmp_[JMY_MAX_MSG_SIZE];
 ClientAgentManager ClientHandler::client_mgr_;
 
 int ClientHandler::onConnect(JmyEventInfo* info)
@@ -56,12 +56,12 @@ void ClientHandler::send_error(JmyMsgInfo* info, ProtoErrorType error) {
 	if (!conn) return;
 	MsgError response;
 	response.set_error_code(error);
-	conn->send(MSGID_LS2CL_LOGIN_RESPONSE, tmp_, response.ByteSize());
+	conn->send(MSGID_S2C_LOGIN_RESPONSE, tmp_, response.ByteSize());
 }
 
 int ClientHandler::processLogin(JmyMsgInfo* info)
 {
-	MsgCL2LS_LoginRequest request;
+	MsgC2S_LoginRequest request;
 	if (!request.ParseFromArray(info->data, info->len)) {
 		send_error(info, PROTO_ERROR_LOGIN_DATA_INVALID);
 		ServerLogError("parse MsgC2LLoginRequest failed");
@@ -80,16 +80,16 @@ int ClientHandler::processLogin(JmyMsgInfo* info)
 
 	user->setState(AGENT_STATE_VERIFIED);
 
-	MsgLS2CL_LoginResponse response;
+	MsgS2C_LoginResponse response;
 	response.SerializeToArray(tmp_, sizeof(tmp_));
-	user->sendMsg(MSGID_LS2CL_LOGIN_RESPONSE, tmp_, response.ByteSize());
+	user->sendMsg(MSGID_S2C_LOGIN_RESPONSE, tmp_, response.ByteSize());
 	ServerLogInfo("account(%d) login", request.account().c_str());
 	return 0;
 }
 
 int ClientHandler::processSelectServer(JmyMsgInfo* info)
 {
-	MsgCL2LS_SelectServerRequest request;
+	MsgC2S_SelectServerRequest request;
 	if (!request.ParseFromArray(info->data, info->len)) {
 		send_error(info, PROTO_ERROR_LOGIN_DATA_INVALID);
 		ServerLogError("parse MsgC2LSelectServerRequest failed");
@@ -112,7 +112,7 @@ int ClientHandler::processSelectServer(JmyMsgInfo* info)
 	MsgLS2GT_SelectedServerNotify notify;
 	notify.set_account(account);
 	notify.SerializeToArray(tmp_, sizeof(tmp_));
-	user->sendMsg(MSGID_LS2CL_SELECT_SERVER_RESPONSE, tmp_, notify.ByteSize());
+	user->sendMsg(MSGID_S2C_SELECT_SERVER_RESPONSE, tmp_, notify.ByteSize());
 	ServerLogInfo("user(%d) select server", user->getId());
 
 	return 0;

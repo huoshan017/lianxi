@@ -6,7 +6,7 @@
 #include "jmy_tcp_connection.h"
 #endif
 
-JmyDataHandler::JmyDataHandler()
+JmyDataHandler::JmyDataHandler() : default_msg_handler_(nullptr)
 {
 }
 
@@ -16,6 +16,8 @@ JmyDataHandler::~JmyDataHandler()
 
 bool JmyDataHandler::registerMsgHandle(JmyId2MsgHandler id2handler)
 {
+	assert(id2handler.msg_id>=JMY_MIN_MESSAGE_ID && id2handler.msg_id<=JMY_MAX_MESSAGE_ID);
+	assert(id2handler.handler != nullptr);
 	if (msg_handler_map_.find(id2handler.msg_id) != msg_handler_map_.end())
 		return false;
 	msg_handler_map_.insert(std::make_pair(id2handler.msg_id, id2handler.handler));
@@ -238,8 +240,20 @@ int JmyDataHandler::handleMsg(JmyMsgInfo* info)
 	if (!info) return -1;
 	std::unordered_map<int, jmy_msg_handler>::iterator it = msg_handler_map_.find(info->msg_id);
 	if (it == msg_handler_map_.end()) {
-		LibJmyLogWarn("not found msg(%d) handler, session_id(%d)", info->msg_id, info->session_id);
-		return info->len;
+		if (default_msg_handler_) {
+			int res = default_msg_handler_(info);
+			if (res == 0) {
+				LibJmyLogWarn("not found msg(%d) handler, session_id(%d)", info->msg_id, info->session_id);
+				return 0;
+			} else if (res < 0) {
+				return -1;
+			} else {
+				return info->len;
+			}
+		} else {
+			LibJmyLogWarn("not found default message handler to handle message(%d), session_id(%d)", info->msg_id, info->session_id);
+			return 0;
+		}
 	}
 	if (it->second(info) < 0)
 		return -1;

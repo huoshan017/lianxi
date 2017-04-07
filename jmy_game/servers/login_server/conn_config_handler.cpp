@@ -5,7 +5,7 @@
 #include "config_loader.h"
 
 std::list<MsgGateConfData> ConnConfigHandler::gate_conf_list_;
-char ConnConfigHandler::tmp_[MAX_SEND_BUFFER_SIZE];
+char ConnConfigHandler::tmp_[JMY_MAX_MSG_SIZE];
 
 int ConnConfigHandler::onConnect(JmyEventInfo* info)
 {

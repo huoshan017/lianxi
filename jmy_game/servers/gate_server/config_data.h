@@ -14,16 +14,22 @@ static JmyRetransmissionConfig s_retran_config = {
 };
 // handle client config
 static JmyId2MsgHandler s_client_handlers[] = {
-	{ MSGID_CL2GT_ENTER_GAME_REQUEST, ClientHandler::processEnterGame },
-	{ MSGID_CL2GT_RECONNECT_REQUEST, ClientHandler::processReconnect}
+	{ MSGID_C2S_ENTER_GAME_REQUEST, ClientHandler::processEnterGame },
+	{ MSGID_C2S_RECONNECT_REQUEST, ClientHandler::processReconnect}
 };
+static jmy_msg_handler s_default_client_handler = nullptr;
 static JmyBaseEventHandlers s_client_base_event_handlers = {
+	ClientHandler::onConnect,
+	ClientHandler::onDisconnect,
+	ClientHandler::onTick,
+	ClientHandler::onTimer
 };
 static JmyConnectionConfig s_client_connection_config = {
 	{ 2048, 2048, 0, 0, false, true},
 	&s_retran_config,
 	s_client_handlers,
 	sizeof(s_client_handlers)/sizeof(s_client_handlers[0]),
+	s_default_client_handler,
 	s_client_base_event_handlers,
 	nullptr, 0,
 	true
@@ -50,6 +56,7 @@ static JmyConnectionConfig s_game_connection_config = {
 	&s_retran_config,
 	s_game_handlers,
 	sizeof(s_game_handlers)/sizeof(s_game_handlers[0]),
+	(jmy_msg_handler)nullptr,
 	s_game_base_event_handlers,
 	nullptr, 0,
 	true
@@ -78,6 +85,7 @@ static JmyConnectionConfig s_config_conn_config = {
 	&s_retran_config,
 	s_config_handlers,
 	sizeof(s_config_handlers)/sizeof(s_config_handlers[0]),
+	(jmy_msg_handler)nullptr,
 	s_config_base_event_handlers,
 	(JmyId2EventHandler*)nullptr, 0,
 	true
@@ -104,6 +112,7 @@ static JmyConnectionConfig s_login_conn_config = {
 	&s_retran_config,
 	s_login_handlers,
 	sizeof(s_login_handlers)/sizeof(s_login_handlers[0]),
+	(jmy_msg_handler)nullptr,
 	s_login_base_event_handlers,
 	(JmyId2EventHandler*)nullptr, 0,
 	true

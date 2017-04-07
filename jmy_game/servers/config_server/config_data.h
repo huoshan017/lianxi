@@ -21,13 +21,14 @@ static JmyBaseEventHandlers s_conn_base_event_handlers = {
 	ConnHandler::onTimer
 };
 static JmyConnectionConfig s_conn_conn_config = {
-	{ 4096, 4096, 0, 0, false, true},
-	&s_retran_config,
-	s_conn_handlers,
-	sizeof(s_conn_handlers)/sizeof(s_conn_handlers[0]),
-	s_conn_base_event_handlers,
-	nullptr, 0,
-	true
+	{ 4096, 4096, 0, 0, false, true},	// JmyBufferConfig
+	&s_retran_config,					// JmyRetransmissionConfig
+	s_conn_handlers,					// JmyId2MsgHandler []
+	sizeof(s_conn_handlers)/sizeof(s_conn_handlers[0]), // int
+	(jmy_msg_handler)nullptr,			// jmy_msg_handler
+	s_conn_base_event_handlers,			// JmyId2EventHandler []
+	(JmyId2EventHandler*)nullptr, 0,	// JmyId2EventHandler*
+	true								// is_reconnect : bool
 };
 static JmyServerConfig s_conn_config = {
 	s_conn_conn_config,

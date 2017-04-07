@@ -54,5 +54,6 @@ char* get_session_code(char* session_buf, int buf_len)
 	for (int i=0; i<buf_len; ++i) {
 		session_buf[i] = dis(gen);
 	}
+	session_buf[buf_len] = '\0';
 	return session_buf;
 }

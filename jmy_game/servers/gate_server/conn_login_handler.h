@@ -30,9 +30,9 @@ public:
 	static bool checkAccountSession(const std::string& account, const std::string& session_code);
 
 private:
-	static char tmp_[MAX_SEND_BUFFER_SIZE];
+	static char tmp_[JMY_MAX_MSG_SIZE];
 	static LoginAgentManager login_mgr_;
-	static char session_code_buff_[ENTER_GAME_SESSION_CODE_LENGTH];
+	static char session_code_buff_[ENTER_GAME_SESSION_CODE_LENGTH+1];
 };
 
 #define LOGIN_MGR (ConnLoginHandler::getLoginManager())

@@ -7,9 +7,9 @@
 #include "config_loader.h"
 
 
-char ConnLoginHandler::tmp_[MAX_SEND_BUFFER_SIZE];
+char ConnLoginHandler::tmp_[JMY_MAX_MSG_SIZE];
 LoginAgentManager ConnLoginHandler::login_mgr_;
-char ConnLoginHandler::session_code_buff_[ENTER_GAME_SESSION_CODE_LENGTH];
+char ConnLoginHandler::session_code_buff_[ENTER_GAME_SESSION_CODE_LENGTH+1];
 
 int ConnLoginHandler::onConnect(JmyEventInfo* info)
 {

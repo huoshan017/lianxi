@@ -4,9 +4,21 @@
 #include "../../proto/src/common.pb.h"
 #include "gate_server.h"
 
-char ClientHandler::tmp_[MAX_SEND_BUFFER_SIZE];
+char ClientHandler::tmp_[JMY_MAX_MSG_SIZE];
 ClientAgentManager ClientHandler::client_mgr_;
 std::unordered_map<std::string, std::string>  ClientHandler::account2session_map_;
+
+int ClientHandler::onConnect(JmyEventInfo* info)
+{
+	JmyTcpConnection* conn = get_connection(info);
+	if (!conn) return -1;
+	if (GATE_SERVER->checkClientMaxCount((int)client_mgr_.getAgentSize())) {
+		conn->close();
+		return -1;
+	}
+	ServerLogInfo("new client connection(%d)", info->conn_id);
+	return 0;
+}
 
 int ClientHandler::onDisconnect(JmyEventInfo* info)
 {
@@ -19,11 +31,13 @@ int ClientHandler::onDisconnect(JmyEventInfo* info)
 
 int ClientHandler::onTick(JmyEventInfo* info)
 {
+	(void)info;
 	return 0;
 }
 
 int ClientHandler::onTimer(JmyEventInfo* info)
 {
+	(void)info;
 	return 0;
 }
 
@@ -52,9 +66,24 @@ void ClientHandler::send_error(JmyMsgInfo* info, ProtoErrorType error)
 
 int ClientHandler::processEnterGame(JmyMsgInfo* info)
 {
-	MsgCL2GT_EnterGameRequest request;
+	MsgC2S_EnterGameRequest request;
 	if (!request.ParseFromArray(info->data, info->len)) {
 		send_error(info, PROTO_ERROR_LOGIN_DATA_INVALID);
+		return -1;
+	}
+
+	// check enter session
+	std::unordered_map<std::string, std::string>::iterator it = account2session_map_.find(request.account());
+	if (it == account2session_map_.end()) {
+		send_error(info, PROTO_ERROR_LOGIN_ACCOUNT_OR_PASSWORD_INVALID);
+		ServerLogError("account %s not found", request.account().c_str());
+		return -1;
+	}
+
+	if (it->second != request.session_code()) {
+		send_error(info, PROTO_ERROR_LOGIN_ACCOUNT_OR_PASSWORD_INVALID);
+		ServerLogError("account %s enter session %s invalid, valid session: %s",
+				request.account().c_str(), request.session_code().c_str(), it->second.c_str());
 		return -1;
 	}
 
@@ -71,12 +100,26 @@ int ClientHandler::processEnterGame(JmyMsgInfo* info)
 		return -1;
 	}
 
-	return 0;
+	char* reconn_session = get_session_code(tmp_, RECONN_SESSION_CODE_BUF_LENGTH);
+	agent->getData().reconn_session = reconn_session;
+
+	MsgS2C_EnterGameResponse response;
+	response.set_reconnect_session(agent->getData().reconn_session.c_str());
+	if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
+		ServerLogError("serialize MsgS2C_EnterGameResponse failed");
+		return -1;
+	}
+	if (agent->sendMsg(MSGID_S2C_ENTER_GAME_RESPONSE, tmp_, response.ByteSize()) < 0) {
+		ServerLogError("send message MsgS2C_EnterGameResponse failed");
+		return -1;
+	}
+
+	return info->len;
 }
 
 int ClientHandler::processReconnect(JmyMsgInfo* info)
 {
-	MsgCL2GT_ReconnectRequest request;
+	MsgC2S_ReconnectRequest request;
 	if (!request.ParseFromArray(info->data, info->len)) {
 		ServerLogError("parse MsgCL2GT_ReconnectRequest failed");
 		return -1;
@@ -91,17 +134,10 @@ int ClientHandler::processReconnect(JmyMsgInfo* info)
 	// disconnect previous connection
 	agent->close();
 
-	return 0;
+	return info->len;
 }
 
-int ClientHandler::onConnect(JmyEventInfo* info)
+int ClientHandler::processDefault(JmyMsgInfo* info)
 {
-	JmyTcpConnection* conn = get_connection(info);
-	if (!conn) return -1;
-	if (GATE_SERVER->checkClientMaxCount((int)client_mgr_.getAgentSize())) {
-		conn->close();
-		return -1;
-	}
-	ServerLogInfo("new client connection(%d)", info->conn_id);
-	return 0;
+	return info->len;
 }

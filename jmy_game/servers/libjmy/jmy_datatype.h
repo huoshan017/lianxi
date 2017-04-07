@@ -142,6 +142,7 @@ struct JmyConnectionConfig {
 	JmyRetransmissionConfig* retran_conf;
 	JmyId2MsgHandler* handlers;
 	int nhandlers;
+	jmy_msg_handler default_msg_handler;
 	JmyBaseEventHandlers base_event_handlers;
 	JmyId2EventHandler* other_event_handlers;
 	int other_event_nhandlers;

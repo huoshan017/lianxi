@@ -6,7 +6,7 @@
 #include "config_data.h"
 #include "config_loader.h"
 
-char ConnConfigHandler::tmp_[MAX_SEND_BUFFER_SIZE];
+char ConnConfigHandler::tmp_[JMY_MAX_MSG_SIZE];
 
 int ConnConfigHandler::onConnect(JmyEventInfo* info)
 {
