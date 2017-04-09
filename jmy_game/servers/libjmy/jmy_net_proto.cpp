@@ -10,12 +10,46 @@
 			2; \
 		})
 
+#define UNPACK_INT16_FROM_BUFF(buff) ({ \
+			((buff[0]<<8)&0xff00) + (buff[1]&0xff); \
+		})
+
 #define PACK_INT32_TO_BUFF(id, buff) ({ \
 			buff[0] = (id>>24) & 0xff; \
 			buff[1] = (id>>16) & 0xff; \
 			buff[2] = (id>>8) & 0xff; \
 			buff[3] = id & 0xff; \
 			4; \
+		})
+
+#define UNPACK_INT32_FROM_BUFF(buff) ({ \
+			((buff[0]<<24)&0xff000000) + \
+			((buff[1]<<16)&0xff0000) + \
+			((buff[2]<<8)&0xff00) + \
+			(buff[3]&0xff); \
+		})
+
+#define PACK_INT64_TO_BUFF(value, buff) ({ \
+			buf[0] = (value>>56) & 0xff; \
+			buf[1] = (value>>48) & 0xff; \
+			buf[2] = (value>>40) & 0xff; \
+			buf[3] = (value>>32) & 0xff; \
+			buf[4] = (value>>24) & 0xff; \
+			buf[5] = (value>>16) & 0xff; \
+			buf[6] = (value>>8) & 0xff; \
+			buf[7] = (value) & 0xff; \
+			8; \
+		})
+
+#define UNPACK_INT64_FROM_BUFF(buff) ({ \
+			((buff[0]<<56)&0xff00000000000000) + \
+			((buff[1]<<48)&0xff000000000000) + \
+			((buff[2]<<40)&0xff0000000000) + \
+			((buff[3]<<32)&0xff00000000) + \
+			((buff[4]<<24)&0xff000000) + \
+			((buff[5]<<16)&0xff0000) + \
+			((buff[6]<<8)&0xff00) + \
+			(buff[7]&0xff); \
 		})
 
 JmyPacketType jmy_net_proto_pack_type(const char* buf) {
@@ -66,12 +100,23 @@ int jmy_net_proto_pack_disconnect_ack(char* buf, unsigned char len) {
 	return JMY_PACKET_LEN_DISCONNECT_ACK;
 }
 
-int jmy_net_proto_pack_msgid(char* buf, unsigned char len, int msgid, unsigned short data_len) {
+int jmy_net_proto_pack_msgid_datalen(char* buf, unsigned char len, int msgid, unsigned short data_len) {
 	if (!buf || len < JMY_PACKET_LEN_USER_DATA_HEAD) return -1;
 	buf[0] = (char)JMY_PACKET_USER_DATA;
 	PACK_INT16_TO_BUFF((data_len+2), (buf+1));
 	PACK_INT16_TO_BUFF((msgid), (buf+3));
 	return JMY_PACKET_LEN_USER_DATA_HEAD;
+}
+
+int jmy_net_proto_pack_userid_msgid_datalen(char* buf, unsigned char len, int user_id, int msg_id, unsigned short data_len)
+{
+	if (!buf || len < JMY_PACKET_LEN_USER_ID_DATA_HEAD) return -1;
+	buf[0] = (char)JMY_PACKET_USER_DATA;
+	int offset = 1;
+	offset += PACK_INT32_TO_BUFF(user_id, (buf+offset));
+	offset += PACK_INT16_TO_BUFF((data_len+2), (buf+offset));
+	PACK_INT16_TO_BUFF((msg_id), (buf+offset));
+	return JMY_PACKET_LEN_USER_ID_DATA_HEAD;
 }
 
 int jmy_net_proto_pack_ack(char* buf, unsigned char len, unsigned short msg_count, unsigned short curr_id) {
@@ -87,8 +132,56 @@ int jmy_net_proto_pack_heartbeat(char* buf, unsigned char len) {
 	buf[0] = (char)JMY_PACKET_HEARTBEAT;
 	std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
 	std::time_t t = std::chrono::system_clock::to_time_t(now);
-	PACK_INT32_TO_BUFF(t, buf);
+	PACK_INT32_TO_BUFF(t, (buf+1));
 	return JMY_PACKET_LEN_HEARTBEAT;
+}
+
+/**
+ * int64 type defined
+ */
+template <>
+int jmy_net_proto_pack_defined_type_head<int64_t>(char* buf, unsigned short len, unsigned char defined_pack_type, const int64_t& int_pack_param) {
+	int int64_packet_type_len = JMY_PACKET_LEN_TYPE+sizeof(int64_t);
+	if (!buf || len < int64_packet_type_len) return -1;
+	buf[0] = (char)defined_pack_type;
+	PACK_INT64_TO_BUFF(int_pack_param, buf);
+	return int64_packet_type_len;
+}
+
+/**
+ * int type defined
+ */
+template <>
+int jmy_net_proto_pack_defined_type_head<int>(char* buf, unsigned short len, unsigned char defined_pack_type, const int& int_pack_param) {
+	int int32_packet_type_len = JMY_PACKET_LEN_TYPE+sizeof(int);
+	if (!buf || len < int32_packet_type_len) return -1;
+	buf[0] = (char)defined_pack_type;
+	PACK_INT32_TO_BUFF(int_pack_param, buf);
+	return int32_packet_type_len;
+}
+
+/**
+ * short type defined
+ */
+template <>
+int jmy_net_proto_pack_defined_type_head<short>(char* buf, unsigned short len, unsigned char defined_pack_type, const short& short_pack_param) {
+	int int16_packet_type_len = JMY_PACKET_LEN_TYPE+sizeof(short);
+	if (!buf || len < int16_packet_type_len) return -1;
+	buf[0] = (char)defined_pack_type;
+	PACK_INT16_TO_BUFF(short_pack_param, buf);
+	return int16_packet_type_len;
+}
+
+/**
+ * char type defined
+ */
+template <>
+int jmy_net_proto_pack_defined_type_head<char>(char* buf, unsigned short len, unsigned char defined_pack_type, const char& char_pack_param) {
+	int int8_packet_type_len = JMY_PACKET_LEN_TYPE+sizeof(char);
+	if (!buf || len<int8_packet_type_len) return -1;
+	buf[0] = (char)defined_pack_type;
+	buf[1] = char_pack_param;
+	return int8_packet_type_len;
 }
 
 int jmy_net_proto_unpack_data_head(const char* buf, unsigned int len, JmyPacketUnpackData& data, int session_id, void* param) {
@@ -152,37 +245,53 @@ int jmy_net_proto_unpack_data_head(const char* buf, unsigned int len, JmyPacketU
 		break;
 #endif
 	case JMY_PACKET_USER_DATA:
+	case JMY_PACKET_USER_ID_DATA:
 		{
+			int offset = JMY_PACKET_LEN_TYPE;
+			int user_id = 0;
+			if (data.type == JMY_PACKET_USER_ID_DATA) {
+				if (len - offset < 4) {
+					data.result = JMY_UNPACK_RESULT_DATA_NOT_ENOUGH;
+					LibJmyLogDebug("user id %d length not enough", len-offset);
+					return 0;
+				}
+				user_id = UNPACK_INT32_FROM_BUFF((buf+offset));
+				offset += 4;
+			}
 			// head not enough
-			if ((int)len-1-2 < 0) {
+			if ((int)len-offset-2 < 0) {
 				data.result = JMY_UNPACK_RESULT_DATA_NOT_ENOUGH;
-				LibJmyLogInfo("data length %d not enough", len);
+				LibJmyLogInfo("data length %d not enough", len-offset);
 				return 0;
 			}
 			// data len invalid, at least include msg id (2 bytes)
-			unsigned short data_len = ((buf[1]<<8)&0xff00) + (buf[2]&0xff);
+			unsigned short data_len = ((buf[offset]<<8)&0xff00) + (buf[offset+1]&0xff);
 			if (data_len < 2) {
 				data.data = data_len;
 				data.result = JMY_UNPACK_RESULT_MSG_LEN_INVALID;
 				LibJmyLogError("message data len field length(%d) invalid", data_len);
 				return -1;
 			}
+			offset += 2;
 			// (can write_len + can read len - nhandled) is not enough to hold next messag	
-			if ((int)len-1-2 < (int)data_len) {
-				data.data = data_len+1+2; // next message len(include data head)
+			if ((int)(len-offset) < (int)data_len) {
+				data.data = data_len+offset; // next message len(include data head)
 				data.result = JMY_UNPACK_RESULT_USER_DATA_NOT_ENOUGH;
 				//LibJmyLogInfo("next message len %d not enough, need %d", len, data_len);
 				return 0;
 			}
 			// msg id
-			data.param = (void*)(long)(((buf[3]<<8)&0xff00) + (buf[4]&0xff));
+			data.param = (void*)(long)(((buf[offset]<<8)&0xff00) + (buf[offset+1]&0xff));
+			offset += 2;
+			// msg info
 			JmyMsgInfo* msg_info = (JmyMsgInfo*)&data.msg_info;
+			msg_info->receiver_id = user_id;
 			msg_info->msg_id = (int)(long)data.param;
-			msg_info->data = const_cast<char*>(buf+1+2+2);
+			msg_info->data = const_cast<char*>(buf+offset);
 			msg_info->len = data_len-2;
 			msg_info->session_id = session_id;
 			msg_info->param = param;
-			handled = 1+2+2+msg_info->len;
+			handled = offset+msg_info->len;
 		}
 		break;
 	case JMY_PACKET_ACK:

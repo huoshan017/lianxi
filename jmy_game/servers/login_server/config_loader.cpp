@@ -50,6 +50,10 @@ bool ConfigLoader::loadJson(const char* jsonpath)
 		return false;
 	}
 	config_.id = doc_["server_id"].GetInt();
+	if (get_server_type(config_.id) != SERVER_TYPE_LOGIN) {
+		std::cout << "server_id " << config_.id << " is not login server type" << std::endl;
+		return false;
+	}
 
 	// server_ip
 	if (!doc_["server_ip"].IsString()) {

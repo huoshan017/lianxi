@@ -20,13 +20,14 @@ struct JmySessionInfo {
 };
 
 struct JmyMsgInfo {
+	int receiver_id;
 	int msg_id;
 	char* data;
 	unsigned int len;
 	int session_id;
 	void* param;
-	JmyMsgInfo() : msg_id(0), data(nullptr), len(0), session_id(0), param(nullptr) {}
-	JmyMsgInfo(int mid, char* d, unsigned int l, int sid, void* p) : msg_id(mid), data(d), len(l), session_id(sid), param(p) {}
+	JmyMsgInfo() : receiver_id(0), msg_id(0), data(nullptr), len(0), session_id(0), param(nullptr) {}
+	JmyMsgInfo(int rid, int mid, char* d, unsigned int l, int sid, void* p) : receiver_id(rid), msg_id(mid), data(d), len(l), session_id(sid), param(p) {}
 };
 
 typedef int (*jmy_msg_handler)(JmyMsgInfo*);

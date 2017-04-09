@@ -66,6 +66,10 @@ int ConnLoginHandler::processConnectLoginResponse(JmyMsgInfo* info)
 		return -1;
 	}
 	int login_id = response.login_id();
+	if (get_server_type(login_id) != SERVER_TYPE_LOGIN) {
+		ServerLogError("login_id(%d) is not login server_type", login_id);
+		return -1;
+	}
 	LoginAgent* agent = login_mgr_.getAgent(login_id);
 	if (agent) {
 		ServerLogError("already exist login agent for login_id(%d)", login_id);

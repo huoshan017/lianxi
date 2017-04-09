@@ -4,9 +4,16 @@
 #include "../../proto/src/error.pb.h"
 #include "../../proto/src/server.pb.h"
 #include "client_handler.h"
+#include "config_loader.h"
 
 char GateHandler::tmp_[JMY_MAX_MSG_SIZE];
 GateAgentManager GateHandler::gate_mgr_;
+
+int GateHandler::init()
+{
+	gate_mgr_.init();
+	return 0;
+}
 
 int GateHandler::onConnect(JmyEventInfo* info)
 {
@@ -68,8 +75,11 @@ int GateHandler::processConnectLogin(JmyMsgInfo* info)
 	data.port = request.gate_server_port();
 
 	MsgLS2GT_ConnectLoginResponse response;
+	response.set_login_id(SERVER_CONFIG_FILE.id);
 	response.SerializeToArray(tmp_, sizeof(tmp_));
 	agent->sendMsg(MSGID_LS2GT_CONNECT_LOGIN_RESPONSE, tmp_, response.ByteSize());
+
+	ServerLogInfo("gate_server: %d connected", gate_id);
 	return 0;
 }
 

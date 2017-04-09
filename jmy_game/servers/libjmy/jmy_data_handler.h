@@ -35,27 +35,32 @@ public:
 	int writeUserData(JmySessionBuffer& buffer, int msg_id, const char* data, unsigned int len);
 	int writeUserData(JmyDoubleSessionBuffer* buffer, int msg_id, const char* data, unsigned int len);
 	int writeUserData(JmySessionBufferList* buffer_list, int msg_id, const char* data, unsigned int len);
+	int writeUserIdAndData(JmySessionBuffer& buffer, int user_id, int msg_id, const char* data, unsigned short len);
+	int writeUserIdAndData(JmyDoubleSessionBuffer* buffer, int user_id, int msg_id, const char* data, unsigned short len);
+	int writeUserIdAndData(JmySessionBufferList* buffer_list, int user_id, int msg_id, const char* data, unsigned short len);
 
 #if USE_CONN_PROTO
-	template <class SessionBuffer>
-	int writeConn(SessionBuffer* buffer);
-	template <class SessionBuffer>
-	int writeConnRes(SessionBuffer* buffer, unsigned int id, char* session/*, unsigned char session_len*/);
-	template <class SessionBuffer>
-	int writeReconn(SessionBuffer* buffer, unsigned int id, char* session/*, unsigned char session_len*/);
-	template <class SessionBuffer>
-	int writeReconnRes(SessionBuffer* buffer, unsigned int id, char* session/*, unsigned char session_len*/);
+	template <class Buffer>
+	int writeConn(Buffer* buffer);
+	template <class Buffer>
+	int writeConnRes(Buffer* buffer, unsigned int id, char* session/*, unsigned char session_len*/);
+	template <class Buffer>
+	int writeReconn(Buffer* buffer, unsigned int id, char* session/*, unsigned char session_len*/);
+	template <class Buffer>
+	int writeReconnRes(Buffer* buffer, unsigned int id, char* session/*, unsigned char session_len*/);
 #endif
-	template <class SessionBuffer>
-	int writeUserData(SessionBuffer* buffer, int msg_id, const char* data, unsigned int len);
-	template <class SessionBuffer>
-	int writeAck(SessionBuffer* buffer, unsigned short msg_count, unsigned short curr_id);
-	template <class SessionBuffer>
-	int writeHeartbeat(SessionBuffer* buffer);
-	template <class SessionBuffer>
-	int writeDisconnect(SessionBuffer* buffer);
-	template <class SessionBuffer>
-	int writeDisconnectAck(SessionBuffer* buffer);
+	template <class Buffer>
+	int writeUserData(Buffer* buffer, int msg_id, const char* data, unsigned int len);
+	template <class Buffer>
+	int writeUserIdAndData(Buffer* buffer, int user_id, int msg_id, const char* data, unsigned short len);
+	template <class Buffer>
+	int writeAck(Buffer* buffer, unsigned short msg_count, unsigned short curr_id);
+	template <class Buffer>
+	int writeHeartbeat(Buffer* buffer);
+	template <class Buffer>
+	int writeDisconnect(Buffer* buffer);
+	template <class Buffer>
+	int writeDisconnectAck(Buffer* buffer);
 
 private:
 #if USE_CONN_PROTO
@@ -158,10 +163,18 @@ template <class SessionBuffer>
 int JmyDataHandler::writeUserData(SessionBuffer* buffer, int msg_id, const char* data, unsigned int len)
 {
 	char head_buf[JMY_PACKET_LEN_USER_DATA_HEAD];
-	int res = jmy_net_proto_pack_msgid(head_buf, sizeof(head_buf), msg_id, len);
+	int res = jmy_net_proto_pack_msgid_datalen(head_buf, sizeof(head_buf), msg_id, len);
 	if (res < 0) {
 		LibJmyLogError("pack msgid(%d) failed", msg_id);
 		return -1;
+	}
+
+	if (len == 0) {
+		if (!buffer->writeData(head_buf, res)) {
+			LibJmyLogError("write length 0 data failed");
+			return -1;
+		}
+		return len;
 	}
 
 	JmyData datas[2];
@@ -171,6 +184,34 @@ int JmyDataHandler::writeUserData(SessionBuffer* buffer, int msg_id, const char*
 	datas[1].len = len;
 
 	// write
+	if (!buffer->writeData(datas, sizeof(datas)/sizeof(datas[0]))) {
+		LibJmyLogError("write data failed");
+		return -1;
+	}
+	return len;
+}
+
+template <class Buffer>
+int JmyDataHandler::writeUserIdAndData(Buffer* buffer, int user_id, int msg_id, const char* data, unsigned short len)
+{
+	char head_buf[JMY_PACKET_LEN_USER_ID_DATA_HEAD];
+	int res = jmy_net_proto_pack_userid_msgid_datalen(head_buf, sizeof(head_buf), user_id, msg_id, len);
+	if (res < 0) {
+		LibJmyLogError("pack userid(%d) msgid(%d) datelen(%d) failed", user_id, msg_id, len);
+	}
+	if (len == 0) {
+		if (!buffer->writeData(head_buf, res)) {
+			LibJmyLogError("write length 0 data failed");
+			return -1;
+		}
+		return len;
+	}
+
+	JmyData datas[2];
+	datas[0].data = head_buf;
+	datas[0].len = res;
+	datas[1].data = data;
+	datas[1].len = len;
 	if (!buffer->writeData(datas, sizeof(datas)/sizeof(datas[0]))) {
 		LibJmyLogError("write data failed");
 		return -1;
