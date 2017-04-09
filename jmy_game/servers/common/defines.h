@@ -30,6 +30,9 @@ enum { GAME_SERVER_MAX_ID = 40100 };
 enum { DB_SERVER_MIN_ID = 50001 };
 enum { DB_SERVER_MAX_ID = 50100 };
 
+// server_id devide
+enum { SERVER_ID_DEVIDE = 10000 };
+
 // retransmission: max cached send buffer count
 enum { RETRANSMISSION_MAX_CACHED_SEND_BUFFER_COUNT = 100 };
 // 

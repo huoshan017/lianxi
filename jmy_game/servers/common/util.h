@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../libjmy/jmy_util.h"
+#include "defines.h"
 
 #define s_libjmy_log_cate "libjmy_log"
 #define s_server_log_cate "server_log"
@@ -36,3 +37,7 @@ struct JmyEventInfo;
 JmyTcpConnection* get_connection(JmyEventInfo*);
 
 char* get_session_code(char*, int);
+
+inline int get_server_type(int server_id) {
+	return server_id/SERVER_ID_DEVIDE;
+}

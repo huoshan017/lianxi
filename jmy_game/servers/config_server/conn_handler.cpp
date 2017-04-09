@@ -38,6 +38,7 @@ int ConnHandler::onDisconnect(JmyEventInfo* info)
 			return -1;
 		}
 		login_mgr_.deleteAgent(it->second);
+		login_conn_id_set_.erase(info->conn_id);
 		ServerLogInfo("remove login agent with login_id(%d) conn_id(%d)", it->second, info->conn_id);
 	} else if (gate_conn_id_set_.find(info->conn_id) != gate_conn_id_set_.end()) {
 		GateAgent* gate_agent = gate_mgr_.getAgent(it->second);
@@ -46,6 +47,7 @@ int ConnHandler::onDisconnect(JmyEventInfo* info)
 			return -1;
 		}
 		gate_mgr_.deleteAgent(it->second);
+		gate_conn_id_set_.erase(info->conn_id);
 		ServerLogInfo("remove gate agent with gate_id(%d) conn_id(%d)", it->second, info->conn_id);
 	} else {
 		ServerLogInfo("connection %d not found agent", info->conn_id);

@@ -19,6 +19,7 @@ struct JmyEventInfo;
 class GateHandler
 {
 public:
+	static int init();
 	static int processConnectLogin(JmyMsgInfo* info);
 	static int processSelectedServerResponse(JmyMsgInfo* info);
 	static int onConnect(JmyEventInfo*);

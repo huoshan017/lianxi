@@ -186,7 +186,7 @@ int JmyDataHandler::processData(JmyDoubleSessionBuffer& recv_buffer, int session
 
 int JmyDataHandler::writeUserData(JmySessionBuffer& send_buffer, int msg_id, const char* data, unsigned int len)
 {
-	if (!data || !len)
+	if (!data)
 		return 0;
 
 	if (!send_buffer.checkWriteLen(len + JMY_PACKET_LEN_USER_DATA_HEAD)) {
@@ -198,7 +198,7 @@ int JmyDataHandler::writeUserData(JmySessionBuffer& send_buffer, int msg_id, con
 
 int JmyDataHandler::writeUserData(JmyDoubleSessionBuffer* send_buffer, int msg_id, const char* data, unsigned int len)
 {
-	if (!send_buffer || !data || !len)
+	if (!send_buffer || !data)
 		return 0;
 
 	if (!send_buffer->checkWriteLen(len + JMY_PACKET_LEN_USER_DATA_HEAD)) {
@@ -229,10 +229,61 @@ int JmyDataHandler::writeUserData(JmyDoubleSessionBuffer* send_buffer, int msg_i
 
 int JmyDataHandler::writeUserData(JmySessionBufferList* buffer_list, int msg_id, const char* data, unsigned int len)
 {
-	if (!buffer_list || !data || !len)
+	if (!buffer_list || !data)
 		return 0;
 
 	return writeUserData<JmySessionBufferList>(buffer_list, msg_id, data, len);
+}
+
+int JmyDataHandler::writeUserIdAndData(JmySessionBuffer& buffer, int user_id, int msg_id, const char* data, unsigned short len)
+{
+	if (!data)
+		return 0;
+
+	if (!buffer.checkWriteLen(len + JMY_PACKET_LEN_USER_ID_DATA_HEAD)) {
+		LibJmyLogError("data length(%d) is not enough to write", len);
+		return -1;
+	}
+	return writeUserIdAndData<JmySessionBuffer>(&buffer, user_id, msg_id, data, len);
+}
+
+int JmyDataHandler::writeUserIdAndData(JmyDoubleSessionBuffer* buffer, int user_id, int msg_id, const char* data, unsigned short len)
+{
+	if (!buffer || !data)
+		return 0;
+
+	if (!buffer->checkWriteLen(len + JMY_PACKET_LEN_USER_ID_DATA_HEAD)) {
+		bool too_large = true;
+		if (!buffer->isLarge()) {
+			if (!buffer->switchToLarge()) {
+				LibJmyLogError("switch to large buffer failed");
+				return -1;
+			}
+			if (buffer->checkWriteLen(len + JMY_PACKET_LEN_USER_ID_DATA_HEAD)) {
+				too_large = false;
+			}
+		}
+		if (too_large) {
+			LibJmyLogError("data length(%d) is not enough to write", len);
+			return -1;
+		}
+	}
+	// check if length of data is small than normal buffer, switch to normal buffer
+	if (buffer->isLarge() && buffer->getNormalLen() >= (unsigned int)len + JMY_PACKET_LEN_USER_ID_DATA_HEAD)  {
+		if (!buffer->backToNormal()) {
+			LibJmyLogError("back to normal buffer failed");
+			return -1;
+		}
+	}
+	return writeUserIdAndData<JmyDoubleSessionBuffer>(buffer, user_id, msg_id, data, len);
+}
+
+int JmyDataHandler::writeUserIdAndData(JmySessionBufferList* buffer_list, int user_id, int msg_id, const char* data, unsigned short len)
+{
+	if (!buffer_list || !data)
+		return 0;
+
+	return writeUserIdAndData<JmySessionBufferList>(buffer_list, user_id, msg_id, data, len);
 }
 
 int JmyDataHandler::handleMsg(JmyMsgInfo* info)
@@ -349,16 +400,17 @@ int JmyDataHandler::handleOne(
 	unsigned int read_len = session_buffer.getReadLen();
 	int r = jmy_net_proto_unpack_data_head(buff+offset, read_len-offset, data, session_id, param);
 	if (r < 0) {
-		if (data.type == JMY_PACKET_USER_DATA && data.result == JMY_UNPACK_RESULT_MSG_LEN_INVALID) {
+		if ((data.type == JMY_PACKET_USER_DATA || data.type == JMY_PACKET_USER_ID_DATA) &&
+			data.result == JMY_UNPACK_RESULT_MSG_LEN_INVALID) {
 			LibJmyLogError("data len(%d) is invalid", data.data);
 		}
 		return -1;
-	} else if (r == 0 && data.type != JMY_PACKET_USER_DATA) {
+	} else if (r == 0 && (data.type != JMY_PACKET_USER_DATA && data.type != JMY_PACKET_USER_ID_DATA)) {
 		return 0;
 	}
 
 	// user data
-	if (data.type == JMY_PACKET_USER_DATA) {
+	if (data.type == JMY_PACKET_USER_DATA || data.type == JMY_PACKET_USER_ID_DATA) {
 		if (data.result == JMY_UNPACK_RESULT_DATA_NOT_ENOUGH) {
 			session_buffer.moveDataToFront();
 			return 0;

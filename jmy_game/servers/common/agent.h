@@ -54,6 +54,22 @@ public:
 		return 0;
 	}
 
+	int sendMsg(int userid, int msgid, const  char* data, unsigned short len) {
+		if (state_ != AGENT_STATE_VERIFIED) return 0;
+		JmyTcpConnection* conn = mgr_->get(id_);
+		if (!conn) {
+			ServerLogError("not found connection with id(%d)", id_);
+			return -1;
+		}
+
+		if (conn->send(userid, msgid, data, len) < 0) {
+			ServerLogError("agent(%d) send message(%d) to user(%d) failed", id_, msgid, userid);
+			return -1;
+		}
+
+		return 0;
+	}
+
 	int close() {
 		JmyTcpConnection* conn = mgr_->get(id_);
 		if (!conn) return -1;
@@ -214,11 +230,13 @@ public:
 	}
 
 	agent_type* newAgent(int_id_type id, JmyTcpConnectionMgr* mgr, int_conn_id_type conn_id) {
-		agent_type* agent = getAgent(id);
-		if (!agent) {
+		if (id<min_id_ || (id-min_id_) > (int_id_type)(agents_.size()-1)) {
 			return nullptr;
 		}
-		agent = jmy_mem_malloc<agent_type>();
+		if (agents_[id-min_id_]) {
+			return nullptr;
+		}
+		agent_type* agent = jmy_mem_malloc<agent_type>();
 		agent->init(conn_id, mgr);
 		agent->setState(AGENT_STATE_VERIFIED);
 		agents_[id-min_id_] = agent;

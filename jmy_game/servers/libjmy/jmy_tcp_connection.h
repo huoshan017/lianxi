@@ -26,6 +26,7 @@ public:
 	bool connect(const char* ip, short port);
 	void start();
 	int send(int msg_id, const char* data, unsigned int len);
+	int send(int user_id, int msg_id, const char* data, unsigned short len);
 	int run();
 
 	// geter and seter
@@ -71,7 +72,7 @@ protected:
 	bool sending_data_;											// is sending data
 	std::chrono::system_clock::time_point active_close_start_;	// active close time start
 	std::shared_ptr<JmyDataHandler> data_handler_;				// data handler
-	std::shared_ptr<JmyEventHandlerManager> event_handler_;			// event handler
+	std::shared_ptr<JmyEventHandlerManager> event_handler_;		// event handler
 	std::shared_ptr<JmyConnectionBuffer> buffer_;				// recv and send buffer
 	std::chrono::system_clock::time_point last_run_tick_;
 	void* unused_data_;											// extra data when need to use

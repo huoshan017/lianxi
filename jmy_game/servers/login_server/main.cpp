@@ -6,6 +6,7 @@
 #include <iostream>
 #include "config_loader.h"
 #include "config_data.h"
+#include "gate_handler.h"
 
 #define ServerConfPath "./login_server.json"
 
@@ -55,6 +56,7 @@ int main(int argc, char* argv[])
 		ServerLogError("listen port %d for gate server failed", s_gate_config.listen_port);
 		return -1;
 	}
+	GateHandler::init();
 	ServerLogInfo("start listening port %d for gate server", s_gate_config.listen_port);
 
 	// connect config server

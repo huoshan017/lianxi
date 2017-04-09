@@ -3,6 +3,7 @@
 #include <string>
 #include <cassert>
 #include <iostream>
+#include "../common/util.h"
 
 ConfigLoader::ConfigLoader()
 {
@@ -57,6 +58,10 @@ bool ConfigLoader::loadJson(const char* jsonpath)
 		return false;
 	}
 	config_.id = doc_["server_id"].GetInt();
+	if (get_server_type(config_.id) != SERVER_TYPE_GATE) {
+		std::cout << "server_id " << config_.id << " type is not gate server type" << std::endl;
+		return false;
+	}
 	std::cout << "server_id is " << config_.id << std::endl;
 
 	// server_ip

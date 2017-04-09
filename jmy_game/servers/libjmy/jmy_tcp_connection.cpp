@@ -162,6 +162,27 @@ int JmyTcpConnection::send(int msg_id, const char* data, unsigned int len)
 	return len;	
 }
 
+int JmyTcpConnection::send(int user_id, int msg_id, const char* data, unsigned short len)
+{
+	if (state_ != JMY_CONN_STATE_CONNECTED)
+		return -1;
+
+	if (!buffer_->use_send_list) {
+		int res = data_handler_->writeUserIdAndData(&buffer_->send_buff, user_id, msg_id, data, len);
+		if (res < 0) {
+			LibJmyLogError("write data length(%d) failed", len);
+			return -1;
+		}
+	} else {
+		int res = data_handler_->writeUserIdAndData(&buffer_->send_buff_list, user_id, msg_id, data, len);
+		if (res < 0) {
+			LibJmyLogError("write data length(%d) failed", len);
+			return -1;
+		}
+	}
+	return len;
+}
+
 int JmyTcpConnection::sendAck(JmyAckInfo* info)
 {
 	if (state_ != JMY_CONN_STATE_CONNECTED)

@@ -69,6 +69,7 @@ int ClientHandler::processEnterGame(JmyMsgInfo* info)
 	MsgC2S_EnterGameRequest request;
 	if (!request.ParseFromArray(info->data, info->len)) {
 		send_error(info, PROTO_ERROR_LOGIN_DATA_INVALID);
+		ServerLogError("parse MsgC2S_EnterGameRequest failed");
 		return -1;
 	}
 
