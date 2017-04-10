@@ -15,12 +15,16 @@ class GameHandler
 {
 public:
 	static int processConnectGateRequest(JmyMsgInfo*);
+	static int processEnterGameResponse(JmyMsgInfo*);
+	static int processLeaveGameResponse(JmyMsgInfo*);
+	static int processDefault(JmyMsgInfo*);
 	static int onConnect(JmyEventInfo*);
 	static int onDisconnect(JmyEventInfo*);
 	static int onTick(JmyEventInfo*);
 	static int onTimer(JmyEventInfo*);
 
 	static int getGameServerCount() { return (int)game_mgr_.getAgentSize(); }
+	static int getGameServerId() { return the_game_id_; }
 	static int sendMsg(int user_id, int msg_id, const char* data, unsigned short len);
 
 private:
@@ -29,4 +33,5 @@ private:
 	static int the_game_id_;
 };
 
-#define SEND_GAME_MSG(user_id, msg_id, data, len) (GameHandler::send(user_id, msg_id, data, len))
+#define SEND_GAME_MSG(user_id, msg_id, data, len) (GameHandler::sendMsg(user_id, msg_id, data, len))
+#define GAME_SERVER_ID (GameHandler::getGameServerId())

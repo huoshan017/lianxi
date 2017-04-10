@@ -24,6 +24,11 @@ enum MsgIdTypeServer {
 	/* GateServer <-> GameServer */
 	MSGID_GS2GT_CONNECT_GATE_REQUEST		= 20200;
 	MSGID_GT2GS_CONNECT_GATE_RESPONSE		= 20201;
+
+	MSGID_GT2GS_ENTER_GAME_REQUEST			= 20210;
+	MSGID_GS2GT_ENTER_GAME_RESPONSE			= 20211;
+	MSGID_GT2GS_LEAVE_GAME_REQUEST			= 20212;
+	MSGID_GS2GT_LEAVE_GAME_RESPONSE			= 20213;
 }
 
 /*** LoginServer <-> GateServer ***/
@@ -115,4 +120,22 @@ message MsgGS2GT_ConnectGateRequest {
 
 // gate -> game  [MSGID_GT2GS_CONNECT_GATE_RESPONSE]
 message MsgGT2GS_ConnectGateResponse {
+}
+
+// gate -> game  [MSGID_GT2GS_ENTER_GAME_REQUEST]
+message MsgGT2GS_EnterGameRequest {
+	string account = 1;
+}
+
+// game -> gate  [MSGID_GS2GT_ENTER_GAME_RESPONSE]
+message MsgGS2GT_EnterGameResponse {
+	string account = 1;
+}
+
+// gate -> game  [MSGID_GT2GS_LEAVE_GAME_REQUEST]
+message MsgGT2GS_LeaveGameRequest {
+}
+
+// game -> gate  [MSGID_GS2GT_LEAVE_GAME_RESPONSE]
+message MsgGS2GT_LeaveGameResponse {
 }

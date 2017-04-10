@@ -306,8 +306,10 @@ int JmyDataHandler::handleMsg(JmyMsgInfo* info)
 			return 0;
 		}
 	}
+
 	if (it->second(info) < 0)
 		return -1;
+
 	return info->len;
 }
 

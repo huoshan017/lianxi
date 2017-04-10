@@ -1,13 +1,13 @@
 {
-	"server_name" : "login_server",
-	"server_id" : 10001,
-	"server_ip" : "192.168.3.250",
-	"server_port" : 10000,
-	"max_conn" : 5000,
+	"name" : "game_server",
+	"id" : 40001,
+	"ip" : "127.0.0.1",
+	"port" : 40000,
+	"max_conn" : 100,
 	"enable_reconnect" : false,
 
-	"listen_gate_ip" : "192.168.3.250",
-	"listen_gate_port" : 20000,
-	"listen_gate_max_conn" : 100,
-	"listen_gate_enable_reconnect" : false
+	"connect_gate_ip" : "127.0.0.1",
+	"connect_gate_port" : 20000,
+	"connect_gate_enable_reconnect" : false,
+	"log_conf_path" : "./log.conf"
 }
