@@ -15,9 +15,10 @@ static JmyRetransmissionConfig s_retran_config = {
 // handle client config
 static JmyId2MsgHandler s_client_handlers[] = {
 	{ MSGID_C2S_ENTER_GAME_REQUEST, ClientHandler::processEnterGame },
+	{ MSGID_C2S_LEAVE_GAME_REQUEST, ClientHandler::processLeaveGame },
 	{ MSGID_C2S_RECONNECT_REQUEST, ClientHandler::processReconnect}
 };
-static jmy_msg_handler s_default_client_handler = nullptr;
+static jmy_msg_handler s_default_client_handler = ClientHandler::processDefault;
 static JmyBaseEventHandlers s_client_base_event_handlers = {
 	ClientHandler::onConnect,
 	ClientHandler::onDisconnect,

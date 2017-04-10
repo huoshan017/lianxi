@@ -1,5 +1,6 @@
 #include "gate_server.h"
 #include "config_data.h"
+#include "client_handler.h"
 
 GateServer::GateServer() : main_server_(service_), listen_game_server_(service_), client_master_(service_), config_client_(nullptr)
 {
@@ -65,12 +66,18 @@ bool GateServer::init(const char* conf_path)
 		return false;
 	}
 
+	if (!ClientHandler::init()) {
+		ServerLogError("client handler init failed");
+		return false;
+	}
+
 	ServerLogInfo("GateServer inited");
 	return true;
 }
 
 void GateServer::close()
 {
+	ClientHandler::clear();
 	client_master_.close();
 	login_client_set_.clear();
 	listen_game_server_.close();

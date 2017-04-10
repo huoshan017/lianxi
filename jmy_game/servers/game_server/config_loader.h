@@ -23,13 +23,14 @@ public:
 		int max_conn;
 		bool enable_reconnect;
 
-		uint8_t gate_list_conf_path_type;
-		std::string gate_list_conf_local_path;
-		std::string gate_list_conf_remote_path;
+		std::string connect_gate_ip;
+		unsigned short connect_gate_port;
+		bool connect_gate_enable_reconnect;
+
 		std::string log_conf_path;
 	};
 
-	const ServerConfig& getServerConfig() { return config_;  }
+	const ServerConfig& getServerConfig() const { return config_; }
 
 private:
 	rapidjson::Document doc_;

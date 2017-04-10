@@ -2,8 +2,11 @@
 
 #include "../libjmy/jmy_const.h"
 #include "../common/agent.h"
+#include "../common/bi_map.h"
 #include "../../proto/src/error.pb.h"
 #include <unordered_map>
+#include "client_array.h"
+
 
 struct ClientData {
 	std::string enter_session;
@@ -19,7 +22,11 @@ struct JmyEventInfo;
 class ClientHandler
 {
 public:
+	static bool init();
+	static void clear();
+
 	static int processEnterGame(JmyMsgInfo*);
+	static int processLeaveGame(JmyMsgInfo*);
 	static int processReconnect(JmyMsgInfo*);
 	static int processDefault(JmyMsgInfo*);
 	static int onConnect(JmyEventInfo*);
@@ -27,15 +34,20 @@ public:
 	static int onTick(JmyEventInfo*);
 	static int onTimer(JmyEventInfo*);
 
-	static ClientAgentManager& getClientManager() { return client_mgr_; }
 	static bool newClientSession(const std::string& account, const std::string& session_code);
+	static int sendEnterGameResponse2Client(int id);
+	static ClientInfo* getClientInfo(int user_id);
+	static ClientInfo* getClientInfoByAccount(const std::string& account);
+	static ClientInfo* getClientInfoByConnId(int conn_id);
+	static void send_error(JmyTcpConnection* conn, ProtoErrorType);
 
-private:
-	static void send_error(JmyMsgInfo*, ProtoErrorType);
 private:
 	static char tmp_[JMY_MAX_MSG_SIZE];
-	static ClientAgentManager client_mgr_;
-	static std::unordered_map<std::string, std::string> account2session_map_;
+	static char session_buf_[RECONN_SESSION_CODE_BUF_LENGTH+1];
+	static BiMap<std::string, int> account_id_map_;
+	static BiMap<int, int> connid_id_map_;
+	static ClientArray client_array_;
 };
 
-#define CLIENT_MGR (ClientHandler::getClientManager())
+#define GET_CLIENT_INFO(account) (ClientHandler::getClientInfo(account))
+#define SEND_CLIENT_ERROR(conn, error) (ClientHandler::send_error(conn, error))
