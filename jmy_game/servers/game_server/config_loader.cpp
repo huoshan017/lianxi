@@ -97,16 +97,16 @@ bool ConfigLoader::loadJson(const char* jsonpath)
 
 	// connect_gate_ip
 	if (doc_.HasMember("connect_gate_ip")) {
-		if (!doc_["connect_gate_ip"].IsInt()) {
+		if (!doc_["connect_gate_ip"].IsString()) {
 			std::cout << "connect_gate_ip type is not string" << std::endl;
 			return false;
 		}
-		config_.connect_gate_ip = doc_["connect_gate_ip"].GetInt();
+		config_.connect_gate_ip = doc_["connect_gate_ip"].GetString();
 	}
 
 	// connect_gate_port 
 	if (doc_.HasMember("connect_gate_port")) {
-		if (!doc_["connect_gate_port"].IsString()) {
+		if (!doc_["connect_gate_port"].IsInt()) {
 			std::cout << "connect_gate_port type is not int" << std::endl;
 			return false;
 		}
@@ -119,7 +119,7 @@ bool ConfigLoader::loadJson(const char* jsonpath)
 			std::cout << "connect_gate_enable_reconnect type is not bool" << std::endl;
 			return false;
 		}
-		config_.connect_gate_enable_reconnect = doc_["connect_gate_enable_reconnect"].GetString();
+		config_.connect_gate_enable_reconnect = doc_["connect_gate_enable_reconnect"].GetBool();
 	}
 
 	// log_conf_path 

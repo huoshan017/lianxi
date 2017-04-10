@@ -7,7 +7,7 @@
 	"enable_reconnect" : false,
 
 	"listen_gate_ip" : "127.0.0.1",
-	"listen_gate_port" : 20000,
+	"listen_gate_port" : 10001,
 	"listen_gate_max_conn" : 100,
 	"listen_gate_enable_reconnect" : false,
 

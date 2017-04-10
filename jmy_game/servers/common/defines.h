@@ -22,7 +22,7 @@ enum { GATE_SERVER_MAX_ID = 20100 };
 enum { CONFIG_SERVER_MIN_ID = 30001 };
 enum { CONFIG_SERVER_MAX_ID = 30001 };
 
-// config server id range
+// game server id range
 enum { GAME_SERVER_MIN_ID = 40001 };
 enum { GAME_SERVER_MAX_ID = 40100 };
 

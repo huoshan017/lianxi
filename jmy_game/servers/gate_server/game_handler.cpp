@@ -60,9 +60,14 @@ int GameHandler::processConnectGateRequest(JmyMsgInfo* info)
 	}
 
 	MsgGS2GT_ConnectGateRequest request;
+	if (!request.ParseFromArray(info->data, info->len)) {
+		ServerLogError("parse message MsgGS2GT_ConnectGateRequest failed");
+		return -1;
+	}
 	int game_id = request.game_id();
 	agent = game_mgr_.newAgent(game_id, (JmyTcpConnectionMgr*)info->param, info->session_id);
 	if (!agent) {
+		ServerLogError("create new game agent with id(%d) failed", game_id);
 		return 0;
 	}
 

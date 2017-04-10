@@ -64,6 +64,7 @@ int GameServer::run()
 		if (res < 0) {
 			break;
 		}
+		service_.poll();
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 	return res;

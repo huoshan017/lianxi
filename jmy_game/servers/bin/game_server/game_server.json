@@ -7,7 +7,7 @@
 	"enable_reconnect" : false,
 
 	"connect_gate_ip" : "127.0.0.1",
-	"connect_gate_port" : 20000,
+	"connect_gate_port" : 20001,
 	"connect_gate_enable_reconnect" : false,
 	"log_conf_path" : "./log.conf"
 }

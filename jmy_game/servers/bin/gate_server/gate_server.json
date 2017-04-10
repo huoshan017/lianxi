@@ -2,7 +2,7 @@
 	"server_name" : "gate_server",
 	"server_id" : 20001,
 	"server_ip" : "127.0.0.1",
-	"server_port" : 11001,
+	"server_port" : 20000,
 	"max_conn" : 5000,
 	"enable_reconnect" : true,
 
