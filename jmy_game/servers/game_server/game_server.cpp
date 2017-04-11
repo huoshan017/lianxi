@@ -37,8 +37,7 @@ bool GameServer::init()
 		return false;
 	}
 
-	s_gate_config.conn_ip = const_cast<char*>(SERVER_CONFIG.connect_gate_ip.c_str());
-	s_gate_config.conn_port = SERVER_CONFIG.connect_gate_port;
+	gate_client_->setIP(const_cast<char*>(SERVER_CONFIG.connect_gate_ip.c_str()), SERVER_CONFIG.connect_gate_port);
 	if (!gate_client_->start(s_gate_config)) {
 		ServerLogError("start connect gate failed");
 		return false;

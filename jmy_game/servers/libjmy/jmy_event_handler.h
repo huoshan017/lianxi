@@ -24,6 +24,23 @@ public:
 			setHandler(id2handlers[i].event_id, id2handlers[i].handler);
 	}
 
+	bool hasConnectHandler() const {
+		return handlers_[JMY_EVENT_CONNECT] != nullptr;
+	}
+	bool hasDisconnectHandler() const {
+		return handlers_[JMY_EVENT_DISCONNECT] != nullptr;
+	}
+	bool hasTickHandler() const {
+		return handlers_[JMY_EVENT_TICK] != nullptr;
+	}
+	bool hasTimerHandler() const {
+		return handlers_[JMY_EVENT_TIMER] != nullptr;
+	}
+	bool hasEventHandler(int event_id) {
+		assert(event_id>JMY_EVENT_NONE && event_id<JMY_EVENT_MAX_COUNT);
+		return handlers_[event_id] != nullptr;
+	}
+
 	void setConnectHandler(jmy_event_handler handler) {
 		handlers_[JMY_EVENT_CONNECT] = handler;
 	}
@@ -88,27 +105,22 @@ public:
 protected:
 	int onDefaultConnect(JmyEventInfo* info) {
 		(void)info;
-		//std::cout << "connection " << info->conn_id << " connected" << std::endl;
 		return 0;
 	}
 	int onDefaultDisconnect(JmyEventInfo* info) {
 		(void)info;
-		//std::cout << "connection " << info->conn_id << " disconnected" << std::endl;
 		return 0;
 	}
 	int onDefaultTick(JmyEventInfo* info) {
 		(void)info;
-		//std::cout << "connection " << info->conn_id << " tick" << std::endl;
 		return 0;
 	}
 	int onDefaultTimer(JmyEventInfo* info) {
 		(void)info;
-		//std::cout << "connection " << info->conn_id << " timer" << std::endl;
 		return 0;
 	}
 	int onDefaultEvent(JmyEventInfo* info) {
 		(void)info;
-		//std::cout << "connection " << info->conn_id << " event(" << info->event_id << ")" << std::endl;
 		return 0;
 	}
 

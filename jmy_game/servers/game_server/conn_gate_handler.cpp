@@ -17,7 +17,6 @@ int ConnGateHandler::onConnect(JmyEventInfo* info)
 		ServerLogError("serialize MsgGS2GT_ConnectGateRequest failed");
 		return -1;
 	}
-	ServerLogInfo("send message bytes size(%d)", request.ByteSize());
 	if (conn->send(MSGID_GS2GT_CONNECT_GATE_REQUEST, tmp_, request.ByteSize()) < 0) {
 		ServerLogError("send message MsgGS2GT_ConnectGateRequest failed");
 		return -1;
@@ -28,6 +27,7 @@ int ConnGateHandler::onConnect(JmyEventInfo* info)
 
 int ConnGateHandler::onDisconnect(JmyEventInfo* info)
 {
+	ServerLogInfo("ondisconnect");
 	return 0;
 }
 
@@ -53,5 +53,7 @@ int ConnGateHandler::processLeaveGame(JmyMsgInfo* info)
 
 int ConnGateHandler::processDefault(JmyMsgInfo* info)
 {
+	switch (info->msg_id) {
+	}
 	return info->len;
 }

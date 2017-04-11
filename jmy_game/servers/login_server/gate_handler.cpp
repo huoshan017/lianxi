@@ -18,6 +18,7 @@ int GateHandler::init()
 int GateHandler::onConnect(JmyEventInfo* info)
 {
 	(void)info;
+	ServerLogInfo("new connection onconnect");
 	return 0;
 }
 
@@ -75,7 +76,7 @@ int GateHandler::processConnectLogin(JmyMsgInfo* info)
 	data.port = request.gate_server_port();
 
 	MsgLS2GT_ConnectLoginResponse response;
-	response.set_login_id(SERVER_CONFIG_FILE.id);
+	response.set_login_id(SERVER_CONFIG.id);
 	response.SerializeToArray(tmp_, sizeof(tmp_));
 	agent->sendMsg(MSGID_LS2GT_CONNECT_LOGIN_RESPONSE, tmp_, response.ByteSize());
 

@@ -15,14 +15,14 @@ public:
 
 	bool init(const char* conf_path);
 	void close();
-	bool startLoginClient();
+	bool startLoginClient(const char* ip, unsigned short port);
 	bool checkClientMaxCount(int curr_count);
 	bool checkGameMaxCount(int curr_count);
 
 	int run();
 
 private:
-	boost::asio::io_service service_;
+	boost::asio::io_service service_, service1_;
 	JmyTcpServer main_server_;			// listen client server
 	JmyTcpServer listen_game_server_;	// listen game server
 	JmyTcpClientMaster client_master_;

@@ -1,4 +1,4 @@
-CC = g++
+CC = clang++
 CCFLAGS = -g -Wall -O0 -std=c++11 -DJEMALLOC_NO_DEMANGLE -fPIC
 DISTRIBUTOR_STR = $(shell lsb_release -i)
 DISTRIBUTOR_PREFIX = Distributor ID:

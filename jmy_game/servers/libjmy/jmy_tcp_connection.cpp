@@ -57,7 +57,7 @@ void JmyTcpConnection::asynConnect(const char* ip, short port)
 	sock_.async_connect(ep, [this, ep](boost::system::error_code err) {
 		if (err) {
 			if (err.value() != boost::system::errc::operation_in_progress) {
-				force_close();
+				state_ = JMY_CONN_STATE_NOT_CONNECT;
 				LibJmyLogError("connect failed: %s", boost::system::system_error(err).what());
 			}
 			return;
@@ -386,7 +386,6 @@ int JmyTcpConnection::handle_send()
 				// continue send
 				handle_send();
 			}
-			//LibJmyLogDebug("connection(%d) send %d bytes", getId(), bytes_transferred);
 		});
 	}
 	sending_data_ = true;
@@ -395,31 +394,32 @@ int JmyTcpConnection::handle_send()
 
 int JmyTcpConnection::handle_event(int event_id, long param)
 {
-	JmyEventInfo info;
-	info.event_id = event_id;
-	info.conn_id = id_;
-	info.param = (void*)&mgr_;
-	info.param_l = param;
+	event_info_.event_id = event_id;
+	event_info_.conn_id = id_;
+	event_info_.param = (void*)&mgr_;
+	event_info_.param_l = param;
 	int res = 0;
 	if (event_id == JMY_EVENT_CONNECT)
-		res = event_handler_->onConnect(&info);
+		res = event_handler_->onConnect(&event_info_);
 	else if (event_id == JMY_EVENT_DISCONNECT)
-		res = event_handler_->onDisconnect(&info);
+		res = event_handler_->onDisconnect(&event_info_);
 	else if (event_id == JMY_EVENT_TICK)
-		res = event_handler_->onTick(&info);
+		res = event_handler_->onTick(&event_info_);
 	else if (event_id == JMY_EVENT_TIMER)
-		res = event_handler_->onTimer(&info);
+		res = event_handler_->onTimer(&event_info_);
 	else
-		res = event_handler_->onEvent(&info);
+		res = event_handler_->onEvent(&event_info_);
 	return res;
 }
 
 int JmyTcpConnection::run()
 {
 	std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-	long elapsed = std::chrono::duration_cast<std::chrono::microseconds>(now - last_run_tick_).count();
-	handle_event(JMY_EVENT_TICK, elapsed);
-	last_run_tick_ = now;
+	if (event_handler_->hasTickHandler()) {
+		long elapsed = std::chrono::duration_cast<std::chrono::microseconds>(now - last_run_tick_).count();
+		handle_event(JMY_EVENT_TICK, elapsed);
+		last_run_tick_ = now;
+	}
 
 	if (state_ == JMY_CONN_STATE_DISCONNECTING) {
 		if (std::chrono::duration_cast<std::chrono::seconds>(now-active_close_start_).count() >= JMY_ACTIVE_CLOSE_CONNECTION_TIMEOUT) {
@@ -427,6 +427,7 @@ int JmyTcpConnection::run()
 			return 0;
 		}
 	}
+
 	if (state_ != JMY_CONN_STATE_CONNECTED)
 		return -1;
 

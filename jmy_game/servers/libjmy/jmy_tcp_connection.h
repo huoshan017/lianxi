@@ -74,6 +74,7 @@ protected:
 	std::shared_ptr<JmyDataHandler> data_handler_;				// data handler
 	std::shared_ptr<JmyEventHandlerManager> event_handler_;		// event handler
 	std::shared_ptr<JmyConnectionBuffer> buffer_;				// recv and send buffer
+	JmyEventInfo event_info_;
 	std::chrono::system_clock::time_point last_run_tick_;
 	void* unused_data_;											// extra data when need to use
 };

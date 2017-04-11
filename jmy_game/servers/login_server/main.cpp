@@ -20,19 +20,18 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-	const ConfigLoader::ServerConfig& config_file = CONFIG_LOADER->getServerConfig();
-
-	if (!global_log_init(config_file.log_conf_path.c_str())) {
-		ServerLogError("failed to init log with path %s", config_file.log_conf_path.c_str());
+	if (!global_log_init(SERVER_CONFIG.log_conf_path.c_str())) {
+		ServerLogError("failed to init log with path %s", SERVER_CONFIG.log_conf_path.c_str());
 		return -1;
 	}
 
-	boost::asio::io_service service;
-	// listen client server
+	boost::asio::io_service service, service1;
+
+	// listen client 
 	JmyTcpServer main_server(service);
-	s_client_config.max_conn = config_file.max_conn;
-	s_client_config.listen_port = config_file.port;
-	s_client_config.listen_ip = (char*)(config_file.ip.c_str());
+	s_client_config.max_conn = SERVER_CONFIG.max_conn;
+	s_client_config.listen_port = SERVER_CONFIG.port;
+	s_client_config.listen_ip = (char*)(SERVER_CONFIG.ip.c_str());
 	if (!main_server.loadConfig(s_client_config)) {
 		ServerLogError("failed to load login config");
 		return -1;
@@ -44,10 +43,10 @@ int main(int argc, char* argv[])
 	ServerLogInfo("start listening port %d for client", s_client_config.listen_port);
 
 	// listen gate server
-	JmyTcpServer listen_gate_server(service);
-	s_gate_config.max_conn = config_file.listen_gate_max_conn;
-	s_gate_config.listen_port = config_file.listen_gate_port;
-	s_gate_config.listen_ip = const_cast<char*>(config_file.listen_gate_ip.c_str());
+	JmyTcpServer listen_gate_server(service1);
+	s_gate_config.max_conn = SERVER_CONFIG.listen_gate_max_conn;
+	s_gate_config.listen_port = SERVER_CONFIG.listen_gate_port;
+	s_gate_config.listen_ip = const_cast<char*>(SERVER_CONFIG.listen_gate_ip.c_str());
 	if (!listen_gate_server.loadConfig(s_gate_config)) {
 		ServerLogError("failed to load listen gate config");
 		return -1;
@@ -70,17 +69,17 @@ int main(int argc, char* argv[])
 		ServerLogError("generate client to connect config server failed");
 		return -1;
 	}
-	s_conn_config.conn_ip = (char*)config_file.connect_config_ip.c_str();
-	s_conn_config.conn_port = config_file.connect_config_port;
+	config_client->setIP((char*)SERVER_CONFIG.connect_config_ip.c_str(), SERVER_CONFIG.connect_config_port);
 	if (!config_client->start(s_conn_config)) {
 		ServerLogError("start client to connect config server failed");
 		return -1;
 	}
-	JmyTcpClientSet client_set;
 
 	while (main_server.run() >= 0) {
 		listen_gate_server.run();
 		config_client->run();
+		service.poll();
+		service1.poll();
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 

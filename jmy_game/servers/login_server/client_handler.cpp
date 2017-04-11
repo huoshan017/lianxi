@@ -13,7 +13,7 @@ int ClientHandler::onConnect(JmyEventInfo* info)
 {
 	(void)info;
 	int curr_conn = (int)client_mgr_.getAgentSize();
-	if (curr_conn < SERVER_CONFIG_FILE.max_conn) {
+	if (curr_conn < SERVER_CONFIG.max_conn) {
 		return 0;
 	}
 	JmyTcpConnection* conn = get_connection(info);

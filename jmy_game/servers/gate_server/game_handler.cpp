@@ -22,15 +22,18 @@ int GameHandler::onDisconnect(JmyEventInfo* info)
 		return 0;
 	}
 
-	if (agent->getId() != the_game_id_) {
-		ServerLogError("game agent id not equal to the game id ondisconnect");
+	int id = 0;
+	bool b = game_mgr_.getIdByConnId(info->conn_id, id);
+	if (!b || (b && id != the_game_id_)) {
+		ServerLogError("game agent id %d not equal to the game id %d ondisconnect", agent->getId(), the_game_id_);
 		return -1;
 	}
 
 	game_mgr_.deleteAgent(the_game_id_);
 	the_game_id_ = 0;
 
-	ServerLogInfo("game server ondisconnect, conn_id(%d)", info->conn_id);
+	ServerLogInfo("game server %d ondisconnect, conn_id(%d)", id, info->conn_id);
+
 	return 0;
 }
 

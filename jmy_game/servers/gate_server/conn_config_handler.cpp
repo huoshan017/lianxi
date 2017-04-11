@@ -57,9 +57,7 @@ int ConnConfigHandler::processConnectConfigResponse(JmyMsgInfo* info)
 	size_t s = response.login_list_size();
 	for (; i<s; ++i) {
 		const MsgLoginInfoData& info = response.login_list(i);
-		s_login_config.conn_ip = (char*)info.login_ip().c_str();
-		s_login_config.conn_port = (unsigned short)info.login_port();
-		if (!GATE_SERVER->startLoginClient()) {
+		if (!GATE_SERVER->startLoginClient(info.login_ip().c_str(), info.login_port())) {
 			ServerLogError("start client to connect login_server(ip:%s, port:%d) failed", info.login_ip().c_str(), info.login_port());
 		} else {
 			ServerLogInfo("start client to connect login_server(ip:%s, port:%d)", info.login_ip().c_str(), info.login_port());
@@ -76,13 +74,13 @@ int ConnConfigHandler::processNewLoginNotify(JmyMsgInfo* info)
 		ServerLogError("parse MsgCS2GT_NewLoginNotify failed");
 		return -1;
 	}
-	s_login_config.conn_ip = (char*)notify.login_data().login_ip().c_str();
-	s_login_config.conn_port = notify.login_data().login_port();
-	if (!GATE_SERVER->startLoginClient()) {
-		ServerLogError("start client to connect login_server(ip:%s, port:%d) failed", s_login_config.conn_ip, s_login_config.conn_port);
+	char* login_ip = (char*)notify.login_data().login_ip().c_str();
+	unsigned short login_port = notify.login_data().login_port(); 
+	if (!GATE_SERVER->startLoginClient(login_ip, login_port)) {
+		ServerLogError("start client to connect login_server(ip:%s, port:%d) failed", login_ip, login_port);
 		return -1;
 	}
-	ServerLogInfo("new login_server(ip:%s, port:%d) notified", s_login_config.conn_ip, s_login_config.conn_port);
+	ServerLogInfo("new login_server(ip:%s, port:%d) notified", login_ip, login_port);
 	return 0;
 }
 

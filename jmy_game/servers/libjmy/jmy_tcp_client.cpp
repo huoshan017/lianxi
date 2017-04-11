@@ -62,15 +62,16 @@ bool JmyTcpClient::start(const JmyClientConfig& conf, bool non_blocking)
 	buffer->init(conf.conn_conf.buff_conf);
 	conn_->setBuffer(buffer);
 
-	return connect(conf.conn_ip, conf.conn_port, non_blocking);
+	return connect(ep_.address().to_string().c_str(), ep_.port(), non_blocking);
 }
 
 bool JmyTcpClient::reconnect(const JmyClientConfig& conf, bool non_blocking)
 {
+	(void)conf;
 	if (conn_->getConnState() != JMY_CONN_STATE_NOT_CONNECT) {
 		return false;
 	}
-	return connect(conf.conn_ip, conf.conn_port, non_blocking);
+	return connect(ep_.address().to_string().c_str(), ep_.port(), non_blocking);
 }
 
 int JmyTcpClient::send(int msg_id, const char* data, unsigned int len)

@@ -91,7 +91,6 @@ static JmyConnectionConfig s_conn_conn_config = {
 };
 static JmyClientConfig s_conn_config = {
 	s_conn_conn_config,
-	(char*)"0.0.0.0",
-	20000,
 	true,
+	CLIENT_RECONNECT_INTERVAL_SECS,
 };

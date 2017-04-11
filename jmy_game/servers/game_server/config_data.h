@@ -33,7 +33,6 @@ static JmyConnectionConfig s_conn_gate_config = {
 };
 static JmyClientConfig s_gate_config = {
 	s_conn_gate_config,
-	(char*)"0.0.0.0",
-	20000,
 	true,
+	CLIENT_RECONNECT_INTERVAL_SECS,
 };

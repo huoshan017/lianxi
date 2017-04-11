@@ -191,9 +191,10 @@ struct JmyConnectorConfig {
 // configure for client
 struct JmyClientConfig {
 	JmyConnectionConfig conn_conf;
-	char* conn_ip;
-	unsigned short conn_port;
+	//char* conn_ip;
+	//unsigned short conn_port;
 	bool is_reconnect;
+	int reconnect_interval;
 };
 
 // configure for clients

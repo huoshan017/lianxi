@@ -15,9 +15,9 @@ int ConnConfigHandler::onConnect(JmyEventInfo* info)
 	}
 	// send msg to config_server
 	MsgLS2CS_ConnectConfigRequest request;
-	request.set_login_id(SERVER_CONFIG_FILE.id);
-	request.set_login_ip(SERVER_CONFIG_FILE.listen_gate_ip);
-	request.set_login_port(SERVER_CONFIG_FILE.listen_gate_port);
+	request.set_login_id(SERVER_CONFIG.id);
+	request.set_login_ip(SERVER_CONFIG.listen_gate_ip);
+	request.set_login_port(SERVER_CONFIG.listen_gate_port);
 
 	if (!request.SerializeToArray(tmp_, sizeof(tmp_))) {
 		ServerLogError("serialize message MsgLS2CS_ConnectConfigRequest failed");
@@ -30,14 +30,14 @@ int ConnConfigHandler::onConnect(JmyEventInfo* info)
 		return -1;
 	}
 
-	ServerLogInfo("login_server(%d) onconnected config_server", SERVER_CONFIG_FILE.id);
+	ServerLogInfo("login_server(%d) onconnected config_server", SERVER_CONFIG.id);
 	return 0;
 }
 
 int ConnConfigHandler::onDisconnect(JmyEventInfo* info)
 {
 	(void)info;
-	ServerLogInfo("login_server(%d) ondisconnected to config_server", SERVER_CONFIG_FILE.id);
+	ServerLogInfo("login_server(%d) ondisconnected to config_server", SERVER_CONFIG.id);
 	return 0;
 }
 

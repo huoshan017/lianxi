@@ -2,7 +2,7 @@
 #include "config_data.h"
 #include "client_handler.h"
 
-GateServer::GateServer() : main_server_(service_), listen_game_server_(service_), client_master_(service_), config_client_(nullptr)
+GateServer::GateServer() : main_server_(service_), listen_game_server_(service1_), client_master_(service_), config_client_(nullptr)
 {
 }
 
@@ -23,6 +23,7 @@ bool GateServer::init(const char* conf_path)
 		return false;
 	}
 
+	// listen client
 	s_client_config.max_conn = CONFIG_FILE.max_conn;
 	s_client_config.listen_port = CONFIG_FILE.port;
 	s_client_config.listen_ip = (char*)(CONFIG_FILE.ip.c_str());
@@ -36,6 +37,7 @@ bool GateServer::init(const char* conf_path)
 	}
 	ServerLogInfo("start listening port %d", CONFIG_FILE.port);
 
+	// listen game
 	s_game_config.max_conn = CONFIG_FILE.listen_game_max_conn;
 	s_game_config.listen_ip = (char*)CONFIG_FILE.listen_game_ip.c_str();
 	s_game_config.listen_port = CONFIG_FILE.listen_game_port;
@@ -47,6 +49,7 @@ bool GateServer::init(const char* conf_path)
 		ServerLogError("listen game server port %d failed", CONFIG_FILE.listen_game_port);
 		return false;
 	}
+	ServerLogInfo("start listening port %d for game server", CONFIG_FILE.listen_game_port);
 
 	if (!client_master_.init(10)) {
 		ServerLogError("client master init failed");
@@ -59,12 +62,13 @@ bool GateServer::init(const char* conf_path)
 		ServerLogError("create client for connection to config_server failed");
 		return false;
 	}
-	s_config_config.conn_ip = (char*)CONFIG_FILE.connect_config_ip.c_str();
-	s_config_config.conn_port = CONFIG_FILE.connect_config_port;
+
+	config_client_->setIP((char*)CONFIG_FILE.connect_config_ip.c_str(), CONFIG_FILE.connect_config_port);
 	if (!config_client_->start(s_config_config)) {
 		ServerLogError("client for connection to config_server start failed");
 		return false;
 	}
+	ServerLogInfo("start connect to config server(%s:%d)", CONFIG_FILE.connect_config_ip.c_str(), CONFIG_FILE.connect_config_port);
 
 	if (!ClientHandler::init()) {
 		ServerLogError("client handler init failed");
@@ -90,18 +94,22 @@ int GateServer::run()
 		listen_game_server_.run();
 		login_client_set_.run();
 		config_client_->run();
+		service_.poll();
+		service1_.poll();
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 	return 0;
 }
 
-bool GateServer::startLoginClient()
+bool GateServer::startLoginClient(const char* ip, unsigned short port)
 {
 	JmyTcpClient* client = client_master_.generate();
 	if (!client) {
 		ServerLogError("client_master generate new client failed");
 		return false;
 	}
+
+	client->setIP(const_cast<char*>(ip), port);
 	if (!client->start(s_login_config)) {
 		ServerLogError("GateServer start client failed");
 		return false;

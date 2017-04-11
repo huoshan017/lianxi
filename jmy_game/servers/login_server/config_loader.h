@@ -44,4 +44,4 @@ private:
 };
 
 #define CONFIG_LOADER (ConfigLoader::getInstance())
-#define SERVER_CONFIG_FILE (CONFIG_LOADER->getServerConfig())
+#define SERVER_CONFIG (CONFIG_LOADER->getServerConfig())

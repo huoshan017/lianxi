@@ -222,7 +222,7 @@ int JmyTcpServer::run()
 #endif
 
 #if !USE_THREAD
-	service_.poll();
+	//service_.poll();
 #endif
 	return 0;
 }

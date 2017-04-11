@@ -93,8 +93,8 @@ static JmyConnectionConfig s_config_conn_config = {
 };
 static JmyClientConfig s_config_config = {
 	s_config_conn_config,
-	(char*)"0.0.0.0", 0,
-	true
+	true,
+	CLIENT_RECONNECT_INTERVAL_SECS,
 };
 
 // handle connection to login_server config
@@ -120,6 +120,6 @@ static JmyConnectionConfig s_login_conn_config = {
 };
 static JmyClientConfig s_login_config = {
 	s_login_conn_config,
-	(char*)"0.0.0.0", 20000,
 	true,
+	CLIENT_RECONNECT_INTERVAL_SECS,
 };
