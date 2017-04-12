@@ -25,7 +25,7 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-	boost::asio::io_service service, service1;
+	boost::asio::io_service service;
 
 	// listen client 
 	JmyTcpServer main_server(service);
@@ -43,7 +43,7 @@ int main(int argc, char* argv[])
 	ServerLogInfo("start listening port %d for client", s_client_config.listen_port);
 
 	// listen gate server
-	JmyTcpServer listen_gate_server(service1);
+	JmyTcpServer listen_gate_server(service);
 	s_gate_config.max_conn = SERVER_CONFIG.listen_gate_max_conn;
 	s_gate_config.listen_port = SERVER_CONFIG.listen_gate_port;
 	s_gate_config.listen_ip = const_cast<char*>(SERVER_CONFIG.listen_gate_ip.c_str());
@@ -79,7 +79,6 @@ int main(int argc, char* argv[])
 		listen_gate_server.run();
 		config_client->run();
 		service.poll();
-		service1.poll();
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 

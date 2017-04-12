@@ -1,0 +1,15 @@
+{
+	"name" : "db_server",
+	"id" : 50001,
+	"ip" : "127.0.0.1",
+	"port" : 50000,
+	"max_conn" : 10,
+	"enable_reconnect" : false,
+	"log_conf_path" : "./log.conf",
+
+	"mysql_ip" : "127.0.0.1",
+	"mysql_port" : 3306,
+	"mysql_user" : "root",
+	"mysql_password" : "111111",
+	"mysql_dbname" : "jmy_game"
+}

@@ -31,7 +31,7 @@ EXE = $(SERVER_BINDIR)/$(SERVER_EXE)
 SRCS = $(wildcard *.cpp)
 OBJS = $(patsubst %.cpp, $(OBJ_DIR)/%.o, $(SRCS))
 
-all: init $(EXE)  
+all: init $(EXE)
 init:
 	mkdir -p $(OBJ_DIR) $(SERVER_BINDIR)
 
@@ -39,6 +39,7 @@ $(EXE): $(OBJS)
 	$(CC) $^ -o $@ $(INCLUDES) $(LIBS) $(CCFLAGS) \
 		-ljmy -lcommon -lproto \
 		$(BOOST_LIBS) \
+		$(OTHER_LIBS) \
 		$(ZLOG_LIB)/libzlog.a \
 		$(JEMALLOC_LIB)/libjemalloc.a \
 		$(PROTOBUF_LIB)/libprotobuf.a \
