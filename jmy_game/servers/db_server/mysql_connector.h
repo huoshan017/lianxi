@@ -24,13 +24,27 @@ public:
 		MYSQL_ROW row;
 		int nfields;
 
+		Result() : res(nullptr), row(nullptr), nfields(0) {}
 		Result(MYSQL_RES* r) : res(r) {
 			nfields = mysql_num_fields(res);
 		}
-		Result() : res(nullptr) {}
 		Result(MYSQL* h) : res(nullptr) {
 			res = mysql_store_result(h);
 			nfields = mysql_num_fields(res);
+		}
+		Result(Result&& r) : res(r.res), row(r.row), nfields(r.nfields) {
+			r.res = nullptr;
+			r.row = nullptr;
+			r.nfields = 0;
+		}
+		Result& operator=(Result&& r) {
+			res = r.res;
+			row = r.row;
+			nfields = r.nfields;
+			r.res = nullptr;
+			r.row = nullptr;
+			r.nfields = 0;
+			return *this;
 		}
 
 		void init(MYSQL_RES* r) {

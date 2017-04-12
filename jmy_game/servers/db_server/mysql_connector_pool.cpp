@@ -19,31 +19,33 @@ static bool one_connector_init(MysqlConnector& conn, const MysqlConnPoolConfig& 
 	return true;
 }
 
-static void connector_read_func(MysqlConnectorPool::ConnectorInfo & conn) {
+static void connector_read_func(MysqlConnectorPool::ConnectorInfo* conn) {
+	MysqlConnectorPool::CmdInfo ci;
 	while (true) {
-		if (conn.cmd_list.size() > 0) {
-			MysqlConnectorPool::CmdInfo& ci = conn.cmd_list.front();
-			if (!conn.connector.real_select(ci.sql, ci.sql_len)) {
+		if (conn->pop(ci)) {
+			if (!conn->connector.real_select(ci.sql, ci.sql_len)) {
 				ServerLogError("real select failed");
 				break;
 			}
-			const MysqlConnector::Result& r = conn.connector.get_result();
-			conn.cmd_list.pop_front();
+			MysqlConnector::Result& r = conn->get_result();
+			MysqlConnectorPool::ResultInfo ri(r);
+			conn->push_res(ri);
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 }
 
-static void connector_write_func(MysqlConnectorPool::ConnectorInfo& conn) {
+static void connector_write_func(MysqlConnectorPool::ConnectorInfo* conn) {
+	MysqlConnectorPool::CmdInfo ci;
 	while (true) {
-		if (conn.cmd_list.size() > 0) {
-			MysqlConnectorPool::CmdInfo& ci = conn.cmd_list.front();
-			if (!conn.connector.real_query(ci.sql, ci.sql_len)) {
+		if (conn->pop(ci)) {
+			if (!conn->connector.real_query(ci.sql, ci.sql_len)) {
 				ServerLogError("real query failed");
 				break;
 			}
-			const MysqlConnector::Result& r = conn.connector.get_result();
-			conn.cmd_list.pop_front();
+			MysqlConnector::Result& r = conn->get_result();
+			MysqlConnectorPool::ResultInfo ri(r);
+			conn->push_res(ri);
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
@@ -51,24 +53,28 @@ static void connector_write_func(MysqlConnectorPool::ConnectorInfo& conn) {
 
 bool MysqlConnectorPool::init(const MysqlConnPoolConfig& config)
 {
+	size_t i = 0;
+	ConnectorInfo* ci = nullptr; 
 	read_connectors_.resize(config.read_conn_size);
-	std::vector<ConnectorInfo>::iterator it = read_connectors_.begin();
-	for (; it!=read_connectors_.end(); ++it) {
-		MysqlConnector& conn = it->connector;
-		if (!one_connector_init(conn, config)) {
+	for (; i<read_connectors_.size(); ++i) {
+		ci = jmy_mem_malloc<ConnectorInfo>();
+		read_connectors_[i] = ci;
+		if (!one_connector_init((ci->connector), config)) {
 			ServerLogError("read connector init failed");
 			return false;
 		}
-		threads_.create_thread(std::bind(connector_read_func, conn));
+		threads_.create_thread(std::bind(connector_read_func, ci));
 	}
+
 	write_connectors_.resize(config.write_conn_size);
-	it = write_connectors_.begin();
-	for (; it!=write_connectors_.end(); ++it) {
-		if (!one_connector_init(it->connector, config)) {
+	for (i=0; i<write_connectors_.size(); ++i) {
+		ci = jmy_mem_malloc<ConnectorInfo>();
+		write_connectors_[i] = ci;
+		if (!one_connector_init(ci->connector, config)) {
 			ServerLogError("write connector init failed");
 			return false;
 		}
-		threads_.create_thread(std::bind(connector_write_func, *it));
+		threads_.create_thread(std::bind(connector_write_func, ci));
 	}
 	return true;
 }
@@ -76,43 +82,56 @@ bool MysqlConnectorPool::init(const MysqlConnPoolConfig& config)
 void MysqlConnectorPool::close()
 {
 	threads_.join_all();
-	std::vector<ConnectorInfo>::iterator it = read_connectors_.begin();
+	std::vector<ConnectorInfo*>::iterator it = read_connectors_.begin();
 	for (; it!=read_connectors_.end(); ++it) {
-		it->connector.close();
-		it->cmd_list.clear();
+		(*it)->clear();
 	}
 	read_connectors_.clear();
 	it = write_connectors_.begin();
 	for (; it!=write_connectors_.end(); ++it) {
-		it->connector.close();
-		it->cmd_list.clear();
+		(*it)->clear();
 	}
 	write_connectors_.clear();
 }
 
-bool MysqlConnectorPool::push_read_cmd(CmdInfo&& info)
+bool MysqlConnectorPool::push_read_cmd(CmdInfo& info)
 {
 	if (curr_read_index_ > (int)(read_connectors_.size()-1)) {
 		curr_read_index_ = 0;
 	} else {
 		curr_read_index_ += 1;
 	}
-	read_connectors_[curr_read_index_].cmd_list.push_back(info);
+	read_connectors_[curr_read_index_]->push(info);
 	return true;
 }
 
-bool MysqlConnectorPool::push_write_cmd(CmdInfo&& info)
+bool MysqlConnectorPool::push_write_cmd(CmdInfo& info)
 {
 	if (curr_write_index_ > (int)(write_connectors_.size()-1)) {
 		curr_read_index_ = 0;
 	} else {
 		curr_read_index_ += 1;
 	}
-	write_connectors_[curr_write_index_].cmd_list.push_back(info);
+	write_connectors_[curr_write_index_]->push(info);
 	return true;
 }
 
 int MysqlConnectorPool::run()
 {
+	ResultInfo ri;
+	ConnectorInfo* ci = nullptr;
+	size_t i = 0;
+	for (; i<read_connectors_.size(); ++i) {
+		ci = read_connectors_[i];
+		if (ci->pop_res(ri)) {
+			ri.cb_func(ri.param, ri.param_l);
+		}
+	}
+	for (; i<write_connectors_.size(); ++i) {
+		ci = write_connectors_[i];
+		if (ci->pop_res(ri)) {
+			ri.cb_func(ri.param, ri.param_l);
+		}
+	}
 	return 0;
 }
