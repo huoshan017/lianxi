@@ -90,3 +90,29 @@ void MysqlConnectorPool::close()
 	write_connectors_.clear();
 }
 
+bool MysqlConnectorPool::push_read_cmd(CmdInfo&& info)
+{
+	if (curr_read_index_ > (int)(read_connectors_.size()-1)) {
+		curr_read_index_ = 0;
+	} else {
+		curr_read_index_ += 1;
+	}
+	read_connectors_[curr_read_index_].cmd_list.push_back(info);
+	return true;
+}
+
+bool MysqlConnectorPool::push_write_cmd(CmdInfo&& info)
+{
+	if (curr_write_index_ > (int)(write_connectors_.size()-1)) {
+		curr_read_index_ = 0;
+	} else {
+		curr_read_index_ += 1;
+	}
+	write_connectors_[curr_write_index_].cmd_list.push_back(info);
+	return true;
+}
+
+int MysqlConnectorPool::run()
+{
+	return 0;
+}

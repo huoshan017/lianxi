@@ -56,13 +56,15 @@ public:
 		void* param; long param_l;
 	};
 
-	bool push_read_cmd(CmdInfo&& info);
-	bool push_write_cmd(CmdInfo&& info);
-
 	struct ConnectorInfo {
 		MysqlConnector connector;
 		std::list<CmdInfo> cmd_list;
 	};
+
+	bool push_read_cmd(CmdInfo&& info);
+	bool push_write_cmd(CmdInfo&& info);
+	int run();
+
 private:
 	std::vector<ConnectorInfo> write_connectors_;
 	std::vector<ConnectorInfo> read_connectors_;
