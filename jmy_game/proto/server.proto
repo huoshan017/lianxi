@@ -29,6 +29,12 @@ enum MsgIdTypeServer {
 	MSGID_GS2GT_ENTER_GAME_RESPONSE			= 20211;
 	MSGID_GT2GS_LEAVE_GAME_REQUEST			= 20212;
 	MSGID_GS2GT_LEAVE_GAME_RESPONSE			= 20213;
+
+	/* GameServer <-> DBServer */
+	MSGID_GS2DS_CONNECT_DB_REQUEST			= 25000;
+	MSGID_DS2GS_CONNECT_DB_RESPONSE			= 25001;
+	MSGID_GS2DS_REQUIRE_USER_DATA_REQUEST	= 25002;
+	MSGID_DS2GS_REQUIRE_USER_DATA_RESPONSE  = 25003;
 }
 
 /*** LoginServer <-> GateServer ***/
@@ -138,4 +144,23 @@ message MsgGT2GS_LeaveGameRequest {
 
 // game -> gate  [MSGID_GS2GT_LEAVE_GAME_RESPONSE]
 message MsgGS2GT_LeaveGameResponse {
+}
+
+// game -> db  [MSGID_GS2DS_REQUIRE_USER_DATA_REQUEST]
+message MsgGS2DS_RequireUserDataRequest {
+	string account = 1;
+}
+
+// db -> game  [MSGID_GS2DS_REQUIRE_USER_DATA_RESPONSE]
+message MsgDS2GS_RequireUserDataResponse {
+	string account = 1;
+}
+
+// game -> db  [MSGID_GS2DS_CONNECT_DB_REQUEST]
+message MsgGS2DS_ConnectDBRequest {
+	int32 game_id = 1;
+}
+
+// db -> game  [MSGID_DS2GS_CONNECT_DB_RESPONSE]
+message MsgDS2GS_ConnectDBResponse {
 }

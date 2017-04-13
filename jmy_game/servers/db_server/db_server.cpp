@@ -2,6 +2,7 @@
 #include "../common/util.h"
 #include "config_loader.h"
 #include "config_data.h"
+#include "game_handler.h"
 
 DBServer::DBServer() : server_(service_)
 {
@@ -20,6 +21,11 @@ bool DBServer::init(const char* confpath)
 
 	if (!global_log_init(SERVER_CONFIG.log_conf_path.c_str())) {
 		ServerLogError("failed to init log with path %s", SERVER_CONFIG.log_conf_path.c_str());
+		return false;
+	}
+
+	if (!GameHandler::init()) {
+		ServerLogError("failed to init GameHandler");
 		return false;
 	}
 
@@ -44,6 +50,7 @@ bool DBServer::init(const char* confpath)
 
 void DBServer::close()
 {
+	GameHandler::clear();
 	server_.close();
 }
 

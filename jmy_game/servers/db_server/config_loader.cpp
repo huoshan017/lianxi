@@ -38,87 +38,154 @@ bool ConfigLoader::loadJson(const char* jsonpath)
 	}
 
 	// server_name
-	if (!doc_["server_name"].IsString()) {
-		std::cout << "server_name type is not string" << std::endl;
+	char* member = (char*)"name";
+	if (!doc_.HasMember(member)) {
+		std::cout << member << " member not exist" << std::endl;
 		return false;
 	}
-	config_.name = doc_["server_name"].GetString();
+	if (!doc_[member].IsString()) {
+		std::cout << member << " type is not string" << std::endl;
+		return false;
+	}
+	config_.name = doc_[member].GetString();
 
 	// server_id
-	if (!doc_["server_id"].IsInt()) {
-		std::cout << "server_id type is not int" << std::endl;
+	member = (char*)"id";
+	if (!doc_.HasMember(member)) {
+		std::cout << member << " member not exist" << std::endl;
 		return false;
 	}
-	config_.id = doc_["server_id"].GetInt();
-	if (get_server_type(config_.id) != SERVER_TYPE_CONFIG) {
-		std::cout << "server_id " << config_.id << " type is not config server type" << std::endl;
+	if (!doc_[member].IsInt()) {
+		std::cout << member << " type is not int" << std::endl;
+		return false;
+	}
+	config_.id = doc_[member].GetInt();
+	if (get_server_type(config_.id) != SERVER_TYPE_DB) {
+		std::cout << member << " " << config_.id << " type is not config server type" << std::endl;
 		return false;
 	}
 
 	// server_ip
-	if (!doc_["server_ip"].IsString()) {
-		std::cout << "server_ip type is not string" << std::endl;
+	member = (char*)"ip";
+	if (!doc_.HasMember(member)) {
+		std::cout << member << " member not exist" << std::endl;
 		return false;
 	}
-	config_.ip = doc_["server_ip"].GetString();
+	if (!doc_[member].IsString()) {
+		std::cout << member << " type is not string" << std::endl;
+		return false;
+	}
+	config_.ip = doc_[member].GetString();
 
 	// server_port
-	if (!doc_["server_port"].IsInt()) {
-		std::cout << "server_port type is not int" << std::endl;
+	member = (char*)"port";
+	if (!doc_.HasMember(member)) {
+		std::cout << member << " member not exist" << std::endl;
 		return false;
 	}
-	config_.port = (unsigned short)doc_["server_port"].GetInt();
+	if (!doc_[member].IsInt()) {
+		std::cout << member << " type is not int" << std::endl;
+		return false;
+	}
+	config_.port = (unsigned short)doc_[member].GetInt();
 
 	// max_conn
-	if (!doc_["max_conn"].IsInt()) {
-		std::cout << "max_conn type is not int" << std::endl;
+	member = (char*)"max_conn";
+	if (!doc_.HasMember(member)) {
+		std::cout << member << " member not exist" << std::endl;
 		return false;
 	}
-	config_.max_conn = doc_["max_conn"].GetInt();
+	if (!doc_[member].IsInt()) {
+		std::cout << member << " type is not int" << std::endl;
+		return false;
+	}
+	config_.max_conn = doc_[member].GetInt();
 
 	// enable_reconnect
-	if (!doc_["enable_reconnect"].IsBool()) {
-		std::cout << "enable_reconnect type is not bool" << std::endl;
+	member = (char*)"enable_reconnect";
+	if (!doc_.HasMember(member)) {
+		std::cout << member << " member not exist" << std::endl;
 		return false;
 	}
-	config_.enable_reconnect = doc_["enable_reconnect"].GetBool();
+	if (!doc_[member].IsBool()) {
+		std::cout << member << " type is not bool" << std::endl;
+		return false;
+	}
+	config_.enable_reconnect = doc_[member].GetBool();
 
 	// log_conf_path 
-	if (!doc_["log_conf_path"].IsString()) {
-		std::cout << "log_conf_path type is not string" << std::endl;
+	member = (char*)"log_conf_path";
+	if (!doc_.HasMember(member)) {
+		std::cout << member << " member not exist" << std::endl;
 		return false;
 	}
-	config_.log_conf_path = doc_["log_conf_path"].GetString();
-	jsonpath_ = jsonpath;
+	if (!doc_[member].IsString()) {
+		std::cout << member << " type is not string" << std::endl;
+		return false;
+	}
+	config_.log_conf_path = doc_[member].GetString();
 
 	// mysql_host
-	if (!doc_["mysql_host"].IsString()) {
-		std::cout << "mysql_host type is not string" << std::endl;
+	member = (char*)"mysql_host";
+	if (!doc_.HasMember(member)) {
+		std::cout << member << " member not exist" << std::endl;
 		return false;
 	}
-	config_.mysql_host = doc_["mysql_host"].GetString();
+	if (!doc_[member].IsString()) {
+		std::cout << member << " type is not string" << std::endl;
+		return false;
+	}
+	config_.mysql_host = doc_[member].GetString();
 
 	// mysql_port 
-	if (!doc_["mysql_port"].IsInt()) {
-		std::cout << "mysql_port type is not int" << std::endl;
+	member = (char*)"mysql_port";
+	if (!doc_.HasMember(member)) {
+		std::cout << member << " member not exist" << std::endl;
 		return false;
 	}
-	config_.mysql_port = doc_["mysql_port"].GetInt();
+	if (!doc_[member].IsInt()) {
+		std::cout << member << " type is not int" << std::endl;
+		return false;
+	}
+	config_.mysql_port = doc_[member].GetInt();
 
 	// mysql_user 
-	if (!doc_["mysql_user"].IsString()) {
-		std::cout << "mysql_user type is not string" << std::endl;
+	member = (char*)"mysql_user";
+	if (!doc_.HasMember(member)) {
+		std::cout << member << " member not exist" << std::endl;
 		return false;
 	}
-	config_.mysql_user = doc_["mysql_user"].GetString();
+	if (!doc_[member].IsString()) {
+		std::cout << member << " type is not string" << std::endl;
+		return false;
+	}
+	config_.mysql_user = doc_[member].GetString();
 
 	// mysql_password
-	if (!doc_["mysql_password"].IsString()) {
-		std::cout << "mysql_password type is not string" << std::endl;
+	member = (char*)"mysql_password";
+	if (!doc_.HasMember(member)) {
+		std::cout << member << " member not exist" << std::endl;
 		return false;
 	}
-	config_.mysql_password = doc_["mysql_password"].GetString();
+	if (!doc_[member].IsString()) {
+		std::cout << member << " type is not string" << std::endl;
+		return false;
+	}
+	config_.mysql_password = doc_[member].GetString();
+
+	// mysql_dbname
+	member = (char*)"mysql_dbname";
+	if (!doc_.HasMember(member)) {
+		std::cout << member << " member not exist" << std::endl;
+		return false;
+	}
+	if (!doc_[member].IsString()) {
+		std::cout << member << " type is not string" << std::endl;
+		return false;
+	}
+	config_.mysql_dbname = doc_[member].GetString();
 	
+	jsonpath_ = jsonpath;
 	std::cout << "load " << jsonpath << " success" << std::endl;
 	return true;
 }

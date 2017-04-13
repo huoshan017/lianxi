@@ -12,7 +12,8 @@ MysqlConnector::~MysqlConnector()
 
 bool MysqlConnector::init()
 {
-	if (!mysql_init(handle_))
+	handle_ = mysql_init(handle_);
+	if (!handle_)
 		return false;
 	return true;
 }
@@ -26,19 +27,57 @@ void MysqlConnector::close()
 	mysql_library_end();
 }
 
-bool MysqlConnector::connect(const std::string& host, const std::string& user, const std::string& passwd, const std::string& dbname)
+bool MysqlConnector::connect(const char* host, const char* user, const char* password)
+{
+	return connect(host, user, password, nullptr);
+}
+
+bool MysqlConnector::connect(const char* host, unsigned short port, const char* user, const char* password)
+{
+	return connect(host, port, user, password, nullptr);
+}
+
+bool MysqlConnector::connect(const char* host, const char* user, const char* passwd, const char* dbname)
 {
 	return connect(host, 3306, user, passwd, dbname);
 }
 
-bool MysqlConnector::connect(const std::string& host, unsigned short port, const std::string& user, const std::string& passwd, const std::string& dbname)
+bool MysqlConnector::connect(const char* host, unsigned short port, const char* user, const char* passwd, const char* dbname)
 {
-	if (!mysql_real_connect(handle_, host.c_str(), user.c_str(), passwd.c_str(), dbname.c_str(), port, nullptr, 0)) {
-		ServerLogError("connect mysql failed, err(%s)", mysql_error(handle_));
-		return false;
+	if (!mysql_real_connect(handle_, host, user, passwd, dbname, port, nullptr, 0)) {
+		int err = mysql_errno(handle_);
+		// specified database not exist
+		if (err == 1049) {
+			if (!mysql_real_connect(handle_, host, user, passwd, "", port, nullptr, 0)) {
+				ServerLogError("connect mysql failed, err(%s)", mysql_error(handle_));
+				return false;
+			}
+			create_db(dbname);
+		} else {
+			ServerLogError("connect mysql failed, err(%s)", mysql_error(handle_));
+			return false;
+		}
 	}
 	ServerLogInfo("mysql connect success");
 	return true;
+}
+
+bool MysqlConnector::create_db(const char* db_name)
+{
+	std::snprintf(buf_, sizeof(buf_), "CREATE DATABASE %s", db_name);
+	return query(buf_);
+}
+
+bool MysqlConnector::use_db(const char* db_name)
+{
+	std::snprintf(buf_, sizeof(buf_), "USE DATABASE %s", db_name);
+	return query(buf_);
+}
+
+bool MysqlConnector::drop_db(const char* db_name)
+{
+	std::snprintf(buf_, sizeof(buf_), "DROP DATABASE %s", db_name);
+	return query(buf_);
 }
 
 bool MysqlConnector::query(const char* stmt_str)
@@ -84,4 +123,16 @@ bool MysqlConnector::store_result()
 	}
 	res_.init(res);
 	return true;
+}
+
+bool MysqlConnector::to_next_result()
+{
+	if (mysql_next_result(handle_) != 0)
+		return false;
+	return true;
+}
+
+unsigned long MysqlConnector::real_escape_string(char* to, const char* from, unsigned long length)
+{
+	return mysql_real_escape_string(handle_, to, from, length);
 }

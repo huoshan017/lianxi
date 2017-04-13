@@ -105,12 +105,9 @@ public:
 		MysqlConnector connector;
 		std::list<CmdInfo> cmd_list;
 		std::mutex cmd_mtx_;
-		std::list<ResultInfo> res_list;
-		std::mutex res_mtx_;
 		void clear() {
 			connector.close();
 			cmd_list.clear();
-			res_list.clear();
 		}
 		void push(CmdInfo& info) {
 			std::lock_guard<std::mutex> lk(cmd_mtx_);
@@ -125,6 +122,15 @@ public:
 			info = std::move(cmd_list.front());
 			cmd_list.pop_front();
 			return true;
+		}
+	};
+
+	struct ReadConnectorInfo : public ConnectorInfo {
+		std::list<ResultInfo> res_list;
+		std::mutex res_mtx_;
+		void clear() {
+			res_list.clear();
+			ConnectorInfo::clear();
 		}
 		void push_res(ResultInfo& res) {
 			std::lock_guard<std::mutex> lk(res_mtx_);
@@ -151,7 +157,7 @@ public:
 
 private:
 	std::vector<ConnectorInfo*> write_connectors_;
-	std::vector<ConnectorInfo*> read_connectors_;
+	std::vector<ReadConnectorInfo*> read_connectors_;
 	boost::thread_group threads_;
 	int curr_read_index_;
 	int curr_write_index_;

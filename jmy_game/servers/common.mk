@@ -43,7 +43,7 @@ $(EXE): $(OBJS)
 		$(ZLOG_LIB)/libzlog.a \
 		$(JEMALLOC_LIB)/libjemalloc.a \
 		$(PROTOBUF_LIB)/libprotobuf.a \
-		-lpthread 
+		-lpthread  -ldl
 
 $(OBJS) : $(OBJ_DIR)/%.o : %.cpp
 	$(CC) $(CCFLAGS) -c $< -o $@ $(INCLUDES)
