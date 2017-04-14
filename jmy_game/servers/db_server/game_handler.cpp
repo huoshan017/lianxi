@@ -7,6 +7,7 @@ GameAgentManager GameHandler::game_mgr_;
 UserDataManager GameHandler::user_mgr_;
 MysqlConnectorPool GameHandler::conn_pool_;
 char GameHandler::tmp_[JMY_MAX_MSG_SIZE];
+std::set<std::string> GameHandler::accounts_set_;
 
 bool GameHandler::init()
 {
@@ -43,8 +44,8 @@ int GameHandler::onDisconnect(JmyEventInfo* info)
 int GameHandler::onTick(JmyEventInfo* info)
 {
 	(void)info;
-	conn_pool_.run();
-	return 0;
+	int res = conn_pool_.run();
+	return res;
 }
 
 int GameHandler::onConnectDBRequest(JmyMsgInfo* info)
@@ -100,12 +101,14 @@ int GameHandler::onRequireUserDataRequest(JmyMsgInfo* info)
 
 	UserData* user = user_mgr_.get(request.account());
 	if (!user) {
+		std::pair<std::set<std::string>::iterator, bool> r = accounts_set_.insert(std::move(request.account()));
+		std::snprintf(tmp_, sizeof(tmp_), "SELECT * FROM player WHERE `account`=%s", request.account().c_str());
 		// to load data from database
 		MysqlConnectorPool::CmdInfo cmd;
-		cmd.sql = (char*)"";
-		cmd.sql_len = 0;
-		cmd.callback_func = nullptr;
-		cmd.param = nullptr;
+		cmd.sql = tmp_;
+		cmd.sql_len = strlen(tmp_);
+		cmd.callback_func = getPlayerInfoCallback;
+		cmd.param = (void*)r.first->c_str();
 		cmd.param_l = 0;
 		conn_pool_.push_read_cmd(cmd);
 	} else {
@@ -113,4 +116,10 @@ int GameHandler::onRequireUserDataRequest(JmyMsgInfo* info)
 	}
 
 	return info->len;
+}
+
+int GameHandler::getPlayerInfoCallback(void* param, long param_l)
+{
+
+	return 0;
 }

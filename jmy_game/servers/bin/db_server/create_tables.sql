@@ -1,0 +1,15 @@
+CREATE TABLE IF NOT EXISTS `account` (
+	`id` int(11) NOT NULL AUTO_INCREMENT,
+	`account` varchar(32) CHARACTER SET utf8 NOT NULL,
+	PRIMARY KEY (`account`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1;
+
+CREATE TABLE IF NOT EXISTS `player` (
+	`id` int(11) NOT NULL AUTO_INCREMENT,
+	`uid` bigint NOT NULL DEFAULT 0,
+	`nick_name` varchar(32) CHARACTER SET utf8 NOT NULL,
+  	`items` blob NOT NULL,
+	`type` varchar(50) CHARACTER SET utf8 NOT NULL,
+	`date` datetime NOT NULL,
+	PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1;

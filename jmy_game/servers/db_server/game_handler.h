@@ -2,9 +2,8 @@
 
 #include "../libjmy/jmy_const.h"
 #include "../common/agent.h"
-#include <string>
-#include <unordered_map>
 #include <set>
+#include <string>
 #include "user_data_manager.h"
 #include "mysql_connector_pool.h"
 
@@ -25,9 +24,13 @@ public:
 	static int onConnectDBRequest(JmyMsgInfo*);
 	static int onRequireUserDataRequest(JmyMsgInfo*);
 
+	static int getPlayerInfoCallback(void* param, long param_l);
+
 private:
 	static GameAgentManager game_mgr_;
 	static UserDataManager user_mgr_;
 	static MysqlConnectorPool conn_pool_;
 	static char tmp_[JMY_MAX_MSG_SIZE];
+
+	static std::set<std::string> accounts_set_;
 };

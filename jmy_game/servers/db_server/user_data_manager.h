@@ -4,8 +4,7 @@
 #include <unordered_map>
 #include "../libjmy/jmy_util.h"
 
-enum { DEFAULT_USER_COUNT = 5000 };
-enum { MAX_USER_ID = 100000 };
+enum { MAX_USER_DATA_COUNT = 200000 };
 enum UserState {
 	USER_STATE_NONE = 0,
 	USER_STATE_ONLINE = 1,
@@ -26,7 +25,8 @@ public:
 	UserDataManager();
 	~UserDataManager();
 
-	bool init(int user_count = DEFAULT_USER_COUNT);
+	bool init(int user_count = MAX_USER_DATA_COUNT);
+	void clear();
 	UserData* getFree(const std::string& account);
 	UserData* get(const std::string& account);
 	UserData* get(int id);

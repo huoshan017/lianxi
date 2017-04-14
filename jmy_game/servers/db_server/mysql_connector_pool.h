@@ -89,7 +89,7 @@ public:
 		ResultInfo(MysqlConnector::Result& r)
 			: res(std::move(r)), cb_func(nullptr), param(nullptr), param_l(0) {
 		}
-		/*ResultInfo(ResultInfo&& ri)
+		ResultInfo(ResultInfo&& ri)
 			: res(std::move(ri.res)), cb_func(ri.cb_func), param(ri.param), param_l(ri.param_l) {
 		}
 		ResultInfo& operator=(ResultInfo&& ri) {
@@ -98,14 +98,17 @@ public:
 			param = ri.param;
 			param_l = ri.param_l;
 			return *this;
-		}*/
+		}
 	};
 
 	struct ConnectorInfo {
 		MysqlConnector connector;
 		std::list<CmdInfo> cmd_list;
 		std::mutex cmd_mtx_;
+		std::list<ResultInfo> res_list;
+		std::mutex res_mtx_;
 		void clear() {
+			res_list.clear();
 			connector.close();
 			cmd_list.clear();
 		}
@@ -122,15 +125,6 @@ public:
 			info = std::move(cmd_list.front());
 			cmd_list.pop_front();
 			return true;
-		}
-	};
-
-	struct ReadConnectorInfo : public ConnectorInfo {
-		std::list<ResultInfo> res_list;
-		std::mutex res_mtx_;
-		void clear() {
-			res_list.clear();
-			ConnectorInfo::clear();
 		}
 		void push_res(ResultInfo& res) {
 			std::lock_guard<std::mutex> lk(res_mtx_);
@@ -157,7 +151,7 @@ public:
 
 private:
 	std::vector<ConnectorInfo*> write_connectors_;
-	std::vector<ReadConnectorInfo*> read_connectors_;
+	std::vector<ConnectorInfo*> read_connectors_;
 	boost::thread_group threads_;
 	int curr_read_index_;
 	int curr_write_index_;

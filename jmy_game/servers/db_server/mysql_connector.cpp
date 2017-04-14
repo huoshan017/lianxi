@@ -83,6 +83,7 @@ bool MysqlConnector::drop_db(const char* db_name)
 bool MysqlConnector::query(const char* stmt_str)
 {
 	if (mysql_query(handle_, stmt_str) != 0) {
+		res_.init(mysql_errno(handle_));
 		ServerLogError("mysql_query error(%s)", mysql_error(handle_));
 		return false;
 	}
@@ -92,13 +93,14 @@ bool MysqlConnector::query(const char* stmt_str)
 bool MysqlConnector::real_query(const char* stmt_str, unsigned long length)
 {
 	if (mysql_real_query(handle_, stmt_str, length) != 0) {
+		res_.init(mysql_errno(handle_));
 		ServerLogError("mysql_real_query error(%s)", mysql_error(handle_));
 		return false;
 	}
 	return true;
 }
 
-bool MysqlConnector::select(const char* stmt_str)
+bool MysqlConnector::read_query(const char* stmt_str)
 {
 	if (!query(stmt_str)) {
 		return false;
@@ -106,7 +108,7 @@ bool MysqlConnector::select(const char* stmt_str)
 	return store_result();
 }
 
-bool MysqlConnector::real_select(const char* stmt_str, unsigned long length)
+bool MysqlConnector::real_read_query(const char* stmt_str, unsigned long length)
 {
 	if (!real_query(stmt_str, length)) {
 		return false;
@@ -132,7 +134,18 @@ bool MysqlConnector::to_next_result()
 	return true;
 }
 
-unsigned long MysqlConnector::real_escape_string(char* to, const char* from, unsigned long length)
+unsigned int MysqlConnector::real_escape_string(char* to, const char* from, unsigned int length)
 {
 	return mysql_real_escape_string(handle_, to, from, length);
+}
+
+unsigned int MysqlConnector::real_escape_string(char** to, const char* from, unsigned int length)
+{
+	if (!to || !(*to))
+		return 0;
+	if (2*length+1 > sizeof(buf_))
+		return 0;
+	unsigned int l = mysql_real_escape_string(handle_, buf_, from, length);
+	*to = buf_;
+	return l;
 }

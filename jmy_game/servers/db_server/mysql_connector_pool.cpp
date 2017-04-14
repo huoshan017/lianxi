@@ -19,13 +19,12 @@ static bool one_connector_init(MysqlConnector& conn, const MysqlConnPoolConfig& 
 	return true;
 }
 
-static void connector_read_func(MysqlConnectorPool::ReadConnectorInfo* conn) {
+static void connector_read_func(MysqlConnectorPool::ConnectorInfo* conn) {
 	MysqlConnectorPool::CmdInfo ci;
 	while (true) {
 		if (conn->pop(ci)) {
-			if (!conn->connector.real_select(ci.sql, ci.sql_len)) {
-				ServerLogError("real select failed");
-				break;
+			if (!conn->connector.real_read_query(ci.sql, ci.sql_len)) {
+				ServerLogWarn("real select failed");
 			}
 			MysqlConnector::Result& r = conn->get_result();
 			MysqlConnectorPool::ResultInfo ri(r);
@@ -40,12 +39,13 @@ static void connector_write_func(MysqlConnectorPool::ConnectorInfo* conn) {
 	while (true) {
 		if (conn->pop(ci)) {
 			if (!conn->connector.real_query(ci.sql, ci.sql_len)) {
-				ServerLogError("real query failed");
-				break;
+				ServerLogWarn("real query failed");
 			}
-			/*MysqlConnector::Result& r = conn->get_result();
-			MysqlConnectorPool::ResultInfo ri(r);
-			conn->push_res(ri);*/
+			MysqlConnector::Result& r = conn->get_result();
+			if (!r.is_empty()) {
+				MysqlConnectorPool::ResultInfo ri(r);
+				conn->push_res(ri);
+			}
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
@@ -54,10 +54,10 @@ static void connector_write_func(MysqlConnectorPool::ConnectorInfo* conn) {
 bool MysqlConnectorPool::init(const MysqlConnPoolConfig& config)
 {
 	size_t i = 0;
-	ReadConnectorInfo* rci = nullptr; 
+	ConnectorInfo* rci = nullptr; 
 	read_connectors_.resize(config.read_conn_size);
 	for (; i<read_connectors_.size(); ++i) {
-		rci = jmy_mem_malloc<ReadConnectorInfo>();
+		rci = jmy_mem_malloc<ConnectorInfo>();
 		read_connectors_[i] = rci;
 		if (!one_connector_init((rci->connector), config)) {
 			ServerLogError("read connector init failed");
@@ -83,15 +83,17 @@ bool MysqlConnectorPool::init(const MysqlConnPoolConfig& config)
 void MysqlConnectorPool::close()
 {
 	threads_.join_all();
-	std::vector<ReadConnectorInfo*>::iterator rit = read_connectors_.begin();
-	for (; rit!=read_connectors_.end(); ++rit) {
-		ReadConnectorInfo* conn = *rit;
+
+	size_t i = 0;
+	for (; i<read_connectors_.size(); ++i) {
+		ConnectorInfo* conn = read_connectors_[i];
 		if (!conn) continue;
 		conn->clear();
 		jmy_mem_free(conn);
 	}
 	read_connectors_.clear();
-	size_t i = 0;
+	curr_read_index_ = 0;
+	
 	for (; i<write_connectors_.size(); ++i) {
 		ConnectorInfo* conn = write_connectors_[i];
 		if (!conn) continue;
@@ -99,6 +101,7 @@ void MysqlConnectorPool::close()
 		jmy_mem_free(conn);
 	}
 	write_connectors_.clear();
+	curr_write_index_ = 0;
 }
 
 bool MysqlConnectorPool::push_read_cmd(CmdInfo& info)
@@ -127,10 +130,16 @@ bool MysqlConnectorPool::push_write_cmd(CmdInfo& info)
 int MysqlConnectorPool::run()
 {
 	ResultInfo ri;
-	ReadConnectorInfo* ci = nullptr;
+	ConnectorInfo* ci = nullptr;
 	size_t i = 0;
 	for (; i<read_connectors_.size(); ++i) {
 		ci = read_connectors_[i];
+		if (ci->pop_res(ri)) {
+			ri.cb_func(ri.param, ri.param_l);
+		}
+	}
+	for (i=0; i<write_connectors_.size(); ++i) {
+		ci = write_connectors_[i];
 		if (ci->pop_res(ri)) {
 			ri.cb_func(ri.param, ri.param_l);
 		}

@@ -45,6 +45,11 @@ public:
 		min_id_ = minid;
 		max_id_ = maxid;
 	}
+	void clear() {
+		min_id_ = 0;
+		max_id_ = 0;
+		reset();
+	}
 	void reset() {
 		curr_id_ = 0;
 		free_list_.clear();

@@ -23,25 +23,29 @@ public:
 	bool drop_db(const char* db_name);
 	bool query(const char* stmt_str);
 	bool real_query(const char* stmt_str, unsigned long length);
-	bool select(const char* stmt_str);
-	bool real_select(const char* stmt_str, unsigned long length);
+	bool read_query(const char* stmt_str);
+	bool real_read_query(const char* stmt_str, unsigned long length);
 
 	struct Result {
+		typedef std::unordered_map<const char*, const char*> res_value_type;
+
 		MYSQL_RES* res;
 		MYSQL_ROW row;
 		int nfields;
-		typedef std::unordered_map<const char*, const char*> res_value_type;
 		res_value_type res_values_;
+		int res_err;
 
-		Result() : res(nullptr), row(nullptr), nfields(0) {}
+		Result() : res(nullptr), row(nullptr), nfields(0), res_err(0) {}
 		Result(MYSQL_RES* r) : res(r) {
 			nfields = mysql_num_fields(res);
 		}
-		Result(MYSQL* h) : res(nullptr) {
+		Result(MYSQL* h) : res(nullptr), res_err(0) {
 			res = mysql_store_result(h);
 			nfields = mysql_num_fields(res);
 		}
-		Result(Result&& r) : res(r.res), row(r.row), nfields(r.nfields) {
+		Result(int err) : res(nullptr), row(nullptr), nfields(0), res_err(err) {
+		}
+		Result(Result&& r) : res(r.res), row(r.row), nfields(r.nfields), res_err(0) {
 			r.res = nullptr;
 			r.row = nullptr;
 			r.nfields = 0;
@@ -66,6 +70,11 @@ public:
 			res = mysql_store_result(h);
 			nfields = mysql_num_fields(res);
 		}
+		void init(int err) {
+			clear();
+			nfields = 0;
+			res_err = err;
+		}
 		void clear() {
 			if (res) {
 				mysql_free_result(res);
@@ -85,6 +94,12 @@ public:
 		int num_rows() {
 			return mysql_num_rows(res);
 		}
+		bool is_empty() {
+			return res == nullptr;
+		}
+		unsigned long* row_lengths() {
+			return mysql_fetch_lengths(res);
+		}
 	};
 
 	struct ResultList {
@@ -95,7 +110,9 @@ public:
 	const ResultList& get_result_list() const { return res_list_; }
 	bool to_next_result();
 
-	unsigned long real_escape_string(char* to, const char* from, unsigned long length);
+	unsigned int real_escape_string(char* to, const char* from, unsigned int length);
+	unsigned int real_escape_string(char** to, const char* from, unsigned int length);
+	unsigned int get_escape_string_buff_len() const { return MAX_BUFFER_SIZE-1; }
 
 private:
 	bool store_result();
@@ -104,5 +121,6 @@ private:
 	MYSQL* handle_;
 	Result res_;
 	ResultList res_list_;
-	char buf_[1024*8];
+	enum { MAX_BUFFER_SIZE };
+	char buf_[MAX_BUFFER_SIZE];
 };
