@@ -24,7 +24,7 @@ static void connector_read_func(MysqlConnectorPool::ConnectorInfo* conn) {
 	while (true) {
 		if (conn->pop(ci)) {
 			if (!conn->connector.real_read_query(ci.sql, ci.sql_len)) {
-				ServerLogWarn("real select failed");
+				ServerLogWarn("real read query failed");
 			}
 			MysqlConnector::Result& r = conn->get_result();
 			MysqlConnectorPool::ResultInfo ri(r);
@@ -135,13 +135,13 @@ int MysqlConnectorPool::run()
 	for (; i<read_connectors_.size(); ++i) {
 		ci = read_connectors_[i];
 		if (ci->pop_res(ri)) {
-			ri.cb_func(ri.param, ri.param_l);
+			ri.cb_func(ri.res, ri.param, ri.param_l);
 		}
 	}
 	for (i=0; i<write_connectors_.size(); ++i) {
 		ci = write_connectors_[i];
 		if (ci->pop_res(ri)) {
-			ri.cb_func(ri.param, ri.param_l);
+			ri.cb_func(ri.res, ri.param, ri.param_l);
 		}
 	}
 	return 0;

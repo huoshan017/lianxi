@@ -24,7 +24,8 @@ public:
 	static int onConnectDBRequest(JmyMsgInfo*);
 	static int onRequireUserDataRequest(JmyMsgInfo*);
 
-	static int getPlayerInfoCallback(void* param, long param_l);
+	// callback functions
+	static int getPlayerInfoCallback(MysqlConnector::Result& res, void* param, long param_l);
 
 private:
 	static GameAgentManager game_mgr_;

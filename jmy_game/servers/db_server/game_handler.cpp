@@ -108,7 +108,7 @@ int GameHandler::onRequireUserDataRequest(JmyMsgInfo* info)
 		cmd.sql = tmp_;
 		cmd.sql_len = strlen(tmp_);
 		cmd.callback_func = getPlayerInfoCallback;
-		cmd.param = (void*)r.first->c_str();
+		cmd.param = (void*)(&r.first);
 		cmd.param_l = 0;
 		conn_pool_.push_read_cmd(cmd);
 	} else {
@@ -118,8 +118,13 @@ int GameHandler::onRequireUserDataRequest(JmyMsgInfo* info)
 	return info->len;
 }
 
-int GameHandler::getPlayerInfoCallback(void* param, long param_l)
+int GameHandler::getPlayerInfoCallback(MysqlConnector::Result& res, void* param, long param_l)
 {
-
+	const std::string& account = *(std::string*)param;
+	std::set<std::string>::iterator it = accounts_set_.find(account);
+	if (it == accounts_set_.end()) {
+		ServerLogError("cant found account %s", account.c_str());
+		return -1;
+	}
 	return 0;
 }

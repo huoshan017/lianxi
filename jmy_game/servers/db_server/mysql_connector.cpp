@@ -52,7 +52,10 @@ bool MysqlConnector::connect(const char* host, unsigned short port, const char* 
 				ServerLogError("connect mysql failed, err(%s)", mysql_error(handle_));
 				return false;
 			}
-			create_db(dbname);
+			if (!create_db(dbname)) {
+				ServerLogError("create db %s error", dbname);
+				return false;
+			}
 		} else {
 			ServerLogError("connect mysql failed, err(%s)", mysql_error(handle_));
 			return false;
@@ -64,7 +67,8 @@ bool MysqlConnector::connect(const char* host, unsigned short port, const char* 
 
 bool MysqlConnector::create_db(const char* db_name)
 {
-	std::snprintf(buf_, sizeof(buf_), "CREATE DATABASE %s", db_name);
+	std::snprintf(buf_, sizeof(buf_), "CREATE DATABASE IF NOT EXISTS %s", db_name);
+	ServerLogInfo("create db sql: %s", buf_);
 	return query(buf_);
 }
 

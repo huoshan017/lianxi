@@ -121,6 +121,6 @@ private:
 	MYSQL* handle_;
 	Result res_;
 	ResultList res_list_;
-	enum { MAX_BUFFER_SIZE };
+	enum { MAX_BUFFER_SIZE = 1024*16 };
 	char buf_[MAX_BUFFER_SIZE];
 };
