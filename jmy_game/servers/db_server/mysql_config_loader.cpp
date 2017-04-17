@@ -161,7 +161,8 @@ const char* MysqlConfigLoader::get_field_type(const MysqlTableFieldInfo& field_i
 	case MYSQL_FIELD_TYPE_TIMESTAMP:
 		{
 			if (field_info.type_length == MYSQL_FIELD_DEFAULT_LENGTH)
-				std::snprintf(buf, sizeof(buf), "TIMESTAMP(%d)", MYSQL_FIELD_DEFAULT_LENGTH_TIMESTAMP);
+				return "TIMESTAMP";
+				//std::snprintf(buf, sizeof(buf), "TIMESTAMP(%d)", MYSQL_FIELD_DEFAULT_LENGTH_TIMESTAMP);
 			else
 				std::snprintf(buf, sizeof(buf), "TIMESTAMP(%d)", field_info.type_length);
 		}
@@ -292,6 +293,8 @@ const char* MysqlConfigLoader::get_field_create_flags(const MysqlTableFieldInfo&
 					std::snprintf(buf[bi], sizeof(buf[bi]), "%s %s 0", pbuf, s_flags_info[i].flag_str);
 				} else if (IS_MYSQL_TEXT_TYPE(field_info.field_type)) {
 					std::snprintf(buf[bi], sizeof(buf[bi]), "%s %s ''", pbuf, s_flags_info[i].flag_str);
+				} else if (field_info.field_type == MYSQL_FIELD_TYPE_TIMESTAMP) {
+					std::snprintf(buf[bi], sizeof(buf[bi]), "%s %s CURRENT_TIMESTAMP", pbuf, s_flags_info[i].flag_str);
 				}
 			} else {
 				std::snprintf(buf[bi], sizeof(buf[bi]), "%s %s", pbuf, s_flags_info[i].flag_str);
@@ -311,8 +314,8 @@ bool MysqlConfigLoader::add_field(const char* table_name, const MysqlTableFieldI
 		return false;
 	}
 
-	const MysqlConnector::Result& res = connector_->get_result();
-	if (res.row_lengths()) {
+	MysqlConnector::Result& res = const_cast<MysqlConnector::Result&>(connector_->get_result());
+	if (res.fetch()) {
 		ServerLogInfo("table %s field(%s) exists", table_name, field_info.name);
 		return true;
 	}

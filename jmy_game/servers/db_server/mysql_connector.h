@@ -70,9 +70,7 @@ public:
 			res = mysql_store_result(h);
 			nfields = mysql_num_fields(res);
 		}
-		void init(int err) {
-			clear();
-			nfields = 0;
+		void init(int err) { clear(); nfields = 0;
 			res_err = err;
 		}
 		void clear() {
