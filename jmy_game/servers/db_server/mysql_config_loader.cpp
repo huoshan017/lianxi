@@ -1,6 +1,7 @@
 #include "mysql_config_loader.h"
 #include "mysql_defines.h"
 #include "mysql_connector.h"
+#include "mysql_util.h"
 #include "../common/util.h"
 #include <cstring>
 
@@ -287,9 +288,14 @@ const char* MysqlConfigLoader::get_field_create_flags(const MysqlTableFieldInfo&
 				bi = 0;
 			}
 			if (s_flags_info[i].flag == MYSQL_TABLE_CREATE_DEFAULT) {
-
+				if (IS_MYSQL_INT_TYPE(field_info.field_type)) {
+					std::snprintf(buf[bi], sizeof(buf[bi]), "%s %s 0", pbuf, s_flags_info[i].flag_str);
+				} else if (IS_MYSQL_TEXT_TYPE(field_info.field_type)) {
+					std::snprintf(buf[bi], sizeof(buf[bi]), "%s %s ''", pbuf, s_flags_info[i].flag_str);
+				}
+			} else {
+				std::snprintf(buf[bi], sizeof(buf[bi]), "%s %s", pbuf, s_flags_info[i].flag_str);
 			}
-			std::snprintf(buf[bi], sizeof(buf[bi]), "%s %s", pbuf, s_flags_info[i].flag_str);
 			pbuf = buf[bi];
 		}
 	}

@@ -100,7 +100,8 @@ public:
 		}
 		const unsigned long* row_lengths() const {
 			if (!res) return nullptr;
-			return mysql_fetch_lengths(res);
+			const unsigned long* r = mysql_fetch_lengths(res);
+			return r;
 		}
 	};
 

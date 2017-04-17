@@ -11,7 +11,7 @@
 
 #define IS_MYSQL_TEXT_TYPE(type) \
 		(type == MYSQL_FIELD_TYPE_CHAR || \
-		 type == MYSQL_FIELD_TYPE_VARCAHR || \
+		 type == MYSQL_FIELD_TYPE_VARCHAR || \
 		 type == MYSQL_FIELD_TYPE_TEXT || \
 		 type == MYSQL_FIELD_TYPE_TINYTEXT || \
 		 type == MYSQL_FIELD_TYPE_MEDIUMTEXT || \
