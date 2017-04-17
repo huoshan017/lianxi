@@ -74,7 +74,7 @@ bool MysqlConnector::create_db(const char* db_name)
 
 bool MysqlConnector::use_db(const char* db_name)
 {
-	std::snprintf(buf_, sizeof(buf_), "USE DATABASE %s", db_name);
+	std::snprintf(buf_, sizeof(buf_), "USE %s", db_name);
 	return query(buf_);
 }
 
@@ -88,7 +88,7 @@ bool MysqlConnector::query(const char* stmt_str)
 {
 	if (mysql_query(handle_, stmt_str) != 0) {
 		res_.init(mysql_errno(handle_));
-		ServerLogError("mysql_query error(%s)", mysql_error(handle_));
+		ServerLogError("mysql_query(%s) error(%s)", stmt_str, mysql_error(handle_));
 		return false;
 	}
 	return true;
@@ -98,7 +98,7 @@ bool MysqlConnector::real_query(const char* stmt_str, unsigned long length)
 {
 	if (mysql_real_query(handle_, stmt_str, length) != 0) {
 		res_.init(mysql_errno(handle_));
-		ServerLogError("mysql_real_query error(%s)", mysql_error(handle_));
+		ServerLogError("mysql_real_query(%s) error(%s)", stmt_str, mysql_error(handle_));
 		return false;
 	}
 	return true;
@@ -128,6 +128,7 @@ bool MysqlConnector::store_result()
 		return false;
 	}
 	res_.init(res);
+	ServerLogInfo("stored result 0x%x", res);
 	return true;
 }
 

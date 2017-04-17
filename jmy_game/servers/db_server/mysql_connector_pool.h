@@ -5,6 +5,8 @@
 #include <mutex>
 #include <boost/thread/thread.hpp>
 #include "../libjmy/jmy_mem.h"
+#include "mysql_defines.h"
+#include "mysql_config_loader.h"
 
 enum { MYSQL_POOL_READ_CONN_SIZE = 8 };
 enum { MYSQL_POOL_WRITE_CONN_SIZE = 1 };
@@ -17,14 +19,17 @@ struct MysqlConnPoolConfig {
 	char* dbname;
 	uint8_t read_conn_size;
 	uint8_t write_conn_size;
+	MysqlDatabaseConfig* database_config;
 	MysqlConnPoolConfig()
 		: host(nullptr), port(3306), user(nullptr), passwd(nullptr), dbname(nullptr),
-		read_conn_size(MYSQL_POOL_READ_CONN_SIZE), write_conn_size(MYSQL_POOL_WRITE_CONN_SIZE)
+		read_conn_size(MYSQL_POOL_READ_CONN_SIZE), write_conn_size(MYSQL_POOL_WRITE_CONN_SIZE),
+		database_config(nullptr)
 	{
 	}
-	MysqlConnPoolConfig(char* h, char* u, char* p, char* db)
+	MysqlConnPoolConfig(char* h, char* u, char* p, char* db, MysqlDatabaseConfig* db_conf)
 		: host(h), port(3306), user(u), passwd(p), dbname(db),
-		read_conn_size(MYSQL_POOL_READ_CONN_SIZE), write_conn_size(MYSQL_POOL_WRITE_CONN_SIZE)
+		read_conn_size(MYSQL_POOL_READ_CONN_SIZE), write_conn_size(MYSQL_POOL_WRITE_CONN_SIZE),
+		database_config(db_conf)
 	{
 	}
 };
@@ -150,6 +155,7 @@ public:
 	int run();
 
 private:
+	MysqlConfigLoader config_loader_;
 	std::vector<ConnectorInfo*> write_connectors_;
 	std::vector<ConnectorInfo*> read_connectors_;
 	boost::thread_group threads_;

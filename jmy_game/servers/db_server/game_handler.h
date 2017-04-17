@@ -26,6 +26,8 @@ public:
 
 	// callback functions
 	static int getPlayerInfoCallback(MysqlConnector::Result& res, void* param, long param_l);
+	static int insertPlayerInfoCallback(MysqlConnector::Result& res, void* param, long param_l);
+	static int getPlayerUidCallback(MysqlConnector::Result& res, void* param, long param_l);
 
 private:
 	static GameAgentManager game_mgr_;

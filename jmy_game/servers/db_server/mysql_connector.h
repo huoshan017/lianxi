@@ -81,23 +81,25 @@ public:
 				res = nullptr;
 			}
 		}
-		int num_fields() {
+		int num_fields() const {
 			return nfields;
 		}
 		char** fetch() {
+			if (!res) return nullptr;
 			row = mysql_fetch_row(res);
 			return row;
 		}
 		char* get(int index) {
 			return row[index];
 		}
-		int num_rows() {
+		int num_rows() const {
 			return mysql_num_rows(res);
 		}
-		bool is_empty() {
+		bool is_empty() const {
 			return res == nullptr;
 		}
-		unsigned long* row_lengths() {
+		const unsigned long* row_lengths() const {
+			if (!res) return nullptr;
 			return mysql_fetch_lengths(res);
 		}
 	};

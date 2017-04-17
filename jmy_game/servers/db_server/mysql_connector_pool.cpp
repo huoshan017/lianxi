@@ -3,7 +3,7 @@
 #include <thread>
 #include <chrono>
 
-MysqlConnectorPool::MysqlConnectorPool() : curr_read_index_(0), curr_write_index_(0)
+MysqlConnectorPool::MysqlConnectorPool() : config_loader_(nullptr), curr_read_index_(0), curr_write_index_(0)
 {
 }
 
@@ -14,8 +14,12 @@ MysqlConnectorPool::~MysqlConnectorPool()
 
 static bool one_connector_init(MysqlConnector& conn, const MysqlConnPoolConfig& config) {
 	if (!conn.init()) return false;
-	if (!conn.connect(config.host, config.port, config.user, config.passwd, config.dbname))
+	if (!conn.connect(config.host, config.user, config.passwd))
 		return false;
+	if (!conn.use_db(config.dbname)) {
+		ServerLogError("use db(%s) failed", config.dbname);
+		return false;
+	}
 	return true;
 }
 
@@ -53,19 +57,8 @@ static void connector_write_func(MysqlConnectorPool::ConnectorInfo* conn) {
 
 bool MysqlConnectorPool::init(const MysqlConnPoolConfig& config)
 {
+	bool load_config = false;
 	size_t i = 0;
-	ConnectorInfo* rci = nullptr; 
-	read_connectors_.resize(config.read_conn_size);
-	for (; i<read_connectors_.size(); ++i) {
-		rci = jmy_mem_malloc<ConnectorInfo>();
-		read_connectors_[i] = rci;
-		if (!one_connector_init((rci->connector), config)) {
-			ServerLogError("read connector init failed");
-			return false;
-		}
-		threads_.create_thread(std::bind(connector_read_func, rci));
-	}
-
 	ConnectorInfo* ci = nullptr;
 	write_connectors_.resize(config.write_conn_size);
 	for (i=0; i<write_connectors_.size(); ++i) {
@@ -75,7 +68,24 @@ bool MysqlConnectorPool::init(const MysqlConnPoolConfig& config)
 			ServerLogError("write connector init failed");
 			return false;
 		}
+		if (!load_config) {
+			config_loader_.setConnector(&ci->connector);
+			if (!config_loader_.load(*config.database_config)) {
+				return false;
+			}
+			load_config = true;
+		}
 		threads_.create_thread(std::bind(connector_write_func, ci));
+	}
+	read_connectors_.resize(config.read_conn_size);
+	for (; i<read_connectors_.size(); ++i) {
+		ci = jmy_mem_malloc<ConnectorInfo>();
+		read_connectors_[i] = ci;
+		if (!one_connector_init((ci->connector), config)) {
+			ServerLogError("read connector init failed");
+			return false;
+		}
+		threads_.create_thread(std::bind(connector_read_func, ci));
 	}
 	return true;
 }

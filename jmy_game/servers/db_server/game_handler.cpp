@@ -2,6 +2,7 @@
 #include "../common/util.h"
 #include "../../proto/src/server.pb.h"
 #include "config_loader.h"
+#include "db_table_defines.h"
 
 GameAgentManager GameHandler::game_mgr_;
 UserDataManager GameHandler::user_mgr_;
@@ -16,7 +17,8 @@ bool GameHandler::init()
 			const_cast<char*>(SERVER_CONFIG.mysql_host.c_str()),
 			const_cast<char*>(SERVER_CONFIG.mysql_user.c_str()),
 			const_cast<char*>(SERVER_CONFIG.mysql_password.c_str()),
-			const_cast<char*>(SERVER_CONFIG.mysql_dbname.c_str()));
+			const_cast<char*>(SERVER_CONFIG.mysql_dbname.c_str()),
+			const_cast<MysqlDatabaseConfig*>(&s_jmy_game_db_config));
 	if (!conn_pool_.init(conn_pool_config)) {
 		ServerLogError("init mysql connector pool failed");
 		return false;
@@ -126,5 +128,24 @@ int GameHandler::getPlayerInfoCallback(MysqlConnector::Result& res, void* param,
 		ServerLogError("cant found account %s", account.c_str());
 		return -1;
 	}
+	if (res.num_rows()==0 || res.is_empty()) {
+		UserData* user = user_mgr_.get(account);
+		if (!user) {
+			ServerLogError("cant found user agent by account %s", account.c_str());
+			return -1;
+		}
+		user->account = account;
+		std::snprintf(tmp_, sizeof(tmp_), "INSERT ");
+	} else {
+		char** datas = res.fetch();
+		int i = 0;
+		while (datas) {
+			for (i=0; i<res.num_fields(); ++i) {
+			}
+			datas = res.fetch();
+		}
+		res.clear();
+	}
+
 	return 0;
 }
