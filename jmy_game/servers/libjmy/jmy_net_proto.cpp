@@ -285,7 +285,7 @@ int jmy_net_proto_unpack_data_head(const char* buf, unsigned int len, JmyPacketU
 			offset += 2;
 			// msg info
 			JmyMsgInfo* msg_info = (JmyMsgInfo*)&data.msg_info;
-			msg_info->receiver_id = user_id;
+			msg_info->user_id = user_id;
 			msg_info->msg_id = (int)(long)data.param;
 			msg_info->data = const_cast<char*>(buf+offset);
 			msg_info->len = data_len-2;

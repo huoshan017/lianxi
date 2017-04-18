@@ -7,8 +7,8 @@
 
 char ClientHandler::tmp_[JMY_MAX_MSG_SIZE];
 char ClientHandler::session_buf_[RECONN_SESSION_CODE_BUF_LENGTH+1];
-BiMap<std::string, int> ClientHandler::account_id_map_;
-BiMap<int, int> ClientHandler::connid_id_map_;
+BiMap<std::string, int> ClientHandler::account_id_bimap_;
+BiMap<int, int> ClientHandler::connid_id_bimap_;
 ClientArray ClientHandler::client_array_;
 
 bool ClientHandler::init()
@@ -36,7 +36,7 @@ int ClientHandler::onDisconnect(JmyEventInfo* info)
 {
 	JmyTcpConnection* conn = get_connection(info);
 	if (!conn) return -1;
-	connid_id_map_.remove_1(info->conn_id);
+	connid_id_bimap_.remove_1(info->conn_id);
 	ServerLogInfo("client connection(%d) disconnect", info->conn_id);
 	return 0;
 }
@@ -56,7 +56,7 @@ int ClientHandler::onTimer(JmyEventInfo* info)
 bool ClientHandler::newClientSession(const std::string& account, const std::string& session_code)
 {
 	int id = 0;
-	bool b = account_id_map_.find_1(account, id);
+	bool b = account_id_bimap_.find_1(account, id);
 	if (b) {
 		ClientInfo* info = client_array_.get(id);
 		if (!info) {
@@ -71,7 +71,7 @@ bool ClientHandler::newClientSession(const std::string& account, const std::stri
 			ServerLogError("cant get free ClientInfo for account(%s) to hold enter_session(%s)", account.c_str(), session_code.c_str());
 			return false;
 		}
-		account_id_map_.insert(account, info->id);
+		account_id_bimap_.insert(account, info->id);
 	}
 	return true;
 }
@@ -85,6 +85,11 @@ void ClientHandler::send_error(JmyTcpConnection* conn, ProtoErrorType error)
 	conn->send(MSGID_ERROR, tmp_, response.ByteSize());
 }
 
+int ClientHandler::getClientStartId()
+{
+	return client_array_.getStartId();
+}
+
 ClientInfo* ClientHandler::getClientInfo(int user_id)
 {
 	return client_array_.get(user_id);
@@ -93,7 +98,7 @@ ClientInfo* ClientHandler::getClientInfo(int user_id)
 ClientInfo* ClientHandler::getClientInfoByAccount(const std::string& account)
 {
 	int id = 0;
-	bool b = account_id_map_.find_1(account, id);
+	bool b = account_id_bimap_.find_1(account, id);
 	if (!b) {
 		ServerLogError("account(%s) not found in account_id_map_", account.c_str());
 		return nullptr;
@@ -104,7 +109,7 @@ ClientInfo* ClientHandler::getClientInfoByAccount(const std::string& account)
 ClientInfo* ClientHandler::getClientInfoByConnId(int conn_id)
 {
 	int id = 0;
-	bool b = connid_id_map_.find_1(conn_id, id);
+	bool b = connid_id_bimap_.find_1(conn_id, id);
 	if (!b) {
 		ServerLogError("conn_id(%d) not found in connid_id_map_", conn_id);
 		return nullptr;
@@ -120,6 +125,7 @@ int ClientHandler::processEnterGame(JmyMsgInfo* info)
 		ServerLogError("get connection by info(conn_id:%d) failed", info->session_id);
 		return -1;
 	}
+
 	MsgC2S_EnterGameRequest request;
 	if (!request.ParseFromArray(info->data, info->len)) {
 		send_error(conn, PROTO_ERROR_LOGIN_DATA_INVALID);
@@ -153,7 +159,7 @@ int ClientHandler::processEnterGame(JmyMsgInfo* info)
 	char* reconn_session = get_session_code(session_buf_, RECONN_SESSION_CODE_BUF_LENGTH);
 	ci->reconn_session = reconn_session;
 	ci->conn = get_connection(info);
-	connid_id_map_.insert(info->session_id, ci->id);
+	connid_id_bimap_.insert(info->session_id, ci->id);
 
 	SEND_GAME_MSG(ci->id, MSGID_C2S_ENTER_GAME_REQUEST, info->data, info->len);
 
@@ -162,7 +168,7 @@ int ClientHandler::processEnterGame(JmyMsgInfo* info)
 
 int ClientHandler::processLeaveGame(JmyMsgInfo* info)
 {
-	connid_id_map_.remove_1(info->session_id);
+	connid_id_bimap_.remove_1(info->session_id);
 	return info->len;
 }
 
@@ -213,7 +219,7 @@ int ClientHandler::processDefault(JmyMsgInfo* info)
 	JmyTcpConnection* conn = get_connection(info);
 	if (!conn) return -1;
 	int id = 0;
-	if (!connid_id_map_.find_1(info->session_id, id)) {
+	if (!connid_id_bimap_.find_1(info->session_id, id)) {
 		send_error(conn, PROTO_ERROR_SERVER_INTERNAL_ERROR);
 		ServerLogError("not found id by conn_id(%d)", info->session_id);
 		return -1;

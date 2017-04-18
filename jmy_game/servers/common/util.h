@@ -5,6 +5,7 @@
 
 #define s_libjmy_log_cate "libjmy_log"
 #define s_server_log_cate "server_log"
+#define s_client_log_cate "client_log"
 
 #define ServerLogDebug(...) \
 	JmyLogDebug(s_server_log_cate, __VA_ARGS__)
@@ -23,6 +24,24 @@
 
 #define ServerLogFatal(...) \
 	JmyLogFatal(s_server_log_cate, __VA_ARGS__)
+
+#define LogDebug(...) \
+	JmyLogDebug(s_client_log_cate, __VA_ARGS__)
+
+#define LogInfo(...) \
+	JmyLogInfo(s_client_log_cate, __VA_ARGS__)
+
+#define LogNotice(...) \
+	JmyLogNotice(s_client_log_cate, __VA_ARGS__)
+
+#define LogWarn(...) \
+	JmyLogWarn(s_client_log_cate, __VA_ARGS__)
+
+#define LogError(...) \
+	JmyLogError(s_client_log_cate, __VA_ARGS__)
+
+#define LogFatal(...) \
+	JmyLogFatal(s_client_log_cate, __VA_ARGS__)
 
 bool global_log_init(const char* logconfpath);
 

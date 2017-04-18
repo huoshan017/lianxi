@@ -2,6 +2,7 @@
 #include "../common/util.h"
 #include "../../proto/src/server.pb.h"
 #include "client_handler.h"
+#include "config_loader.h"
 
 char GameHandler::tmp_[JMY_MAX_MSG_SIZE];
 GameAgentManager GameHandler::game_mgr_;
@@ -75,6 +76,19 @@ int GameHandler::processConnectGateRequest(JmyMsgInfo* info)
 	}
 
 	the_game_id_ = game_id;
+
+	// return message to game server
+	MsgGT2GS_ConnectGateResponse response;
+	response.set_max_user_count(CONFIG_FILE.max_conn);
+	response.set_start_user_id(ClientHandler::getClientStartId());
+	if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
+		ServerLogError("serialize msg MsgGT2GS_ConnectGateResponse failed");
+		return -1;
+	}
+	if (agent->sendMsg(MSGID_GT2GS_CONNECT_GATE_RESPONSE, tmp_, response.ByteSize()) < 0) {
+		ServerLogError("send msg MsgGT2GS_ConnectGateResponse failed");
+		return -1;
+	}
 	
 	ServerLogInfo("game_server(id: %d) connected", game_id);
 	return info->len;
@@ -82,13 +96,13 @@ int GameHandler::processConnectGateRequest(JmyMsgInfo* info)
 
 int GameHandler::processEnterGameResponse(JmyMsgInfo* info)
 {
-	ClientInfo* client_info = GET_CLIENT_INFO(info->receiver_id);
+	ClientInfo* client_info = GET_CLIENT_INFO(info->user_id);
 	if (!client_info) {
 		SEND_CLIENT_ERROR(client_info->conn, PROTO_ERROR_ENTER_GAME_INVALID_ACCOUNT);
-		ServerLogError("cant get ClientInfo by id(%d)", info->receiver_id);
+		ServerLogError("cant get ClientInfo by id(%d)", info->user_id);
 		return -1;
 	}
-	if (ClientHandler::sendEnterGameResponse2Client(info->receiver_id) < 0) {
+	if (ClientHandler::sendEnterGameResponse2Client(info->user_id) < 0) {
 		ServerLogError("send enter game response to client failed");
 		return -1;
 	}
@@ -104,9 +118,9 @@ int GameHandler::processEnterGameResponse(JmyMsgInfo* info)
 
 int GameHandler::processLeaveGameResponse(JmyMsgInfo* info)
 {
-	ClientInfo* client_info = GET_CLIENT_INFO(info->receiver_id);
+	ClientInfo* client_info = GET_CLIENT_INFO(info->user_id);
 	if (!client_info) {
-		ServerLogError("cant get ClientInfo by id(%d)", info->receiver_id);
+		ServerLogError("cant get ClientInfo by id(%d)", info->user_id);
 		return -1;
 	}
 	client_info->close();

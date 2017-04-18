@@ -25,15 +25,15 @@ LIBS = -L$(JMY_LIB) -L$(COMMON_LIB) -L$(PROTO_LIB) -L$(BOOST_LIB) -L$(ZLOG_LIB) 
 INCLUDES = -I$(TOP_DIR) -I$(JMY_DIR) -I$(COMMON_DIR) -I$(THIRD_INC)
 BINDIR = $(TOP_DIR)/bin
 
-OBJ_DIR = $(SERVER_DIR)/obj
-EXE = $(SERVER_BINDIR)/$(SERVER_EXE)
+OBJ_DIR = $(APP_DIR)/obj
+EXE = $(APP_BINDIR)/$(APP_EXE)
 
 SRCS = $(wildcard *.cpp)
 OBJS = $(patsubst %.cpp, $(OBJ_DIR)/%.o, $(SRCS))
 
 all: init $(EXE)
 init:
-	mkdir -p $(OBJ_DIR) $(SERVER_BINDIR)
+	mkdir -p $(OBJ_DIR) $(APP_BINDIR)
 
 $(EXE): $(OBJS) 
 	$(CC) $^ -o $@ $(INCLUDES) $(LIBS) $(CCFLAGS) \

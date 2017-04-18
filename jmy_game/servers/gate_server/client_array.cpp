@@ -87,3 +87,10 @@ bool ClientArray::free(ClientInfo* info)
 	info->used = false;
 	return true;
 }
+
+bool ClientArray::free(int id)
+{
+	ClientInfo* ci = get(id);
+	if (!ci) return false;
+	return free(ci);
+}

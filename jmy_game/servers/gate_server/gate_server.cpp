@@ -2,7 +2,7 @@
 #include "config_data.h"
 #include "client_handler.h"
 
-GateServer::GateServer() : main_server_(service_), listen_game_server_(service1_), client_master_(service_), config_client_(nullptr)
+GateServer::GateServer() : main_server_(service_), listen_game_server_(service_), client_master_(service_), config_client_(nullptr)
 {
 }
 
@@ -95,7 +95,6 @@ int GateServer::run()
 		login_client_set_.run();
 		config_client_->run();
 		service_.poll();
-		service1_.poll();
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 	return 0;

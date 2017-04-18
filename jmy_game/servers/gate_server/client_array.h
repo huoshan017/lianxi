@@ -47,7 +47,9 @@ public:
 	ClientInfo* getFree();
 	ClientInfo* get(int id);
 	bool free(ClientInfo* info);
+	bool free(int id);
 	int getUsedSize() const { return used_ids_.size(); }
+	int getStartId() const { return start_id_; }
 
 private:
 	ClientInfo** info_array_;

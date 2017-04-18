@@ -36,6 +36,7 @@ public:
 
 	static bool newClientSession(const std::string& account, const std::string& session_code);
 	static int sendEnterGameResponse2Client(int id);
+	static int getClientStartId();
 	static ClientInfo* getClientInfo(int user_id);
 	static ClientInfo* getClientInfoByAccount(const std::string& account);
 	static ClientInfo* getClientInfoByConnId(int conn_id);
@@ -44,8 +45,8 @@ public:
 private:
 	static char tmp_[JMY_MAX_MSG_SIZE];
 	static char session_buf_[RECONN_SESSION_CODE_BUF_LENGTH+1];
-	static BiMap<std::string, int> account_id_map_;
-	static BiMap<int, int> connid_id_map_;
+	static BiMap<std::string, int> account_id_bimap_;
+	static BiMap<int, int> connid_id_bimap_;
 	static ClientArray client_array_;
 };
 

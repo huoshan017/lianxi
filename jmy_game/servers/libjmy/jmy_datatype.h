@@ -20,14 +20,14 @@ struct JmySessionInfo {
 };
 
 struct JmyMsgInfo {
-	int receiver_id;
+	int user_id;
 	int msg_id;
 	char* data;
 	unsigned int len;
 	int session_id;
 	void* param;
-	JmyMsgInfo() : receiver_id(0), msg_id(0), data(nullptr), len(0), session_id(0), param(nullptr) {}
-	JmyMsgInfo(int rid, int mid, char* d, unsigned int l, int sid, void* p) : receiver_id(rid), msg_id(mid), data(d), len(l), session_id(sid), param(p) {}
+	JmyMsgInfo() : user_id(0), msg_id(0), data(nullptr), len(0), session_id(0), param(nullptr) {}
+	JmyMsgInfo(int rid, int mid, char* d, unsigned int l, int sid, void* p) : user_id(rid), msg_id(mid), data(d), len(l), session_id(sid), param(p) {}
 };
 
 typedef int (*jmy_msg_handler)(JmyMsgInfo*);
@@ -131,8 +131,8 @@ struct JmyBufferConfig {
 	bool use_send_buff_list;
 };
 
-// configure for retransmission
-struct JmyRetransmissionConfig {
+// configure for resend
+struct JmyResendConfig {
 	unsigned short max_cached_send_count;	// if the size of send messages great to the value, that is meant network has problem
 	unsigned short ack_recv_count;			// acknowlege the count of receiving messages
 };
@@ -140,7 +140,7 @@ struct JmyRetransmissionConfig {
 // connection configure
 struct JmyConnectionConfig {
 	JmyBufferConfig buff_conf;
-	JmyRetransmissionConfig* retran_conf;
+	JmyResendConfig* retran_conf;
 	JmyId2MsgHandler* handlers;
 	int nhandlers;
 	jmy_msg_handler default_msg_handler;
@@ -191,8 +191,6 @@ struct JmyConnectorConfig {
 // configure for client
 struct JmyClientConfig {
 	JmyConnectionConfig conn_conf;
-	//char* conn_ip;
-	//unsigned short conn_port;
 	bool is_reconnect;
 	int reconnect_interval;
 };

@@ -6,7 +6,7 @@
 #include "../common/defines.h"
 #include "game_handler.h"
 
-static JmyRetransmissionConfig s_retran_config = {
+static JmyResendConfig s_retran_config = {
 	RETRANSMISSION_MAX_CACHED_SEND_BUFFER_COUNT,
 	RETRANSMISSION_ACK_RECV_COUNT
 };
