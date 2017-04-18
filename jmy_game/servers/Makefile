@@ -9,3 +9,20 @@ all:
 	$(call make_subdir, all)
 clean:
 	$(call make_subdir, clean)
+
+proto:
+	cd ../proto && make
+libjmy:
+	cd libjmy && make
+common:
+	cd common && make
+ls:
+	cd login_server && make
+gt:
+	cd gate_server && make
+cs:
+	cd config_server && make
+gs:
+	cd game_server && make
+ds:
+	cd db_server && make

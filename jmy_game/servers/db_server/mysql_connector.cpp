@@ -146,7 +146,7 @@ unsigned int MysqlConnector::real_escape_string(char* to, const char* from, unsi
 
 unsigned int MysqlConnector::real_escape_string(char** to, const char* from, unsigned int length)
 {
-	if (!to || !(*to))
+	if (!to)
 		return 0;
 	if (2*length+1 > sizeof(buf_))
 		return 0;
