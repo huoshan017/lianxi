@@ -1,4 +1,4 @@
-dirs := ../proto libjmy common login_server gate_server config_server game_server db_server
+dirs := ../proto libjmy common login_server gate_server config_server game_server db_server test_client
 
 define make_subdir
 	@for subdir in $(dirs); do \
@@ -26,3 +26,5 @@ gs:
 	cd game_server && make
 ds:
 	cd db_server && make
+test_client:
+	cd test_client && make

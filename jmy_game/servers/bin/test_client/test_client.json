@@ -1,0 +1,8 @@
+{
+	"connect_ip" : "127.0.0.1",
+	"connect_port" : 10000,
+	"enable_reconnect" : true,
+	"log_conf_path" : "./log.conf",
+	"account" : "test1",
+	"password" : "111111"
+}
