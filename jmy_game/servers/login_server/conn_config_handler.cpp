@@ -2,9 +2,10 @@
 #include "../libjmy/jmy_datatype.h"
 #include "../libjmy/jmy_tcp_connection.h"
 #include "../common/util.h"
+#include "../../proto/src/server.pb.h"
 #include "config_loader.h"
+#include "gate_server_list.h"
 
-std::list<MsgGateConfData> ConnConfigHandler::gate_conf_list_;
 char ConnConfigHandler::tmp_[JMY_MAX_MSG_SIZE];
 
 int ConnConfigHandler::onConnect(JmyEventInfo* info)
@@ -62,12 +63,12 @@ int ConnConfigHandler::processConnectConfigResponse(JmyMsgInfo* info)
 		return -1;
 	}	
 
-	gate_conf_list_.clear();
+	GATE_SERVER_LIST->clear();
 	size_t i = 0;
 	size_t s = response.gate_list_size();
 	for (; i<s; ++i) {
-		const MsgGateConfData& gd = response.gate_list(i);
-		gate_conf_list_.push_back(gd);
+		MsgGateConfData* gd = response.mutable_gate_list(i);
+		GATE_SERVER_LIST->push(*gd);
 	}
 
 	LogInfo("connect response get gate server list");
@@ -83,12 +84,12 @@ int ConnConfigHandler::processGateConfListNotify(JmyMsgInfo* info)
 		return -1;
 	}
 
-	gate_conf_list_.clear();
+	GATE_SERVER_LIST->clear();
 	size_t i = 0;
 	size_t s = notify.gate_list_size();
 	for (; i<s; ++i) {
-		const MsgGateConfData& gd = notify.gate_list(i);
-		gate_conf_list_.push_back(gd);
+		MsgGateConfData* gd = notify.mutable_gate_list(i);
+		GATE_SERVER_LIST->push(*gd);
 	}
 
 	LogInfo("config_server notify gate_conf_list");

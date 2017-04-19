@@ -106,6 +106,8 @@ message MsgGateConfData {
 	int32 port = 4;
 	string platform = 5;
 	string channel_code = 6;
+	bool is_busy = 7;
+	bool is_maintenance = 8;
 }
 
 // config -> login  [MSGID_CS2LS_CONNECT_RESPONSE]

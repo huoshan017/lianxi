@@ -1,10 +1,11 @@
 #include "client_handler.h"
+#include <random>
 #include "../libjmy/jmy.h"
 #include "../common/util.h"
 #include "../../proto/src/server.pb.h"
 #include "config_loader.h"
 #include "user.h"
-#include <random>
+#include "gate_server_list.h"
 
 char ClientHandler::tmp_[JMY_MAX_MSG_SIZE];
 ClientAgentManager ClientHandler::client_mgr_;
@@ -81,6 +82,14 @@ int ClientHandler::processLogin(JmyMsgInfo* info)
 	user->setState(AGENT_STATE_VERIFIED);
 
 	MsgS2C_LoginResponse response;
+	GateServerList::Iterator it = GATE_SERVER_LIST->begin();
+	for (; it!=GATE_SERVER_LIST->end(); ++it) {
+		MsgServerInfo* si = response.add_servers();
+		si->set_name((*it).name());
+		si->set_id((*it).id());
+		si->set_is_busy((*it).is_busy());
+		si->set_is_maintenance((*it).is_maintenance());
+	}
 	response.SerializeToArray(tmp_, sizeof(tmp_));
 	user->sendMsg(MSGID_S2C_LOGIN_RESPONSE, tmp_, response.ByteSize());
 	LogInfo("account(%s) login", request.account().c_str());
