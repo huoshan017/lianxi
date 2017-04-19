@@ -21,5 +21,4 @@ public:
 private:
 	static char tmp_[JMY_MAX_MSG_SIZE];
 	static JmyTcpConnection* gate_conn_;
-	static std::unordered_map<std::string, int> account2id_map_;
 };

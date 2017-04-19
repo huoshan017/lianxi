@@ -56,3 +56,8 @@ int ConnDBHandler::processRequireUserDataResponse(JmyMsgInfo* info)
 
 	return info->len;
 }
+
+int ConnDBHandler::processDefault(JmyMsgInfo* info)
+{
+	return info->len;
+}

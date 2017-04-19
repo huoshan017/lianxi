@@ -12,6 +12,7 @@ public:
 	static int onTick(JmyEventInfo*);
 	static int processConnectDBResponse(JmyMsgInfo*);
 	static int processRequireUserDataResponse(JmyMsgInfo*);
+	static int processDefault(JmyMsgInfo*);
 
 private:
 	static char tmp_[JMY_MAX_MSG_SIZE];

@@ -17,7 +17,7 @@ static bool one_connector_init(MysqlConnector& conn, const MysqlConnPoolConfig& 
 	if (!conn.connect(config.host, config.user, config.passwd))
 		return false;
 	if (!conn.use_db(config.dbname)) {
-		ServerLogError("use db(%s) failed", config.dbname);
+		LogError("use db(%s) failed", config.dbname);
 		return false;
 	}
 	return true;
@@ -28,7 +28,7 @@ static void connector_read_func(MysqlConnectorPool::ConnectorInfo* conn) {
 	while (true) {
 		if (conn->pop(ci)) {
 			if (!conn->connector.real_read_query(ci.sql, ci.sql_len)) {
-				ServerLogWarn("real read query failed");
+				LogWarn("real read query failed");
 			}
 			MysqlConnector::Result& r = conn->get_result();
 			MysqlConnectorPool::ResultInfo ri(r);
@@ -43,7 +43,7 @@ static void connector_write_func(MysqlConnectorPool::ConnectorInfo* conn) {
 	while (true) {
 		if (conn->pop(ci)) {
 			if (!conn->connector.real_query(ci.sql, ci.sql_len)) {
-				ServerLogWarn("real query failed");
+				LogWarn("real query failed");
 			}
 			MysqlConnector::Result& r = conn->get_result();
 			if (!r.is_empty()) {
@@ -60,12 +60,11 @@ bool MysqlConnectorPool::init(const MysqlConnPoolConfig& config)
 	bool load_config = false;
 	size_t i = 0;
 	ConnectorInfo* ci = nullptr;
-	write_connectors_.resize(config.write_conn_size);
-	for (i=0; i<write_connectors_.size(); ++i) {
+	for (i=0; i<config.write_conn_size; ++i) {
 		ci = jmy_mem_malloc<ConnectorInfo>();
-		write_connectors_[i] = ci;
+		write_connectors_.push_back(ci);
 		if (!one_connector_init(ci->connector, config)) {
-			ServerLogError("write connector init failed");
+			LogError("write connector init failed");
 			return false;
 		}
 		if (!load_config) {
@@ -77,12 +76,11 @@ bool MysqlConnectorPool::init(const MysqlConnPoolConfig& config)
 		}
 		threads_.create_thread(std::bind(connector_write_func, ci));
 	}
-	read_connectors_.resize(config.read_conn_size);
-	for (; i<read_connectors_.size(); ++i) {
+	for (; i<config.read_conn_size; ++i) {
 		ci = jmy_mem_malloc<ConnectorInfo>();
-		read_connectors_[i] = ci;
+		read_connectors_.push_back(ci);
 		if (!one_connector_init((ci->connector), config)) {
-			ServerLogError("read connector init failed");
+			LogError("read connector init failed");
 			return false;
 		}
 		threads_.create_thread(std::bind(connector_read_func, ci));
@@ -142,13 +140,15 @@ int MysqlConnectorPool::run()
 	ResultInfo ri;
 	ConnectorInfo* ci = nullptr;
 	size_t i = 0;
-	for (; i<read_connectors_.size(); ++i) {
+	size_t s = read_connectors_.size();
+	for (; i<s; ++i) {
 		ci = read_connectors_[i];
 		if (ci->pop_res(ri)) {
 			ri.cb_func(ri.res, ri.param, ri.param_l);
 		}
 	}
-	for (i=0; i<write_connectors_.size(); ++i) {
+	s = write_connectors_.size();
+	for (i=0; i<s; ++i) {
 		ci = write_connectors_[i];
 		if (ci->pop_res(ri)) {
 			ri.cb_func(ri.res, ri.param, ri.param_l);

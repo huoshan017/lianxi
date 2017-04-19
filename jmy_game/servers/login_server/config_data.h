@@ -7,7 +7,7 @@
 #include "gate_handler.h"
 #include "conn_config_handler.h"
 
-static JmyRetransmissionConfig s_retran_config = {
+static JmyResendConfig s_retran_config = {
 	RETRANSMISSION_MAX_CACHED_SEND_BUFFER_COUNT,
 	RETRANSMISSION_ACK_RECV_COUNT
 };
@@ -25,7 +25,7 @@ static JmyBaseEventHandlers s_client_base_event_handlers = {
 };
 static JmyConnectionConfig s_client_conn_config = {
 	{ 2048, 2048, 0, 0, false, true },
-	(JmyRetransmissionConfig*)nullptr, //&s_retran_config,
+	(JmyResendConfig*)nullptr, //&s_retran_config,
 	s_client_handlers,
 	sizeof(s_client_handlers)/sizeof(s_client_handlers[0]),
 	(jmy_msg_handler)nullptr,

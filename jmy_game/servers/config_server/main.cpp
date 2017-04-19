@@ -16,17 +16,17 @@ int main(int argc, char* argv[])
 	(void)argv;
 
 	if (!CONFIG_LOADER->loadJson(ServerConfPath)) {
-		ServerLogError("failed to load server config %s", ServerConfPath);
+		LogError("failed to load server config %s", ServerConfPath);
 		return -1;
 	}
 
 	if (!global_log_init(SERVER_CONFIG.log_conf_path.c_str())) {
-		ServerLogError("failed to init log with path %s", SERVER_CONFIG.log_conf_path.c_str());
+		LogError("failed to init log with path %s", SERVER_CONFIG.log_conf_path.c_str());
 		return -1;
 	}
 
 	if (!CONF_GATE_LIST->loadJson(ConfGateListPath)) {
-		ServerLogError("failed to load gate_list_conf(%s) file", ConfGateListPath);
+		LogError("failed to load gate_list_conf(%s) file", ConfGateListPath);
 		return -1;
 	}
 
@@ -37,15 +37,15 @@ int main(int argc, char* argv[])
 	s_conn_config.listen_port = SERVER_CONFIG.port;
 	s_conn_config.listen_ip = (char*)(SERVER_CONFIG.ip.c_str());
 	if (!main_server.loadConfig(s_conn_config)) {
-		ServerLogError("failed to load login config");
+		LogError("failed to load login config");
 		return -1;
 	}
 	if (main_server.listenStart(s_conn_config.listen_port) < 0) {
-		ServerLogError("main server listen port %d failed", s_conn_config.listen_port);
+		LogError("main server listen port %d failed", s_conn_config.listen_port);
 		return -1;
 	}
 
-	ServerLogInfo("start listening port %d", s_conn_config.listen_port);
+	LogInfo("start listening port %d", s_conn_config.listen_port);
 
 	while (main_server.run() >= 0) {
 		service.poll();

@@ -16,12 +16,12 @@ int main(int argc, char* argv[])
 	(void)argv;
 
 	if (!CONFIG_LOADER->loadJson(ServerConfPath)) {
-		ServerLogError("failed to load server config %s", ServerConfPath);
+		LogError("failed to load server config %s", ServerConfPath);
 		return -1;
 	}
 
 	if (!global_log_init(SERVER_CONFIG.log_conf_path.c_str())) {
-		ServerLogError("failed to init log with path %s", SERVER_CONFIG.log_conf_path.c_str());
+		LogError("failed to init log with path %s", SERVER_CONFIG.log_conf_path.c_str());
 		return -1;
 	}
 
@@ -33,14 +33,14 @@ int main(int argc, char* argv[])
 	s_client_config.listen_port = SERVER_CONFIG.port;
 	s_client_config.listen_ip = (char*)(SERVER_CONFIG.ip.c_str());
 	if (!main_server.loadConfig(s_client_config)) {
-		ServerLogError("failed to load login config");
+		LogError("failed to load login config");
 		return -1;
 	}
 	if (main_server.listenStart(s_client_config.listen_port) < 0) {
-		ServerLogError("main server listen port %d failed", s_client_config.listen_port);
+		LogError("main server listen port %d failed", s_client_config.listen_port);
 		return -1;
 	}
-	ServerLogInfo("start listening port %d for client", s_client_config.listen_port);
+	LogInfo("start listening port %d for client", s_client_config.listen_port);
 
 	// listen gate server
 	JmyTcpServer listen_gate_server(service);
@@ -48,30 +48,30 @@ int main(int argc, char* argv[])
 	s_gate_config.listen_port = SERVER_CONFIG.listen_gate_port;
 	s_gate_config.listen_ip = const_cast<char*>(SERVER_CONFIG.listen_gate_ip.c_str());
 	if (!listen_gate_server.loadConfig(s_gate_config)) {
-		ServerLogError("failed to load listen gate config");
+		LogError("failed to load listen gate config");
 		return -1;
 	}
 	if (listen_gate_server.listenStart(s_gate_config.listen_port) < 0) {
-		ServerLogError("listen port %d for gate server failed", s_gate_config.listen_port);
+		LogError("listen port %d for gate server failed", s_gate_config.listen_port);
 		return -1;
 	}
 	GateHandler::init();
-	ServerLogInfo("start listening port %d for gate server", s_gate_config.listen_port);
+	LogInfo("start listening port %d for gate server", s_gate_config.listen_port);
 
 	// connect config server
 	JmyTcpClientMaster client_master(main_server.getService());
 	if (!client_master.init(2)) {
-		ServerLogError("client master init failed");
+		LogError("client master init failed");
 		return -1;
 	}
 	JmyTcpClient* config_client = client_master.generate();
 	if (!config_client) {
-		ServerLogError("generate client to connect config server failed");
+		LogError("generate client to connect config server failed");
 		return -1;
 	}
 	config_client->setIP((char*)SERVER_CONFIG.connect_config_ip.c_str(), SERVER_CONFIG.connect_config_port);
 	if (!config_client->start(s_conn_config)) {
-		ServerLogError("start client to connect config server failed");
+		LogError("start client to connect config server failed");
 		return -1;
 	}
 

@@ -44,6 +44,8 @@ void PlayerManager::clear()
 	jmy_mem_free(using_array_);
 	start_player_id_ = 0;
 	max_player_size_ = 0;
+	uid2id_map_.clear();
+	account2id_map_.clear();
 }
 
 Player* PlayerManager::malloc(int id, uint64_t uid)
@@ -58,26 +60,28 @@ Player* PlayerManager::malloc(int id, uint64_t uid)
 	p->id = id;
 	p->uid = uid;
 	using_array_[index] = true;
-	uid2id_map_.insert(std::make_pair(uid, id));
+	uid2id_map_.insert(uid, id);
 	return p;
 }
 
 Player* PlayerManager::get(int id)
 {
-	if (id >= max_player_size_ + start_player_id_)
+	int index = id - start_player_id_;
+	if (index >= max_player_size_)
 		return nullptr;
 	if (!player_array_)
 		return nullptr;
-	Player* p = player_array_[id-start_player_id_];
+	Player* p = player_array_[index];
 	return p;
 }
 
 Player* PlayerManager::getByUid(uint64_t uid)
 {
-	std::unordered_map<uint64_t, int>::iterator it = uid2id_map_.find(uid);
-	if (it == uid2id_map_.end())
+	int user_id = 0;
+	bool b = uid2id_map_.find_1(uid, user_id);
+	if (!b)
 		return nullptr;
-	return get(it->second);
+	return get(user_id);
 }
 
 bool PlayerManager::isUsing(int id)
@@ -90,11 +94,11 @@ bool PlayerManager::isUsing(int id)
 
 bool PlayerManager::isUsing(uint64_t uid)
 {
-	std::unordered_map<uint64_t, int>::iterator it = uid2id_map_.find(uid);
-	if (it == uid2id_map_.end())
+	int user_id = 0;
+	if (!uid2id_map_.find_1(uid, user_id))
 		return false;
 
-	return isUsing(it->second);
+	return isUsing(user_id);
 }
 
 bool PlayerManager::free(int id)
@@ -106,10 +110,38 @@ bool PlayerManager::free(int id)
 	if (u) {
 		using_array_[index] = false;
 	}
+	uid2id_map_.remove_2(id);
 	return true;
 }
 
 bool PlayerManager::free(Player* p)
 {
 	return free(p->id);
+}
+
+bool PlayerManager::addAccountId(const std::string& account, int user_id)
+{
+	int id = 0;
+	if (!account2id_map_.find_1(account, id))
+		return false;
+	account2id_map_.insert(account, user_id);
+	return true;
+}
+
+bool PlayerManager::removeAccountId(const std::string& account)
+{
+	return account2id_map_.remove_1(account);
+}
+
+bool PlayerManager::removeAccountId(int user_id)
+{
+	return account2id_map_.remove_2(user_id);
+}
+
+Player* PlayerManager::getByAccount(const std::string& account)
+{
+	int user_id = 0;
+	if (!account2id_map_.find_1(account, user_id))
+		return nullptr;
+	return get(user_id);
 }

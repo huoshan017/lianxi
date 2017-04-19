@@ -8,6 +8,7 @@
 #include "../../proto/src/server.pb.h"
 #include <list>
 #include <array>
+#include <unordered_map>
 
 enum { MAX_GATE_SERVER_COUNT = GATE_SERVER_MAX_ID-GATE_SERVER_MIN_ID };
 class ConfGateList : public JmySingleton<ConfGateList>
@@ -31,11 +32,13 @@ public:
 	};*/
 
 	MsgGateConfData* get(int index);
+	MsgGateConfData* getById(int id);
 
 private:
 	rapidjson::Document doc_;
 	std::string jsonpath_;
 	std::array<MsgGateConfData*, MAX_GATE_SERVER_COUNT> gate_array_;
+	std::unordered_map<int, MsgGateConfData*> id2gate_map_;
 	size_t gate_count_;
 };
 

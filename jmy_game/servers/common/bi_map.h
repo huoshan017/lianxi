@@ -9,6 +9,11 @@ public:
 	BiMap() {}
 	~BiMap() {}
 
+	void clear() {
+		one_map_.clear();
+		two_map_.clear();
+	}
+
 	bool insert(const T1& t1, const T2& t2) {
 		if (one_map_.find(t1) != one_map_.end())
 			return false;
@@ -38,16 +43,20 @@ public:
 	}
 
 	bool remove_1(const T1& t1) {
-		if (one_map_.find(t1) == one_map_.end())
+		typename std::unordered_map<T1, T2>::iterator it = one_map_.find(t1);
+		if (it == one_map_.end())
 			return false;
 		one_map_.erase(t1);
+		two_map_.erase(it->second);
 		return true;
 	}
 
 	bool remove_2(const T2& t2) {
-		if (two_map_.find(t2) == two_map_.end())
+		typename std::unordered_map<T2, T1>::iterator it = two_map_.find(t2);
+		if (it == two_map_.end())
 			return false;
 		two_map_.erase(t2);
+		one_map_.erase(it->second);
 		return true;
 	}
 

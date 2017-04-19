@@ -14,11 +14,11 @@ int ConnHandler::onConnect(JmyEventInfo* info)
 {
 	std::unordered_map<int, int>::iterator it = conn2agent_map_.find(info->conn_id);
 	if (it != conn2agent_map_.end()) {
-		ServerLogError("already has connection %d", info->conn_id);
+		LogError("already has connection %d", info->conn_id);
 		return -1;
 	}
 	conn2agent_map_.insert(std::make_pair(info->conn_id, 0));
-	ServerLogInfo("connection %d connected", info->conn_id);
+	LogInfo("connection %d connected", info->conn_id);
 	return 0;
 }
 
@@ -26,7 +26,7 @@ int ConnHandler::onDisconnect(JmyEventInfo* info)
 {
 	std::unordered_map<int, int>::iterator it = conn2agent_map_.find(info->conn_id);
 	if (it == conn2agent_map_.end()) {
-		ServerLogError("not found connection %d to disconnect", info->conn_id);
+		LogError("not found connection %d to disconnect", info->conn_id);
 		return -1;
 	}
 
@@ -34,27 +34,27 @@ int ConnHandler::onDisconnect(JmyEventInfo* info)
 	if (login_conn_id_set_.find(info->conn_id) != login_conn_id_set_.end()) {
 		LoginAgent* login_agent = login_mgr_.getAgent(it->second);
 		if (!login_agent) {
-			ServerLogError("not found login agent with login_id(%d) conn_id(%d)", it->second, info->conn_id);
+			LogError("not found login agent with login_id(%d) conn_id(%d)", it->second, info->conn_id);
 			return -1;
 		}
 		login_mgr_.deleteAgent(it->second);
 		login_conn_id_set_.erase(info->conn_id);
-		ServerLogInfo("remove login agent with login_id(%d) conn_id(%d)", it->second, info->conn_id);
+		LogInfo("remove login agent with login_id(%d) conn_id(%d)", it->second, info->conn_id);
 	} else if (gate_conn_id_set_.find(info->conn_id) != gate_conn_id_set_.end()) {
 		GateAgent* gate_agent = gate_mgr_.getAgent(it->second);
 		if (!gate_agent) {
-			ServerLogError("not found gate agent with gate_id(%d) conn_id(%d)", it->second, info->conn_id);
+			LogError("not found gate agent with gate_id(%d) conn_id(%d)", it->second, info->conn_id);
 			return -1;
 		}
 		gate_mgr_.deleteAgent(it->second);
 		gate_conn_id_set_.erase(info->conn_id);
-		ServerLogInfo("remove gate agent with gate_id(%d) conn_id(%d)", it->second, info->conn_id);
+		LogInfo("remove gate agent with gate_id(%d) conn_id(%d)", it->second, info->conn_id);
 	} else {
-		ServerLogInfo("connection %d not found agent", info->conn_id);
+		LogInfo("connection %d not found agent", info->conn_id);
 		return 0;
 	}
 
-	ServerLogInfo("connection conn_id(%d) disconnected", info->conn_id);
+	LogInfo("connection conn_id(%d) disconnected", info->conn_id);
 	return 0;
 }
 
@@ -74,11 +74,11 @@ int ConnHandler::check_conn(int conn_id)
 {
 	std::unordered_map<int, int>::iterator it = conn2agent_map_.find(conn_id);
 	if (it == conn2agent_map_.end()) {
-		ServerLogInfo("not found connection %d in set", conn_id);
+		LogInfo("not found connection %d in set", conn_id);
 		return -1;
 	}
 	if (it->second != 0) {
-		ServerLogInfo("connection %d already connected", conn_id);
+		LogInfo("connection %d already connected", conn_id);
 		return -1;
 	}	
 	return 0;
@@ -101,17 +101,17 @@ int ConnHandler::broadcast_msg_to_gate(int msg_id, char* data, int len)
 	for (; it!=gate_conn_id_set_.end(); ++it) {
 		c2a_it = conn2agent_map_.find(*it);
 		if (c2a_it == conn2agent_map_.end()) {
-			ServerLogWarn("not found gate_id with conn_id(%d)", *it);
+			LogWarn("not found gate_id with conn_id(%d)", *it);
 			continue;
 		}
 		GateAgent* agent = gate_mgr_.getAgent(c2a_it->second);
 		if (!agent) {
-			ServerLogWarn("not found gate agent with gate_id(%d)", c2a_it->second);
+			LogWarn("not found gate agent with gate_id(%d)", c2a_it->second);
 			return -1;
 		}
 		if (agent->sendMsg(msg_id, data, len) < 0)
 			return -1;
-		ServerLogInfo("broadcast message(%d) to login_server(%d)", msg_id, c2a_it->second);
+		LogInfo("broadcast message(%d) to login_server(%d)", msg_id, c2a_it->second);
 	}
 	return 0;
 }
@@ -163,7 +163,7 @@ int ConnHandler::broadcast_msg_to_login(int msg_id, char* data, int len)
 
 int ConnHandler::processGateConnect(JmyMsgInfo* info)
 {
-	if (check_conn(info->session_id) < 0)
+	if (check_conn(info->conn_id) < 0)
 		return -1;
 
 	MsgGT2CS_ConnectConfigRequest request;
@@ -171,12 +171,12 @@ int ConnHandler::processGateConnect(JmyMsgInfo* info)
 	int gate_id = (int)request.gate_id();
 	GateAgent* agent = gate_mgr_.getAgent(gate_id);
 	if (agent) {
-		ServerLogError("already exist gate agent with gate_id(%d) conn_id(%d)", gate_id, info->session_id);
+		LogError("already exist gate agent with gate_id(%d) conn_id(%d)", gate_id, info->conn_id);
 		return -1;
 	}
-	agent = gate_mgr_.newAgent(gate_id, (JmyTcpConnectionMgr*)info->param, info->session_id);
+	agent = gate_mgr_.newAgent(gate_id, (JmyTcpConnectionMgr*)info->param, info->conn_id);
 	if (!agent) {
-		ServerLogError("create new gate agent with id(%d) session_id(%d) failed", gate_id, info->session_id);
+		LogError("create new gate agent with id(%d) session_id(%d) failed", gate_id, info->conn_id);
 		return -1;
 	}
 		
@@ -185,11 +185,11 @@ int ConnHandler::processGateConnect(JmyMsgInfo* info)
 	gate_data.ip = request.gate_ip();
 	gate_data.port = request.gate_port();
 	
-	update_conn(info->session_id, gate_id);
-	gate_conn_id_set_.insert(info->session_id);
+	update_conn(info->conn_id, gate_id);
+	gate_conn_id_set_.insert(info->conn_id);
 
 	MsgCS2GT_ConnectConfigResponse response;
-	// return logins ip and port list to gate server
+	// return logins (ip, port, id) list to gate server
 	std::set<int>::iterator it = login_conn_id_set_.begin();
 	for (; it!=login_conn_id_set_.end(); ++it) {
 		LoginAgent* login_agent = login_mgr_.getAgentByConnId(*it);
@@ -198,40 +198,41 @@ int ConnHandler::processGateConnect(JmyMsgInfo* info)
 		MsgLoginInfoData* data = response.add_login_list();
 		data->set_login_ip(login_data.ip);
 		data->set_login_port(login_data.port);
+		data->set_login_id(login_data.id);
 	}
 
 	if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
-		ServerLogError("serialize connect config_server response message failed");
+		LogError("serialize connect config_server response message failed");
 		return -1;
 	}
 	if (agent->sendMsg(MSGID_CS2GT_CONNECT_CONFIG_RESPONSE, tmp_, response.ByteSize()) < 0) {
-		ServerLogError("send connect config_server response message failed");
+		LogError("send connect config_server response message failed");
 		return -1;
 	}
 
-	ServerLogInfo("gate_server(%d) connected", gate_id);
+	LogInfo("gate_server(%d) connected", gate_id);
 	return 0;
 }
 
 int ConnHandler::processLoginConnect(JmyMsgInfo* info)
 {
-	if (check_conn(info->session_id) < 0)
+	if (check_conn(info->conn_id) < 0)
 		return -1;
 
 	MsgLS2CS_ConnectConfigRequest request;
 	if (!request.ParseFromArray(info->data, info->len)) {
-		ServerLogError("parse connect config_server request message failed");
+		LogError("parse connect config_server request message failed");
 		return -1;
 	}
 	int login_id = (int)request.login_id();
 	LoginAgent* agent = login_mgr_.getAgent(login_id);
 	if (agent) {
-		ServerLogError("already exist login agent with id(%d)", login_id);
+		LogError("already exist login agent with id(%d)", login_id);
 		return -1;
 	}
-	agent = login_mgr_.newAgent(login_id, (JmyTcpConnectionMgr*)info->param, info->session_id);
+	agent = login_mgr_.newAgent(login_id, (JmyTcpConnectionMgr*)info->param, info->conn_id);
 	if (!agent) {
-		ServerLogError("create new login agent with id(%d) session_id(%d) failed", login_id, info->session_id);
+		LogError("create new login agent with id(%d) session_id(%d) failed", login_id, info->conn_id);
 		return -1;
 	}
 
@@ -240,8 +241,8 @@ int ConnHandler::processLoginConnect(JmyMsgInfo* info)
 	login_data.ip = request.login_ip();
 	login_data.port = request.login_port();
 
-	update_conn(info->session_id, login_id);
-	login_conn_id_set_.insert(info->session_id);	
+	update_conn(info->conn_id, login_id);
+	login_conn_id_set_.insert(info->conn_id);	
 
 	MsgCS2LS_ConnectConfigResponse response;
 	// get gate server list info from server_list.json
@@ -254,12 +255,12 @@ int ConnHandler::processLoginConnect(JmyMsgInfo* info)
 		*data = *gate_data;
 	}
 	if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
-		ServerLogError("serialize connect config_server response message failed");
+		LogError("serialize connect config_server response message failed");
 		return -1;
 	}
 
 	if (agent->sendMsg(MSGID_CS2LS_CONNECT_CONFIG_RESPONSE, tmp_, response.ByteSize()) < 0) {
-		ServerLogError("send connect config_server response message failed");
+		LogError("send connect config_server response message failed");
 		return -1;
 	}
 
@@ -267,7 +268,7 @@ int ConnHandler::processLoginConnect(JmyMsgInfo* info)
 	if (broadcast_new_login_to_gate(login_id, login_data.ip.c_str(), login_data.port) < 0)
 		return -1;
 
-	ServerLogInfo("login_server(id:%d, ip:%s, port:%d) connected", 
+	LogInfo("login_server(id:%d, ip:%s, port:%d) connected", 
 			login_id, login_data.ip.c_str(), login_data.port);
 	return 0;
 }

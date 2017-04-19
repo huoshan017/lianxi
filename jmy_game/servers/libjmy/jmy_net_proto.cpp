@@ -184,7 +184,7 @@ int jmy_net_proto_pack_defined_type_head<char>(char* buf, unsigned short len, un
 	return int8_packet_type_len;
 }
 
-int jmy_net_proto_unpack_data_head(const char* buf, unsigned int len, JmyPacketUnpackData& data, int session_id, void* param) {
+int jmy_net_proto_unpack_data_head(const char* buf, unsigned int len, JmyPacketUnpackData& data, int conn_id, void* param) {
 	if (!buf || !len)
 		return 0;
 
@@ -289,7 +289,7 @@ int jmy_net_proto_unpack_data_head(const char* buf, unsigned int len, JmyPacketU
 			msg_info->msg_id = (int)(long)data.param;
 			msg_info->data = const_cast<char*>(buf+offset);
 			msg_info->len = data_len-2;
-			msg_info->session_id = session_id;
+			msg_info->conn_id = conn_id;
 			msg_info->param = param;
 			handled = offset+msg_info->len;
 		}

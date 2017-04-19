@@ -122,6 +122,36 @@ bool ConfigLoader::loadJson(const char* jsonpath)
 		config_.connect_gate_enable_reconnect = doc_["connect_gate_enable_reconnect"].GetBool();
 	}
 
+	// connect_db_ip
+	char* member = (char*)"connect_db_ip";
+	if (doc_.HasMember(member)) {
+		if (!doc_[member].IsString()) {
+			std::cout << member << " type is not string" << std::endl;
+			return false;
+		}
+		config_.connect_db_ip = doc_[member].GetString();
+	}
+
+	// connect_db_port
+	member = (char*)"connect_db_port";
+	if (doc_.HasMember(member)) {
+		if (!doc_[member].IsInt()) {
+			std::cout << member << " type is not int" << std::endl;
+			return false;
+		}
+		config_.connect_db_port = (unsigned short)doc_[member].GetInt();
+	}
+
+	// connect_db_enable_reconnect
+	member = (char*)"connect_db_enable_reconnect";
+	if (doc_.HasMember(member)) {
+		if (!doc_[member].IsBool()) {
+			std::cout << member << " type is not bool" << std::endl;	
+			return false;
+		}
+		config_.connect_db_enable_reconnect = doc_[member].GetBool();
+	}
+
 	// log_conf_path 
 	if (doc_.HasMember("log_conf_path")) {
 		if (!doc_["log_conf_path"].IsString()) {

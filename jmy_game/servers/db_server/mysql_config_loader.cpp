@@ -17,18 +17,18 @@ MysqlConfigLoader::~MysqlConfigLoader()
 bool MysqlConfigLoader::load(const MysqlDatabaseConfig& config)
 {
 	if (!connector_->create_db(config.dbname)) {
-		ServerLogError("create database %s failed", config.dbname);
+		LogError("create database %s failed", config.dbname);
 		return false;
 	}
 	int i = 0;
 	for (; i<config.tables_num; ++i) {
 		if (!loadTable(config.tables_info[i])) {
-			ServerLogError("load table %s config failed", config.tables_info[i].name);
+			LogError("load table %s config failed", config.tables_info[i].name);
 			return false;
 		}
 	}
 
-	ServerLogInfo("load database %s config success", config.dbname);
+	LogInfo("load database %s config success", config.dbname);
 	return true;
 }
 
@@ -39,11 +39,11 @@ void MysqlConfigLoader::clear()
 bool MysqlConfigLoader::loadTable(const MysqlTableInfo& table_info)
 {
 	if (table_info.fields_num<=table_info.primary_key_index || table_info.primary_key_index<0) {
-		ServerLogError("primary_key_index %d invalid", table_info.primary_key_index);
+		LogError("primary_key_index %d invalid", table_info.primary_key_index);
 		return false;
 	}
 	if (std::strcmp(table_info.fields_info[table_info.primary_key_index].name, table_info.primary_key) != 0) {
-		ServerLogError("primary_key(%d) is not same to index name", table_info.primary_key);
+		LogError("primary_key(%d) is not same to index name", table_info.primary_key);
 		return false;
 	}
 
@@ -65,7 +65,7 @@ bool MysqlConfigLoader::loadTable(const MysqlTableInfo& table_info)
 			engine_type);
 
 	if (!connector_->real_query(buf_, strlen(buf_))) {
-		ServerLogError("create table %s failed", table_info.name);
+		LogError("create table %s failed", table_info.name);
 		return false;
 	}
 	
@@ -74,12 +74,12 @@ bool MysqlConfigLoader::loadTable(const MysqlTableInfo& table_info)
 		if (i == table_info.primary_key_index)
 			continue;
 		if (!add_field(table_info.name, table_info.fields_info[i])) {
-			ServerLogError("table %s add field %s failed", table_info.name, table_info.fields_info[i].name);
+			LogError("table %s add field %s failed", table_info.name, table_info.fields_info[i].name);
 			return false;
 		}
 	}
 
-	ServerLogInfo("load table %s success", table_info.name);
+	LogInfo("load table %s success", table_info.name);
 	return true;
 }
 
@@ -87,10 +87,10 @@ bool MysqlConfigLoader::dropTable(const char* table_name)
 {
 	std::snprintf(buf_, sizeof(buf_), "DROP TABLE %s", table_name);
 	if (!connector_->real_query(buf_, strlen(buf_))) {
-		ServerLogError("drop table %s failed", table_name);
+		LogError("drop table %s failed", table_name);
 		return false;
 	}
-	ServerLogInfo("droped table %s", table_name);
+	LogInfo("droped table %s", table_name);
 	return true;
 }
 
@@ -302,7 +302,7 @@ const char* MysqlConfigLoader::get_field_create_flags(const MysqlTableFieldInfo&
 			pbuf = buf[bi];
 		}
 	}
-	ServerLogInfo("field %s create flags: %s", field_info.name, buf[bi]);
+	LogInfo("field %s create flags: %s", field_info.name, buf[bi]);
 	return buf[bi];
 }
 
@@ -310,13 +310,13 @@ bool MysqlConfigLoader::add_field(const char* table_name, const MysqlTableFieldI
 {
 	std::snprintf(buf_, sizeof(buf_), "DESCRIBE %s %s", table_name, field_info.name);
 	if (!connector_->real_read_query(buf_, strlen(buf_))) {
-		ServerLogError("describe %s %s failed", table_name, field_info.name);
+		LogError("describe %s %s failed", table_name, field_info.name);
 		return false;
 	}
 
 	MysqlConnector::Result& res = const_cast<MysqlConnector::Result&>(connector_->get_result());
 	if (res.fetch()) {
-		ServerLogInfo("table %s field(%s) exists", table_name, field_info.name);
+		LogInfo("table %s field(%s) exists", table_name, field_info.name);
 		return true;
 	}
 
@@ -324,11 +324,11 @@ bool MysqlConfigLoader::add_field(const char* table_name, const MysqlTableFieldI
 	const char* field_create_str = get_field_create_flags(field_info);
 	std::snprintf(buf_, sizeof(buf_), "ALTER TABLE `%s` ADD COLUMN `%s` %s %s", table_name, field_info.name, field_type_str, field_create_str);
 	if (!connector_->real_query(buf_, strlen(buf_))) {
-		ServerLogError("add field(%s) to table(%s) failed", field_info.name, table_name);
+		LogError("add field(%s) to table(%s) failed", field_info.name, table_name);
 		return false;
 	}
 
-	ServerLogInfo("table(%s) add field(%s) success", table_name, field_info.name);
+	LogInfo("table(%s) add field(%s) success", table_name, field_info.name);
 	return true;
 }
 
@@ -336,10 +336,10 @@ bool MysqlConfigLoader::remove_field(const char* table_name, const char* field_n
 {
 	std::snprintf(buf_, sizeof(buf_), "ALTER TABLE `%s` DROP COLUMN `%s`", table_name, field_name);
 	if (!connector_->real_query(buf_, strlen(buf_))) {
-		ServerLogError("remove field(%s) for table(%s) failed", field_name, table_name);
+		LogError("remove field(%s) for table(%s) failed", field_name, table_name);
 		return false;
 	}
-	ServerLogInfo("table(%s) remove field(%s) success", table_name, field_name);
+	LogInfo("table(%s) remove field(%s) success", table_name, field_name);
 	return true;
 }
 
@@ -347,10 +347,10 @@ bool MysqlConfigLoader::rename_field(const char* table_name, const char* old_fie
 {
 	std::snprintf(buf_, sizeof(buf_), "ALTER TABLE `%s` CHANGE `%s` `%s`", table_name, old_field_name, new_field_name);
 	if (!connector_->real_query(buf_, strlen(buf_))) {
-		ServerLogError("change table(%s) field name(%s) to name(%s)", table_name, old_field_name, new_field_name);
+		LogError("change table(%s) field name(%s) to name(%s)", table_name, old_field_name, new_field_name);
 		return false;
 	}
-	ServerLogInfo("table(%s) field name(%s) be changed to name(%s)", table_name, old_field_name, new_field_name);
+	LogInfo("table(%s) field name(%s) be changed to name(%s)", table_name, old_field_name, new_field_name);
 	return true;
 }
 
@@ -360,9 +360,9 @@ bool MysqlConfigLoader::modify_field_attr(const char* table_name, const MysqlTab
 	const char* field_create_str = get_field_create_flags(field_info);
 	std::snprintf(buf_, sizeof(buf_), "ALTER TABLE `%s` MODIFY `%s` %s %s", table_name, field_info.name, field_type_str, field_create_str);
 	if (!connector_->real_query(buf_, strlen(buf_))) {
-		ServerLogError("modify table(%s) field(%s) attr failed", table_name, field_info.name);
+		LogError("modify table(%s) field(%s) attr failed", table_name, field_info.name);
 		return false;
 	}
-	ServerLogInfo("table(%s) field(%s) attr modified", table_name, field_info.name);
+	LogInfo("table(%s) field(%s) attr modified", table_name, field_info.name);
 	return true;
 }

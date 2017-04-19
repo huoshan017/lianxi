@@ -20,24 +20,24 @@ int ConnConfigHandler::onConnect(JmyEventInfo* info)
 	request.set_login_port(SERVER_CONFIG.listen_gate_port);
 
 	if (!request.SerializeToArray(tmp_, sizeof(tmp_))) {
-		ServerLogError("serialize message MsgLS2CS_ConnectConfigRequest failed");
+		LogError("serialize message MsgLS2CS_ConnectConfigRequest failed");
 		return -1;
 	}
 
 	// connect request to get gate_conf_list
 	if (conn->send(MSGID_LS2CS_CONNECT_CONFIG_REQUEST, tmp_, request.ByteSize()) < 0) {
-		ServerLogError("send MsgLS2CS_ConnectConfigRequest to config_server failed");
+		LogError("send MsgLS2CS_ConnectConfigRequest to config_server failed");
 		return -1;
 	}
 
-	ServerLogInfo("login_server(%d) onconnected config_server", SERVER_CONFIG.id);
+	LogInfo("login_server(%d) onconnected config_server", SERVER_CONFIG.id);
 	return 0;
 }
 
 int ConnConfigHandler::onDisconnect(JmyEventInfo* info)
 {
 	(void)info;
-	ServerLogInfo("login_server(%d) ondisconnected to config_server", SERVER_CONFIG.id);
+	LogInfo("login_server(%d) ondisconnected to config_server", SERVER_CONFIG.id);
 	return 0;
 }
 
@@ -58,7 +58,7 @@ int ConnConfigHandler::processConnectConfigResponse(JmyMsgInfo* info)
 {
 	MsgCS2LS_ConnectConfigResponse response;
 	if (!response.ParseFromArray(info->data, info->len)) {
-		ServerLogError("serilize message MsgCS2LS_ConnectConfigResponse failed");		
+		LogError("serilize message MsgCS2LS_ConnectConfigResponse failed");		
 		return -1;
 	}	
 
@@ -70,7 +70,7 @@ int ConnConfigHandler::processConnectConfigResponse(JmyMsgInfo* info)
 		gate_conf_list_.push_back(gd);
 	}
 
-	ServerLogInfo("connect response get gate server list");
+	LogInfo("connect response get gate server list");
 	return 0;
 }
 
@@ -79,7 +79,7 @@ int ConnConfigHandler::processGateConfListNotify(JmyMsgInfo* info)
 {
 	MsgCS2LS_GateConfListNotify notify;
 	if (!notify.ParseFromArray(info->data, info->len)) {
-		ServerLogError("serialize MsgCS2LS_GateConfListNotify failed");
+		LogError("serialize MsgCS2LS_GateConfListNotify failed");
 		return -1;
 	}
 
@@ -91,6 +91,6 @@ int ConnConfigHandler::processGateConfListNotify(JmyMsgInfo* info)
 		gate_conf_list_.push_back(gd);
 	}
 
-	ServerLogInfo("config_server notify gate_conf_list");
+	LogInfo("config_server notify gate_conf_list");
 	return 0;
 }

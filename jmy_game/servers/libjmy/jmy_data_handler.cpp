@@ -294,7 +294,7 @@ int JmyDataHandler::handleMsg(JmyMsgInfo* info)
 		if (default_msg_handler_) {
 			int res = default_msg_handler_(info);
 			if (res == 0) {
-				LibJmyLogWarn("not found msg(%d) handler, session_id(%d)", info->msg_id, info->session_id);
+				LibJmyLogWarn("not found msg(%d) handler, session_id(%d)", info->msg_id, info->conn_id);
 				return 0;
 			} else if (res < 0) {
 				return -1;
@@ -302,7 +302,7 @@ int JmyDataHandler::handleMsg(JmyMsgInfo* info)
 				return info->len;
 			}
 		} else {
-			LibJmyLogWarn("not found default message handler to handle message(%d), session_id(%d)", info->msg_id, info->session_id);
+			LibJmyLogWarn("not found default message handler to handle message(%d), session_id(%d)", info->msg_id, info->conn_id);
 			return 0;
 		}
 	}

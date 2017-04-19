@@ -10,9 +10,9 @@
 	"connect_gate_port" : 24001,
 	"connect_gate_enable_reconnect" : true,
 
-	"connect_game_ip" : "127.0.0.1",
-	"connect_game_port" : 50000,
-	"connect_game_enable_reconnect" : true,
+	"connect_db_ip" : "127.0.0.1",
+	"connect_db_port" : 50000,
+	"connect_db_enable_reconnect" : true,
 
 	"log_conf_path" : "./log.conf"
 }

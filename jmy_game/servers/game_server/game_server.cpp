@@ -6,7 +6,7 @@
 
 static const char* ServerConfPath = "./game_server.json";
 
-GameServer::GameServer() : client_master_(service_), gate_client_(nullptr)
+GameServer::GameServer() : client_master_(service_), gate_client_(nullptr), db_client_(nullptr)
 {
 }
 
@@ -28,20 +28,36 @@ bool GameServer::init()
 	}
 
 	if (!client_master_.init(10)) {
-		ServerLogError("client_master init with size(%d) failed", 10);
-		return false;
-	}
-	gate_client_ = client_master_.generate();
-	if (!gate_client_) {
-		ServerLogError("client_master generate client failed");
+		LogError("client_master init with size(%d) failed", 10);
 		return false;
 	}
 
-	gate_client_->setIP(const_cast<char*>(SERVER_CONFIG.connect_gate_ip.c_str()), SERVER_CONFIG.connect_gate_port);
-	if (!gate_client_->start(s_gate_config)) {
-		ServerLogError("start connect gate failed");
+	// gate client
+	gate_client_ = client_master_.generate();
+	if (!gate_client_) {
+		LogError("client_master generate gate client failed");
 		return false;
 	}
+	gate_client_->setIP(const_cast<char*>(SERVER_CONFIG.connect_gate_ip.c_str()), SERVER_CONFIG.connect_gate_port);
+	if (!gate_client_->start(s_gate_config)) {
+		LogError("start connect gate_server failed");
+		return false;
+	}
+
+	// db client
+	db_client_ = client_master_.generate();
+	if (!db_client_) {
+		LogError("client_master generate db client failed");
+		return false;
+	}
+	const char* db_ip = SERVER_CONFIG.connect_db_ip.c_str();
+	unsigned short db_port = SERVER_CONFIG.connect_db_port;
+	db_client_->setIP(db_ip, db_port);
+	if (!db_client_->start(s_db_config)) {
+		LogError("start connect db_server failed");
+		return false;
+	}
+
 	return true;
 }
 
@@ -50,6 +66,10 @@ void GameServer::clear()
 	if (gate_client_) {
 		client_master_.recycle(gate_client_);
 		gate_client_ = nullptr;
+	}
+	if (db_client_) {
+		client_master_.recycle(db_client_);
+		db_client_ = nullptr;
 	}
 	client_master_.close();
 }
@@ -60,9 +80,9 @@ int GameServer::run()
 	int res = 0;
 	while (run_) {
 		res = gate_client_->run();
-		if (res < 0) {
-			break;
-		}
+		if (res < 0) break;
+		res = db_client_->run();
+		if (res < 0) break;
 		service_.poll();
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}

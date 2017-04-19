@@ -5,6 +5,7 @@
 #include "gate_server.h"
 #include "config_data.h"
 #include "config_loader.h"
+#include "global_data.h"
 
 char ConnConfigHandler::tmp_[JMY_MAX_MSG_SIZE];
 
@@ -17,31 +18,33 @@ int ConnConfigHandler::onConnect(JmyEventInfo* info)
 	request.set_gate_ip(CONFIG_FILE.ip.c_str());
 	request.set_gate_port(CONFIG_FILE.port);
 	if (!request.SerializeToArray(tmp_, sizeof(tmp_))) {
-		ServerLogError("serialize MsgGT2CS_ConnectConfigRequest failed");
+		LogError("serialize MsgGT2CS_ConnectConfigRequest failed");
 		return -1;
 	}
 	if (conn->send(MSGID_GT2CS_CONNECT_CONFIG_REQUEST, tmp_, request.ByteSize()) < 0) {
-		ServerLogError("send MsgGT2CS_ConnectConfigRequest(id:%d, ip:%s, port:%d) failed", CONFIG_FILE.id, CONFIG_FILE.ip.c_str(), CONFIG_FILE.port);
+		LogError("send MsgGT2CS_ConnectConfigRequest(id:%d, ip:%s, port:%d) failed", CONFIG_FILE.id, CONFIG_FILE.ip.c_str(), CONFIG_FILE.port);
 		return -1;
 	}
-	ServerLogInfo("connection to config_server with conn_id(%d), send gate(id:%d, ip:%s, port:%d)",
+	LogInfo("connection to config_server with conn_id(%d), send gate(id:%d, ip:%s, port:%d)",
 			info->conn_id, CONFIG_FILE.id, CONFIG_FILE.ip.c_str(), CONFIG_FILE.port);
 	return 0;
 }
 
 int ConnConfigHandler::onDisconnect(JmyEventInfo* info)
 {
-	ServerLogInfo("connection to config_server with conn_id(%d) disconnected", info->conn_id);
+	LogInfo("connection to config_server with conn_id(%d) disconnected", info->conn_id);
 	return 0;
 }
 
 int ConnConfigHandler::onTick(JmyEventInfo* info)
 {
+	(void)info;
 	return 0;
 }
 
 int ConnConfigHandler::onTimer(JmyEventInfo* info)
 {
+	(void)info;
 	return 0;
 }
 
@@ -50,20 +53,22 @@ int ConnConfigHandler::processConnectConfigResponse(JmyMsgInfo* info)
 {
 	MsgCS2GT_ConnectConfigResponse response;
 	if (!response.ParseFromArray(info->data, info->len)) {
-		ServerLogError("parse MsgCS2GT_ConnectConfigResponse failed");
+		LogError("parse MsgCS2GT_ConnectConfigResponse failed");
 		return -1;
 	}
 	size_t i = 0;
 	size_t s = response.login_list_size();
 	for (; i<s; ++i) {
 		const MsgLoginInfoData& info = response.login_list(i);
-		if (!GATE_SERVER->startLoginClient(info.login_ip().c_str(), info.login_port())) {
-			ServerLogError("start client to connect login_server(ip:%s, port:%d) failed", info.login_ip().c_str(), info.login_port());
+		JmyTcpClient* client = GATE_SERVER->startLoginClient(info.login_ip().c_str(), info.login_port());
+		if (!client) {
+			LogError("start client to connect login_server(ip:%s, port:%d) failed", info.login_ip().c_str(), info.login_port());
 		} else {
-			ServerLogInfo("start client to connect login_server(ip:%s, port:%d)", info.login_ip().c_str(), info.login_port());
+			GLOBAL_DATA->addLoginClient(info.login_id(), client);
+			LogInfo("start client to connect login_server(ip:%s, port:%d)", info.login_ip().c_str(), info.login_port());
 		}
 	}
-	ServerLogInfo("processed connect config_server response");
+	LogInfo("processed connect config_server response");
 	return 0;
 }
 
@@ -71,20 +76,23 @@ int ConnConfigHandler::processNewLoginNotify(JmyMsgInfo* info)
 {
 	MsgCS2GT_NewLoginNotify notify;
 	if (!notify.ParseFromArray(info->data, info->len)) {
-		ServerLogError("parse MsgCS2GT_NewLoginNotify failed");
+		LogError("parse MsgCS2GT_NewLoginNotify failed");
 		return -1;
 	}
 	char* login_ip = (char*)notify.login_data().login_ip().c_str();
 	unsigned short login_port = notify.login_data().login_port(); 
-	if (!GATE_SERVER->startLoginClient(login_ip, login_port)) {
-		ServerLogError("start client to connect login_server(ip:%s, port:%d) failed", login_ip, login_port);
+	JmyTcpClient* client = GATE_SERVER->startLoginClient(login_ip, login_port);
+	if (!client) {
+		LogError("start client to connect login_server(ip:%s, port:%d) failed", login_ip, login_port);
 		return -1;
 	}
-	ServerLogInfo("new login_server(ip:%s, port:%d) notified", login_ip, login_port);
+	GLOBAL_DATA->addLoginClient(notify.login_data().login_id(), client);
+	LogInfo("new login_server(ip:%s, port:%d) notified", login_ip, login_port);
 	return 0;
 }
 
 int ConnConfigHandler::processRemoveLoginNotify(JmyMsgInfo* info)
 {
+	(void)info;
 	return 0;
 }

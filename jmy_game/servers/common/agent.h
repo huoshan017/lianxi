@@ -22,15 +22,15 @@ class Agent
 public:
 	typedef typename std::enable_if<std::is_integral<conn_id_type>::value, conn_id_type>::type int_conn_id_type;
 
-	Agent() : data_(), id_(0), mgr_(nullptr), state_(AGENT_STATE_NONE) {}
+	Agent() : data_(), conn_id_(0), mgr_(nullptr), state_(AGENT_STATE_NONE) {}
 	~Agent() {}
-	void init(int_conn_id_type id, JmyTcpConnectionMgr* mgr) {
-		id_ = id;
+	void init(int_conn_id_type conn_id, JmyTcpConnectionMgr* mgr) {
+		conn_id_ = conn_id;
 		mgr_ = mgr;
 		state_ = AGENT_STATE_NONE;
 	}
 
-	int_conn_id_type getId() const { return id_; }
+	int_conn_id_type getConnId() const { return conn_id_; }
 	AgentStateType getState() const { return state_; }
 	void setState(AgentStateType state) { state_ = state; }
 	data_type& getData() { return data_; }
@@ -40,14 +40,14 @@ public:
 
 	int sendMsg(int msgid, const char* data, int len) {
 		if (state_ != AGENT_STATE_VERIFIED) return 0;
-		JmyTcpConnection* conn = mgr_->get(id_);
+		JmyTcpConnection* conn = mgr_->get(conn_id_);
 		if (!conn) {
-			ServerLogError("not found connection with id(%d)", id_);
+			LogError("not found connection with conn_id(%d)", conn_id_);
 			return -1;
 		}
 
 		if (conn->send(msgid, data, len) < 0) {
-			ServerLogError("agent(%d) send message(%d) failed", id_, msgid);
+			LogError("agent(conn_id:%d) send message(%d) failed", conn_id_, msgid);
 			return -1;
 		}
 
@@ -56,14 +56,14 @@ public:
 
 	int sendMsg(int userid, int msgid, const  char* data, unsigned short len) {
 		if (state_ != AGENT_STATE_VERIFIED) return 0;
-		JmyTcpConnection* conn = mgr_->get(id_);
+		JmyTcpConnection* conn = mgr_->get(conn_id_);
 		if (!conn) {
-			ServerLogError("not found connection with id(%d)", id_);
+			LogError("not found connection with conn_id(%d)", conn_id_);
 			return -1;
 		}
 
 		if (conn->send(userid, msgid, data, len) < 0) {
-			ServerLogError("agent(%d) send message(%d) to user(%d) failed", id_, msgid, userid);
+			LogError("agent(%d) send message(%d) to user(%d) failed", conn_id_, msgid, userid);
 			return -1;
 		}
 
@@ -71,14 +71,14 @@ public:
 	}
 
 	int close() {
-		JmyTcpConnection* conn = mgr_->get(id_);
+		JmyTcpConnection* conn = mgr_->get(conn_id_);
 		if (!conn) return -1;
 		conn->close();
 		return 0;
 	}
 
 	int force_close() {
-		JmyTcpConnection* conn = mgr_->get(id_);
+		JmyTcpConnection* conn = mgr_->get(conn_id_);
 		if (!conn) return -1;
 		conn->force_close();
 		return 0;
@@ -86,7 +86,7 @@ public:
 
 private:
 	data_type data_;
-	int_conn_id_type id_;
+	int_conn_id_type conn_id_;
 	JmyTcpConnectionMgr* mgr_;
 	AgentStateType state_;
 };

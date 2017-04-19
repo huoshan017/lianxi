@@ -20,7 +20,7 @@ bool GameHandler::init()
 			const_cast<char*>(SERVER_CONFIG.mysql_dbname.c_str()),
 			const_cast<MysqlDatabaseConfig*>(&s_jmy_game_db_config));
 	if (!conn_pool_.init(conn_pool_config)) {
-		ServerLogError("init mysql connector pool failed");
+		LogError("init mysql connector pool failed");
 		return false;
 	}
 	return true;
@@ -33,13 +33,13 @@ void GameHandler::clear()
 
 int GameHandler::onConnect(JmyEventInfo* info)
 {
-	ServerLogInfo("onconnection conn_id(%d)", info->conn_id);
+	LogInfo("onconnection conn_id(%d)", info->conn_id);
 	return 0;
 }
 
 int GameHandler::onDisconnect(JmyEventInfo* info)
 {
-	ServerLogInfo("ondisconnect conn_id(%d)", info->conn_id);
+	LogInfo("ondisconnect conn_id(%d)", info->conn_id);
 	return 0;
 }
 
@@ -52,52 +52,52 @@ int GameHandler::onTick(JmyEventInfo* info)
 
 int GameHandler::onConnectDBRequest(JmyMsgInfo* info)
 {
-	if (game_mgr_.getAgentByConnId(info->session_id)) {
-		ServerLogError("already exist game agent by conn_id(%d)", info->session_id);
+	if (game_mgr_.getAgentByConnId(info->conn_id)) {
+		LogError("already exist game agent by conn_id(%d)", info->conn_id);
 		return -1;
 	}
 	MsgGS2DS_ConnectDBRequest request;
 	if (!request.ParseFromArray(info->data, info->len)) {
-		ServerLogError("parse MsgGS2DS_ConnectDBRequest failed");
+		LogError("parse MsgGS2DS_ConnectDBRequest failed");
 		return -1;
 	}
 	int game_id = request.game_id();
-	GameAgent* agent = game_mgr_.newAgent(game_id, (JmyTcpConnectionMgr*)info->param, info->session_id);
+	GameAgent* agent = game_mgr_.newAgent(game_id, (JmyTcpConnectionMgr*)info->param, info->conn_id);
 	if (!agent) {
-		ServerLogError("create game agent with game_id(%d), conn_id(%d) failed", game_id, info->session_id);
+		LogError("create game agent with game_id(%d), conn_id(%d) failed", game_id, info->conn_id);
 		return -1;
 	}
 
 	MsgDS2GS_ConnectDBResponse response;
 	if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
-		ServerLogError("serialize MsgDS2GS_ConnectDBResponse failed");
+		LogError("serialize MsgDS2GS_ConnectDBResponse failed");
 		return -1;
 	}
 	if (agent->sendMsg(MSGID_DS2GS_CONNECT_DB_RESPONSE, tmp_, response.ByteSize()) < 0) {
-		ServerLogError("send MsgDS2GS_ConnectDBResponse to game server %d failed", game_id);
+		LogError("send MsgDS2GS_ConnectDBResponse to game server %d failed", game_id);
 		return -1;
 	}
 
-	ServerLogInfo("game server %d connected", game_id);
+	LogInfo("game server %d connected", game_id);
 	return info->len;
 }
 
 int GameHandler::onRequireUserDataRequest(JmyMsgInfo* info)
 {
-	GameAgent* agent = game_mgr_.getAgentByConnId(info->session_id);
+	GameAgent* agent = game_mgr_.getAgentByConnId(info->conn_id);
 	if (!agent) {
-		ServerLogError("not found game agent with conn_id(%d)", info->session_id);
+		LogError("not found game agent with conn_id(%d)", info->conn_id);
 		return -1;
 	}
 	int id = 0;
-	if (!game_mgr_.getIdByConnId(info->session_id, id)) {
-		ServerLogError("cant get game_id by conn_id(%d)");
+	if (!game_mgr_.getIdByConnId(info->conn_id, id)) {
+		LogError("cant get game_id by conn_id(%d)");
 		return -1;
 	}
 
 	MsgGS2DS_RequireUserDataRequest request;
 	if (!request.ParseFromArray(info->data, info->len)) {
-		ServerLogError("parse MsgGS2DS_RequireUserDataRequest failed");
+		LogError("parse MsgGS2DS_RequireUserDataRequest failed");
 		return -1;
 	}
 
@@ -125,13 +125,13 @@ int GameHandler::getPlayerInfoCallback(MysqlConnector::Result& res, void* param,
 	const std::string& account = *(std::string*)param;
 	std::set<std::string>::iterator it = accounts_set_.find(account);
 	if (it == accounts_set_.end()) {
-		ServerLogError("cant found account %s", account.c_str());
+		LogError("cant found account %s", account.c_str());
 		return -1;
 	}
 	if (res.num_rows()==0 || res.is_empty()) {
 		UserData* user = user_mgr_.get(account);
 		if (!user) {
-			ServerLogError("cant found user agent by account %s", account.c_str());
+			LogError("cant found user agent by account %s", account.c_str());
 			return -1;
 		}
 		user->account = account;

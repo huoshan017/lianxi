@@ -15,17 +15,17 @@ DBServer::~DBServer()
 bool DBServer::init(const char* confpath)
 {
 	if (!CONFIG_LOADER->loadJson(confpath)) {
-		ServerLogError("failed to load server config %s", confpath);
+		LogError("failed to load server config %s", confpath);
 		return false;
 	}
 
 	if (!global_log_init(SERVER_CONFIG.log_conf_path.c_str())) {
-		ServerLogError("failed to init log with path %s", SERVER_CONFIG.log_conf_path.c_str());
+		LogError("failed to init log with path %s", SERVER_CONFIG.log_conf_path.c_str());
 		return false;
 	}
 
 	if (!GameHandler::init()) {
-		ServerLogError("failed to init GameHandler");
+		LogError("failed to init GameHandler");
 		return false;
 	}
 
@@ -35,16 +35,16 @@ bool DBServer::init(const char* confpath)
 	s_game_config.listen_port = SERVER_CONFIG.port;
 	s_game_config.listen_ip = (char*)(SERVER_CONFIG.ip.c_str());
 	if (!server_.loadConfig(s_game_config)) {
-		ServerLogError("failed to load login config");
+		LogError("failed to load login config");
 		return false;
 	}
 
 	if (server_.listenStart(s_game_config.listen_port) < 0) {
-		ServerLogError("main server listen port %d failed", s_game_config.listen_port);
+		LogError("main server listen port %d failed", s_game_config.listen_port);
 		return false;
 	}
 
-	ServerLogInfo("start listening port %d", s_game_config.listen_port);
+	LogInfo("start listening port %d", s_game_config.listen_port);
 	return true;
 }
 
