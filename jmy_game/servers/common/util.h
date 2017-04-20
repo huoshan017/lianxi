@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../libjmy/jmy_util.h"
+#include "../../proto/src/error.pb.h"
 #include "defines.h"
 
 #define s_libjmy_log_cate "libjmy_log"
@@ -41,3 +42,5 @@ char* get_session_code(char*, int);
 inline int get_server_type(int server_id) {
 	return server_id/SERVER_ID_DEVIDE;
 }
+
+int send_error(JmyTcpConnection* conn, ProtoErrorType);

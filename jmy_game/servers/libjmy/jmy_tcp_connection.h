@@ -97,7 +97,6 @@ public:
 private:
 	io_service& service_;
 	JmyConnectionConfig conf_;
-	//JmyConnectionBufferMgr buffer_mgr_;
 	std::unordered_map<int, JmyTcpConnection*> used_map_;
 	std::list<JmyTcpConnection*> free_list_;
 	int size_;

@@ -1,6 +1,7 @@
 #include "gate_server.h"
 #include "config_data.h"
 #include "client_handler.h"
+#include "client_manager.h"
 
 GateServer::GateServer() : main_server_(service_), listen_game_server_(service_), client_master_(service_), config_client_(nullptr)
 {
@@ -70,7 +71,7 @@ bool GateServer::init(const char* conf_path)
 	}
 	LogInfo("start connect to config server(%s:%d)", CONFIG_FILE.connect_config_ip.c_str(), CONFIG_FILE.connect_config_port);
 
-	if (!ClientHandler::init()) {
+	if (!CLIENT_MANAGER->init()) {
 		LogError("client handler init failed");
 		return false;
 	}
@@ -81,7 +82,7 @@ bool GateServer::init(const char* conf_path)
 
 void GateServer::close()
 {
-	ClientHandler::clear();
+	CLIENT_MANAGER->clear();
 	client_master_.close();
 	login_client_set_.clear();
 	listen_game_server_.close();

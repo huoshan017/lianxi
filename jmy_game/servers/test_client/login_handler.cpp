@@ -94,14 +94,15 @@ int LoginHandler::processSelectedServer(JmyMsgInfo* info)
 	}
 
 	MsgS2C_SelectServerResponse response;
-	if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
-		LogError("serialize msg MsgS2C_SelectServerResponse failed");
+	if (!response.ParseFromArray(info->data, info->len)) {
+		LogError("parse msg MsgS2C_SelectServerResponse failed");
 		return -1;
 	}
 
 	GameHandler::setEnterSession(response.session_code());
 	TEST_CLIENT->postConnectGameEvent(response.server_ip().c_str(), response.port());
-	LogInfo("processSelectedServer");
+	LogInfo("processSelectedServer: session_code(%s), gate_ip(%s), gate_port(%d)",
+			response.session_code().c_str(), response.server_ip().c_str(), response.port());
 	return info->len;
 }
 

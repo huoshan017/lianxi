@@ -21,7 +21,7 @@ static JmyBaseEventHandlers s_client_base_event_handlers = {
 	ClientHandler::onConnect,
 	ClientHandler::onDisconnect,
 	ClientHandler::onTick,
-	ClientHandler::onTimer,
+	nullptr,
 };
 static JmyConnectionConfig s_client_conn_config = {
 	{ 2048, 2048, 0, 0, false, true },
@@ -50,7 +50,7 @@ static JmyBaseEventHandlers s_gate_base_event_handlers = {
 	GateHandler::onConnect,
 	GateHandler::onDisconnect,
 	GateHandler::onTick,
-	GateHandler::onTimer,
+	nullptr,
 };
 static JmyConnectionConfig s_gate_conn_config = {
 	{ 1024*64, 1024*64, 0, 0, false, true },
@@ -77,7 +77,7 @@ static JmyBaseEventHandlers s_conn_config_base_event_handlers = {
 	ConnConfigHandler::onConnect,
 	ConnConfigHandler::onDisconnect,
 	ConnConfigHandler::onTick,
-	ConnConfigHandler::onTimer,
+	nullptr,
 };
 static JmyConnectionConfig s_conn_conn_config = {
 	{ 1024*64, 1024*64, 0, 0, false, true },

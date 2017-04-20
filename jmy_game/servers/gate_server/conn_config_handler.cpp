@@ -42,12 +42,6 @@ int ConnConfigHandler::onTick(JmyEventInfo* info)
 	return 0;
 }
 
-int ConnConfigHandler::onTimer(JmyEventInfo* info)
-{
-	(void)info;
-	return 0;
-}
-
 // connect all login server with login list info
 int ConnConfigHandler::processConnectConfigResponse(JmyMsgInfo* info)
 {

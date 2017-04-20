@@ -70,7 +70,7 @@ ClientInfo* ClientArray::get(int id)
 	if (!inited_) return nullptr;
 	if (id<start_id_ || id>start_id_+info_size_)
 		return nullptr;
-	if (used_ids_.find(id) != used_ids_.end())
+	if (used_ids_.find(id) == used_ids_.end())
 		return nullptr;
 
 	return info_array_[id-start_id_];

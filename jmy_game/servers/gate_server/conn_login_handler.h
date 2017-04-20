@@ -18,7 +18,6 @@ public:
 	static int onConnect(JmyEventInfo* info);
 	static int onDisconnect(JmyEventInfo* info);
 	static int onTick(JmyEventInfo* info);
-	static int onTimer(JmyEventInfo* info);
 	
 	static bool checkAccountSession(const std::string& account, const std::string& session_code);
 

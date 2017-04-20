@@ -14,16 +14,16 @@ static JmyResendConfig s_retran_config = {
 };
 // handle client config
 static JmyId2MsgHandler s_client_handlers[] = {
-	{ MSGID_C2S_ENTER_GAME_REQUEST, ClientHandler::processEnterGame },
-	{ MSGID_C2S_LEAVE_GAME_REQUEST, ClientHandler::processLeaveGame },
-	{ MSGID_C2S_RECONNECT_REQUEST, ClientHandler::processReconnect}
+	{ MSGID_C2S_ENTER_GAME_REQUEST, ClientHandler::processEnterGameRequest },
+	{ MSGID_C2S_LEAVE_GAME_REQUEST, ClientHandler::processLeaveGameRequest },
+	{ MSGID_C2S_RECONNECT_REQUEST, ClientHandler::processReconnectRequest }
 };
 static jmy_msg_handler s_default_client_handler = ClientHandler::processDefault;
 static JmyBaseEventHandlers s_client_base_event_handlers = {
 	ClientHandler::onConnect,
 	ClientHandler::onDisconnect,
 	ClientHandler::onTick,
-	ClientHandler::onTimer
+	nullptr,
 };
 static JmyConnectionConfig s_client_connection_config = {
 	{ 2048, 2048, 0, 0, false, true},
@@ -50,7 +50,7 @@ static JmyBaseEventHandlers s_game_base_event_handlers = {
 	GameHandler::onConnect,
 	GameHandler::onDisconnect,
 	GameHandler::onTick,
-	GameHandler::onTimer
+	nullptr,
 };
 static JmyConnectionConfig s_game_connection_config = {
 	{ 2048*100, 2048*100, 0, 0, false, true },
@@ -79,7 +79,7 @@ static JmyBaseEventHandlers s_config_base_event_handlers = {
 	ConnConfigHandler::onConnect,
 	ConnConfigHandler::onDisconnect,
 	ConnConfigHandler::onTick,
-	ConnConfigHandler::onTimer,
+	nullptr,
 };
 static JmyConnectionConfig s_config_conn_config = {
 	{ 1024*64, 1024*64, 0, 0, false, true },
@@ -106,7 +106,7 @@ static JmyBaseEventHandlers s_login_base_event_handlers = {
 	ConnLoginHandler::onConnect,
 	ConnLoginHandler::onDisconnect,
 	ConnLoginHandler::onTick,
-	ConnLoginHandler::onTimer,
+	nullptr,
 };
 static JmyConnectionConfig s_login_conn_config = {
 	{ 1024*64, 1024*64, 0, 0, false, true },

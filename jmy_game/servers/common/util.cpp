@@ -1,6 +1,7 @@
 #include "util.h"
 #include "../libjmy/jmy_tcp_connection.h"
 #include "../libjmy/jmy_log.h"
+#include "../../proto/src/common.pb.h"
 #include <random>
 
 bool global_log_init(const char* logconfpath)
@@ -49,11 +50,21 @@ char* get_session_code(char* session_buf, int buf_len)
 {
 	static char cs[] = "abcdefghijklmnopqrstuvwxyz0123456789~!@#$%^&*()_+`-={}[]:<>?,./";
 	// generate session string
-	std::default_random_engine gen;
-	std::uniform_int_distribution<> dis(0, sizeof(cs));
+	std::default_random_engine gen(std::time(0));
+	std::uniform_int_distribution<> dis(0, std::strlen(cs)-1);
 	for (int i=0; i<buf_len; ++i) {
-		session_buf[i] = dis(gen);
+		session_buf[i] = cs[dis(gen)];
 	}
 	session_buf[buf_len] = '\0';
 	return session_buf;
+}
+
+int send_error(JmyTcpConnection* conn, ProtoErrorType error)
+{
+	char tmp[64];
+	if (!conn) return -1;
+	MsgError response;
+	response.set_error_code(error);
+	response.SerializeToArray(tmp, sizeof(tmp));
+	return conn->send(MSGID_ERROR, tmp, response.ByteSize());
 }

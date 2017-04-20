@@ -149,8 +149,6 @@ public:
 	}
 
 	bool deleteAgent(key_type key) {
-		//typename key2agent_map_type::iterator it = key2agents_.find(key);
-		//if (it == key2agents_.end()) { return false; }
 		agent_type* agent = getAgent(key);
 		if (!agent) {
 			return false;

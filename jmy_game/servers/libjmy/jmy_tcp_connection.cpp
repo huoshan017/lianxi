@@ -126,11 +126,11 @@ void JmyTcpConnection::start()
 			int ev = err.value();
 			if (ev == boost::system::errc::no_such_file_or_directory) {
 				LibJmyLogInfo("peer(%s:%d) is closed", sock_.remote_endpoint().address().to_string().c_str(), sock_.remote_endpoint().port());
+			} else if (ev == boost::system::errc::operation_canceled) {
+				LibJmyLogInfo("operation was canceled");
+				return;
 			} else {
-				if (ev == 10053 || ev == 10054) {
-
-				}
-				LibJmyLogError("read some data failed, err: %d", err.value());
+				LibJmyLogError("read some data failed, err_code(%d), err_str(%s)", ev, err.message().c_str());
 			}
 			force_close();
 		}
@@ -288,8 +288,10 @@ int JmyTcpConnection::handleDisconnect()
 
 int JmyTcpConnection::handleDisconnectAck()
 {
-	if (state_ != JMY_CONN_STATE_DISCONNECTING)
+	if (state_ != JMY_CONN_STATE_DISCONNECTING) {
+		LibJmyLogWarn("state(%d) not JMY_CONN_STATE_DISCONNECTING(%d)", state_, JMY_CONN_STATE_DISCONNECTING);
 		return 0;
+	}
 
 	force_close();
 	return 1;

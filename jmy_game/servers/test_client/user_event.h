@@ -21,7 +21,6 @@ struct UserEvent {
 	}
 };
 
-class TestClient;
 class UserEventList
 {
 public:
@@ -29,7 +28,8 @@ public:
 	~UserEventList() {}
 
 	bool pushEvent(int event_id, void* ptr_param, long l_param, const std::string& str_param) {
-		events_.emplace_back(event_id, ptr_param, l_param, str_param);
+		UserEvent e(event_id, ptr_param, l_param, str_param);
+		events_.push_back(std::move(e));
 		return true;
 	}
 

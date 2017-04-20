@@ -48,12 +48,6 @@ int ConnConfigHandler::onTick(JmyEventInfo* info)
 	return 0;
 }
 
-int ConnConfigHandler::onTimer(JmyEventInfo* info)
-{
-	(void)info;
-	return 0;
-}
-
 // get gate_conf_list generated with server_list.json
 int ConnConfigHandler::processConnectConfigResponse(JmyMsgInfo* info)
 {

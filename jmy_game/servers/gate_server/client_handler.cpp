@@ -5,25 +5,10 @@
 #include "gate_server.h"
 #include "game_handler.h"
 #include "global_data.h"
+#include "client_manager.h"
 
 char ClientHandler::tmp_[JMY_MAX_MSG_SIZE];
 char ClientHandler::session_buf_[RECONN_SESSION_CODE_BUF_LENGTH+1];
-BiMap<std::string, int> ClientHandler::account_id_bimap_;
-BiMap<int, int> ClientHandler::connid_id_bimap_;
-ClientArray ClientHandler::client_array_;
-
-bool ClientHandler::init()
-{
-	if (!client_array_.init(CONFIG_FILE.max_conn)) {
-		return false;
-	}
-	return true;
-}
-
-void ClientHandler::clear()
-{
-	client_array_.clear();
-}
 
 int ClientHandler::onConnect(JmyEventInfo* info)
 {
@@ -37,7 +22,8 @@ int ClientHandler::onDisconnect(JmyEventInfo* info)
 {
 	JmyTcpConnection* conn = get_connection(info);
 	if (!conn) return -1;
-	connid_id_bimap_.remove_1(info->conn_id);
+	if (!CLIENT_MANAGER->removeByConnId(info->conn_id))
+		return -1;
 	LogInfo("client connection(%d) disconnect", info->conn_id);
 	return 0;
 }
@@ -48,78 +34,7 @@ int ClientHandler::onTick(JmyEventInfo* info)
 	return 0;
 }
 
-int ClientHandler::onTimer(JmyEventInfo* info)
-{
-	(void)info;
-	return 0;
-}
-
-bool ClientHandler::newClientSession(const std::string& account, const std::string& session_code)
-{
-	int id = 0;
-	bool b = account_id_bimap_.find_1(account, id);
-	if (b) {
-		ClientInfo* info = client_array_.get(id);
-		if (!info) {
-			LogError("cant found ClientInfo by account:%s id:%d", account.c_str(), id);
-			return false;
-		}
-		info->account = account;
-		info->enter_session = session_code;
-	} else {
-		ClientInfo* info = client_array_.getFree();
-		if (!info) {
-			LogError("cant get free ClientInfo for account(%s) to hold enter_session(%s)", account.c_str(), session_code.c_str());
-			return false;
-		}
-		account_id_bimap_.insert(account, info->id);
-	}
-	return true;
-}
-
-void ClientHandler::send_error(JmyTcpConnection* conn, ProtoErrorType error)
-{
-	if (!conn) return;
-	MsgError response;
-	response.set_error_code(error);
-	response.SerializeToArray(tmp_, sizeof(tmp_));
-	conn->send(MSGID_ERROR, tmp_, response.ByteSize());
-}
-
-int ClientHandler::getClientStartId()
-{
-	return client_array_.getStartId();
-}
-
-ClientInfo* ClientHandler::getClientInfo(int user_id)
-{
-	return client_array_.get(user_id);
-}
-
-ClientInfo* ClientHandler::getClientInfoByAccount(const std::string& account)
-{
-	int id = 0;
-	bool b = account_id_bimap_.find_1(account, id);
-	if (!b) {
-		LogError("account(%s) not found in account_id_map_", account.c_str());
-		return nullptr;
-	}
-	return client_array_.get(id);
-}
-
-ClientInfo* ClientHandler::getClientInfoByConnId(int conn_id)
-{
-	int id = 0;
-	bool b = connid_id_bimap_.find_1(conn_id, id);
-	if (!b) {
-		LogError("conn_id(%d) not found in connid_id_map_", conn_id);
-		return nullptr;
-	}
-
-	return client_array_.get(id);
-}
-
-int ClientHandler::processEnterGame(JmyMsgInfo* info)
+int ClientHandler::processEnterGameRequest(JmyMsgInfo* info)
 {
 	JmyTcpConnection* conn = get_connection(info);
 	if (!conn) {
@@ -134,7 +49,7 @@ int ClientHandler::processEnterGame(JmyMsgInfo* info)
 		return -1;
 	}
 
-	ClientInfo* ci = getClientInfoByAccount(request.account());
+	ClientInfo* ci = CLIENT_MANAGER->getClientInfoByAccount(request.account());
 	if (!ci) {
 		send_error(conn, PROTO_ERROR_ENTER_GAME_INVALID_ACCOUNT);
 		LogError("cant get ClientInfo by account(%s)", request.account().c_str());
@@ -150,30 +65,33 @@ int ClientHandler::processEnterGame(JmyMsgInfo* info)
 	}
 
 	// check max connection
-	if (GATE_SERVER->checkClientMaxCount(client_array_.getUsedSize())) {
+	int used_size = CLIENT_MANAGER->getUsedSize();
+	if (GATE_SERVER->checkClientMaxCount(used_size)) {
 		send_error(conn, PROTO_ERROR_ENTER_GAME_PLAYER_COUNT_MAXIMUM);
+		// close this client
 		ci->close();
-		LogError("account %s enter game failed, player count(%d) is maximumu", client_array_.getUsedSize());
+		LogError("account %s enter game failed, player count(%d) is maximumu", used_size);
 		return -1;
 	}
 
 	char* reconn_session = get_session_code(session_buf_, RECONN_SESSION_CODE_BUF_LENGTH);
 	ci->reconn_session = reconn_session;
 	ci->conn = get_connection(info);
-	connid_id_bimap_.insert(info->conn_id, ci->id);
+	CLIENT_MANAGER->insertConnIdId(info->conn_id, ci->id);
 
 	SEND_GAME_MSG(ci->id, MSGID_C2S_ENTER_GAME_REQUEST, info->data, info->len);
 
 	return info->len;
 }
 
-int ClientHandler::processLeaveGame(JmyMsgInfo* info)
+int ClientHandler::processLeaveGameRequest(JmyMsgInfo* info)
 {
-	connid_id_bimap_.remove_1(info->conn_id);
+	if (!CLIENT_MANAGER->removeByConnId(info->conn_id))
+		return -1;
 	return info->len;
 }
 
-int ClientHandler::processReconnect(JmyMsgInfo* info)
+int ClientHandler::processReconnectRequest(JmyMsgInfo* info)
 {
 	MsgC2S_ReconnectRequest request;
 	if (!request.ParseFromArray(info->data, info->len)) {
@@ -187,7 +105,7 @@ int ClientHandler::processReconnect(JmyMsgInfo* info)
 		return -1;
 	}
 
-	ClientInfo* client_info = getClientInfoByAccount(request.account());
+	ClientInfo* client_info = CLIENT_MANAGER->getClientInfoByAccount(request.account());
 	if (!client_info) {
 		send_error(conn, PROTO_ERROR_RECONN_ACCOUNT_NOT_FOUND);
 		LogError("account(%s) reconnect must has ClientInfo, but not found", request.account().c_str());
@@ -211,7 +129,10 @@ int ClientHandler::processReconnect(JmyMsgInfo* info)
 		LogError("serialize MsgS2C_ReconnectResponse failed");
 		return -1;
 	}
-	conn->send(MSGID_S2C_RECONNECT_RESPONSE, tmp_, response.ByteSize());
+	if (conn->send(MSGID_S2C_RECONNECT_RESPONSE, tmp_, response.ByteSize()) < 0) {
+		LogError("send MsgS2C_ReconnectResponse failed");
+		return -1;
+	}
 	return info->len;
 }
 
@@ -219,8 +140,8 @@ int ClientHandler::processDefault(JmyMsgInfo* info)
 {
 	JmyTcpConnection* conn = get_connection(info);
 	if (!conn) return -1;
-	int id = 0;
-	if (!connid_id_bimap_.find_1(info->conn_id, id)) {
+	int id = CLIENT_MANAGER->getIdByConnId(info->conn_id);
+	if (!id) {
 		send_error(conn, PROTO_ERROR_SERVER_INTERNAL_ERROR);
 		LogError("not found id by conn_id(%d)", info->conn_id);
 		return -1;
@@ -231,26 +152,4 @@ int ClientHandler::processDefault(JmyMsgInfo* info)
 	}
 	LogInfo("send user(%d) message(%d) to game_server(%d)", id, info->msg_id, GAME_SERVER_ID);
 	return info->len;
-}
-
-int ClientHandler::sendEnterGameResponse2Client(int id)
-{
-	ClientInfo* ci = client_array_.get(id);
-	if (!ci) {
-		LogError("get ClientInfo by id(%d) failed", id);
-		return -1;
-	}
-	MsgS2C_EnterGameResponse response;
-	response.set_reconnect_session(ci->reconn_session.c_str());
-	if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
-		LogError("serialize MsgS2C_EnterGameResponse failed");
-		return -1;
-	}
-	int res = ci->send(MSGID_S2C_ENTER_GAME_RESPONSE, tmp_, response.ByteSize());
-	if (res < 0) {
-		LogError("send message MsgS2C_EnterGameResponse failed to client(%d) failed", id);
-		return -1;
-	}
-	LogInfo("send message MsgS2C_EnterGameResponse to client(%d)", id);
-	return res;
 }

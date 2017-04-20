@@ -9,14 +9,13 @@ struct JmyEventInfo;
 class GameHandler
 {
 public:
+	static int onConnect(JmyEventInfo*);
+	static int onDisconnect(JmyEventInfo*);
+	static int onTick(JmyEventInfo*);
 	static int processConnectGateRequest(JmyMsgInfo*);
 	static int processEnterGameResponse(JmyMsgInfo*);
 	static int processLeaveGameResponse(JmyMsgInfo*);
 	static int processDefault(JmyMsgInfo*);
-	static int onConnect(JmyEventInfo*);
-	static int onDisconnect(JmyEventInfo*);
-	static int onTick(JmyEventInfo*);
-	static int onTimer(JmyEventInfo*);
 
 private:
 	static char tmp_[JMY_MAX_MSG_SIZE];
