@@ -69,8 +69,8 @@ int TestClient::run()
 			}
 		} else {
 		}
-		service_.poll();
 		do_events();
+		service_.poll();
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 	state_ = InNone;
@@ -110,7 +110,8 @@ int TestClient::do_events()
 {
 	int c = 0;
 	UserEvent event;
-	while (event_list_.popEvent(event)) {
+	while (true) {
+		if (!event_list_.popEvent(event)) break;
 		switch (event.event_id) {
 		case USER_EVENT_CONNECT_GAME_SERVER:
 			{
