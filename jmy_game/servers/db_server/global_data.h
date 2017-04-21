@@ -19,6 +19,14 @@ public:
 		auto p = accounts_.insert(account);
 		return *p.first;
 	}
+	const std::string& getAccount(const std::string& account) {
+		std::set<std::string>::iterator it = accounts_.find(account);
+		if (it == accounts_.end()) {
+			return empty_str_;
+		} else {
+			return *it;
+		}
+	}
 	bool findAccount(const std::string& account) {
 		return accounts_.find(account) != accounts_.end();
 	}
@@ -28,6 +36,7 @@ public:
 
 private:
 	std::set<std::string> accounts_;
+	std::string empty_str_;
 };
 
 #define GLOBAL_DATA (GlobalData::getInstance())

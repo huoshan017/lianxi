@@ -82,7 +82,10 @@ int GameHandler::processRequireUserDataRequest(JmyMsgInfo* info)
 	if (!user) {
 		std::snprintf(tmp_, sizeof(tmp_), "SELECT * FROM player WHERE `account`='%s'", request.account().c_str());
 		// to load data from database
-		const std::string& a = GLOBAL_DATA->insertAccount(request.account());
+		std::string& a = const_cast<std::string&>(GLOBAL_DATA->getAccount(request.account()));
+		if (a == "") {
+			a = GLOBAL_DATA->insertAccount(request.account());
+		}
 		if (!DB_MGR->pushReadCmd(tmp_, strlen(tmp_), DBResCBFuncs::getPlayerInfo, (void*)&a, 0)) {
 			GLOBAL_DATA->removeAccount(request.account());
 			LogError("push db read cmd(%s) failed", tmp_);

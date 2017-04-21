@@ -14,6 +14,12 @@ int DBResCBFuncs::getPlayerInfo(MysqlConnector::Result& res, void* param, long p
 		LogError("cant found account %s", account.c_str());
 		return -1;
 	}
+
+	if (res.res_err != 0) {
+		LogError("getPlayerInfo(account:%s) result(%d) is not no error", account.c_str(), res.res_err);
+		return -1;
+	}
+
 	if (res.num_rows()==0 || res.is_empty()) {
 		UserData* user = USER_MGR->get(account);
 		if (!user) {
