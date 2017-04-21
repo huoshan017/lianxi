@@ -65,6 +65,11 @@ public:
 			callback_func = ci.callback_func;
 			param = ci.param;
 			param_l = ci.param_l;
+			ci.sql = nullptr;
+			ci.sql_len = 0;
+			ci.callback_func = nullptr;
+			ci.param = 0;
+			ci.param_l = 0;
 			return *this;
 		}
 		~CmdInfo() { clear(); }
@@ -96,12 +101,18 @@ public:
 		}
 		ResultInfo(ResultInfo&& ri)
 			: res(std::move(ri.res)), cb_func(ri.cb_func), param(ri.param), param_l(ri.param_l) {
+			ri.cb_func = nullptr;
+			ri.param = 0;
+			ri.param_l = 0;
 		}
 		ResultInfo& operator=(ResultInfo&& ri) {
 			res = std::move(ri.res);
 			cb_func = ri.cb_func;
 			param = ri.param;
 			param_l = ri.param_l;
+			ri.cb_func = nullptr;
+			ri.param = 0;
+			ri.param_l = 0;
 			return *this;
 		}
 	};

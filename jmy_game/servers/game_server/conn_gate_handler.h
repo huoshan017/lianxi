@@ -12,7 +12,6 @@ public:
 	static int onConnect(JmyEventInfo*);
 	static int onDisconnect(JmyEventInfo*);
 	static int onTick(JmyEventInfo*);
-	static int onTimer(JmyEventInfo*);
 	static int processConnectGateResponse(JmyMsgInfo*);
 	static int processEnterGame(JmyMsgInfo*);
 	static int processLeaveGame(JmyMsgInfo*);
@@ -20,5 +19,4 @@ public:
 
 private:
 	static char tmp_[JMY_MAX_MSG_SIZE];
-	static JmyTcpConnection* gate_conn_;
 };

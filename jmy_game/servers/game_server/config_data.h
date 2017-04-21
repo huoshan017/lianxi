@@ -20,7 +20,7 @@ static JmyBaseEventHandlers s_conn_gate_base_event_handlers = {
 	ConnGateHandler::onConnect,
 	ConnGateHandler::onDisconnect,
 	ConnGateHandler::onTick,
-	ConnGateHandler::onTimer,
+	nullptr,
 };
 static jmy_msg_handler s_conn_gate_default_msg_handler = ConnGateHandler::processDefault;
 static JmyConnectionConfig s_conn_gate_config = {

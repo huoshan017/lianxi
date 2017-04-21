@@ -27,22 +27,23 @@ void ClientManager::clear()
 bool ClientManager::newClientSession(const std::string& account, const std::string& session_code)
 {
 	int id = 0;
+	ClientInfo* info = nullptr;
 	if (account_id_bimap_.find_1(account, id)) {
-		ClientInfo* info = client_array_.get(id);
+		info = client_array_.get(id);
 		if (!info) {
 			LogError("cant found ClientInfo by account:%s id:%d", account.c_str(), id);
 			return false;
 		}
-		info->account = account;
-		info->enter_session = session_code;
 	} else {
-		ClientInfo* info = client_array_.getFree();
+		info = client_array_.getFree();
 		if (!info) {
 			LogError("cant get free ClientInfo for account(%s) to hold enter_session(%s)", account.c_str(), session_code.c_str());
 			return false;
 		}
 		account_id_bimap_.insert(account, info->id);
 	}
+	info->account = account;
+	info->enter_session = session_code;
 	return true;
 }
 

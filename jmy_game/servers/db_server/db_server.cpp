@@ -2,7 +2,8 @@
 #include "../common/util.h"
 #include "config_loader.h"
 #include "config_data.h"
-#include "game_handler.h"
+#include "user_data_manager.h"
+#include "db_manager.h"
 
 DBServer::DBServer() : server_(service_)
 {
@@ -24,8 +25,13 @@ bool DBServer::init(const char* confpath)
 		return false;
 	}
 
-	if (!GameHandler::init()) {
-		LogError("failed to init GameHandler");
+	if (!DB_MGR->init()) {
+		LogError("failed to init db_manager");
+		return false;
+	}
+
+	if (!USER_MGR->init()) {
+		LogError("failed to init user_data_manager");
 		return false;
 	}
 
@@ -50,13 +56,15 @@ bool DBServer::init(const char* confpath)
 
 void DBServer::close()
 {
-	GameHandler::clear();
+	USER_MGR->clear();
+	DB_MGR->clear();
 	server_.close();
 }
 
 int DBServer::run()
 {
 	while (server_.run() >= 0) {
+		if (DB_MGR->run() < 0) { break;}
 		service_.poll();
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}

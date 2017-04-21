@@ -45,18 +45,21 @@ public:
 		}
 		Result(int err) : res(nullptr), row(nullptr), nfields(0), res_err(err) {
 		}
-		Result(Result&& r) : res(r.res), row(r.row), nfields(r.nfields), res_err(0) {
+		Result(Result&& r) : res(r.res), row(r.row), nfields(r.nfields), res_err(r.res_err) {
 			r.res = nullptr;
 			r.row = nullptr;
 			r.nfields = 0;
+			r.res_err = 0;
 		}
 		Result& operator=(Result&& r) {
 			res = r.res;
 			row = r.row;
 			nfields = r.nfields;
+			res_err = r.res_err;
 			r.res = nullptr;
 			r.row = nullptr;
 			r.nfields = 0;
+			r.res_err = 0;
 			return *this;
 		}
 

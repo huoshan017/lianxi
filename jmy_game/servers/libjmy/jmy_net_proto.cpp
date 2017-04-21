@@ -111,10 +111,12 @@ int jmy_net_proto_pack_msgid_datalen(char* buf, unsigned char len, int msgid, un
 int jmy_net_proto_pack_userid_msgid_datalen(char* buf, unsigned char len, int user_id, int msg_id, unsigned short data_len)
 {
 	if (!buf || len < JMY_PACKET_LEN_USER_ID_DATA_HEAD) return -1;
-	buf[0] = (char)JMY_PACKET_USER_DATA;
+	buf[0] = (char)JMY_PACKET_USER_ID_DATA;
 	int offset = 1;
-	offset += PACK_INT32_TO_BUFF(user_id, (buf+offset));
-	offset += PACK_INT16_TO_BUFF((data_len+2), (buf+offset));
+	int res = PACK_INT32_TO_BUFF(user_id, (buf+offset));
+	offset += res;
+	res = PACK_INT16_TO_BUFF((data_len+2), (buf+offset));
+	offset += res;
 	PACK_INT16_TO_BUFF((msg_id), (buf+offset));
 	return JMY_PACKET_LEN_USER_ID_DATA_HEAD;
 }

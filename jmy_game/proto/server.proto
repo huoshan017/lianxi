@@ -140,6 +140,7 @@ message MsgGT2GS_EnterGameRequest {
 // game -> gate  [MSGID_GS2GT_ENTER_GAME_RESPONSE]
 message MsgGS2GT_EnterGameResponse {
 	string account = 1;
+	int32 user_id = 2;
 }
 
 // gate -> game  [MSGID_GT2GS_LEAVE_GAME_REQUEST]

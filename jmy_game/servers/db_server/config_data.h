@@ -11,8 +11,8 @@ static JmyResendConfig s_retran_config = {
 	RETRANSMISSION_ACK_RECV_COUNT
 };
 static JmyId2MsgHandler s_game_handlers[] = {
-	{ MSGID_GS2DS_CONNECT_DB_REQUEST, GameHandler::onConnectDBRequest },
-	{ MSGID_GS2DS_REQUIRE_USER_DATA_REQUEST, GameHandler::onRequireUserDataRequest }
+	{ MSGID_GS2DS_CONNECT_DB_REQUEST, GameHandler::processConnectDBRequest },
+	{ MSGID_GS2DS_REQUIRE_USER_DATA_REQUEST, GameHandler::processRequireUserDataRequest }
 };
 static JmyBaseEventHandlers s_game_base_event_handlers = {
 	GameHandler::onConnect,

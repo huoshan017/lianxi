@@ -5,9 +5,9 @@
 #include "../../proto/src/server.pb.h"
 #include "config_loader.h"
 #include "player.h"
+#include "global_data.h"
 
 char ConnGateHandler::tmp_[JMY_MAX_MSG_SIZE];
-JmyTcpConnection* ConnGateHandler::gate_conn_ = nullptr;
 
 int ConnGateHandler::onConnect(JmyEventInfo* info)
 {
@@ -23,7 +23,6 @@ int ConnGateHandler::onConnect(JmyEventInfo* info)
 		LogError("send message MsgGS2GT_ConnectGateRequest failed");
 		return -1;
 	}
-	gate_conn_ = conn;
 	LogInfo("send message MsgGS2GT_ConnectGateRequest to gate server");
 	return 0;
 }
@@ -31,7 +30,7 @@ int ConnGateHandler::onConnect(JmyEventInfo* info)
 int ConnGateHandler::onDisconnect(JmyEventInfo* info)
 {
 	(void)info;
-	gate_conn_ = nullptr;
+	GLOBAL_DATA->setGateConn(nullptr);
 	LogInfo("ondisconnect");
 	return 0;
 }
@@ -42,17 +41,17 @@ int ConnGateHandler::onTick(JmyEventInfo* info)
 	return 0;
 }
 
-int ConnGateHandler::onTimer(JmyEventInfo* info)
-{
-	(void)info;
-	return 0;
-}
-
 int ConnGateHandler::processConnectGateResponse(JmyMsgInfo* info)
 {
 	if (PLAYER_MGR->isInited()) {
 		LogWarn("already connected gate server");
 		return info->len;
+	}
+
+	JmyTcpConnection* conn = get_connection(info);
+	if (!conn) {
+		LogError("cant get connection");
+		return -1;
 	}
 
 	MsgGT2GS_ConnectGateResponse response;
@@ -66,6 +65,8 @@ int ConnGateHandler::processConnectGateResponse(JmyMsgInfo* info)
 				response.start_user_id(), response.max_user_count());
 		return -1;
 	}
+
+	GLOBAL_DATA->setGateConn(conn);
 
 	LogInfo("processConnectGateResponse: start_user_id(%d), max_user_count(%d)",
 			response.start_user_id(), response.max_user_count());
@@ -86,27 +87,49 @@ int ConnGateHandler::processEnterGame(JmyMsgInfo* info)
 	// player not found, send message to db_server
 	if (!p) {
 		PLAYER_MGR->addAccountId(request.account(), user_id);
-		MsgGS2DS_RequireUserDataRequest user_data_rsq;
-		user_data_rsq.set_account(request.account());
-		if (!user_data_rsq.SerializeToArray(tmp_, sizeof(tmp_))) {
+		MsgGS2DS_RequireUserDataRequest user_data_req;
+		user_data_req.set_account(request.account());
+		if (!user_data_req.SerializeToArray(tmp_, sizeof(tmp_))) {
 			LogError("serialize msg MsgGS2DS_RequireUserDataRequest failed");
 			return -1;
 		}
-		if (gate_conn_->send(MSGID_GS2DS_REQUIRE_USER_DATA_REQUEST, tmp_, user_data_rsq.ByteSize()) < 0) {
+		if (GLOBAL_DATA->sendDB(MSGID_GS2DS_REQUIRE_USER_DATA_REQUEST, tmp_, user_data_req.ByteSize()) < 0) {
 			LogError("send msg MsgGS2DS_RequireUserDataRequest failed");
 			return -1;
 		}
-		LogInfo("");
+		LogInfo("send MsgGS2DS_RequireUserDataRequest to db_server");
 	} else {
-	
+		MsgGS2GT_EnterGameResponse response;
+		if (response.SerializeToArray(tmp_, sizeof(tmp_))) {
+			LogError("serialize MsgGS2GT_EnterGameResponse failed");
+			return -1;
+		}
+		if (GLOBAL_DATA->sendGate(user_id, MSGID_GS2GT_ENTER_GAME_RESPONSE, tmp_, response.ByteSize()) < 0) {
+			LogError("send MsgGS2GT_EnterGameResponse failed");
+			return -1;
+		}
+		LogInfo("send MsgGS2GT_EnterGameResponse to gate_server");
 	}
 	
-	LogInfo("processEnterGame");
+	LogInfo("processEnterGame: user_id(%d)", user_id);
 	return info->len;
 }
 
 int ConnGateHandler::processLeaveGame(JmyMsgInfo* info)
 {
+	MsgGT2GS_LeaveGameRequest request;
+	if (!request.ParseFromArray(info->data, info->len)) {
+		LogError("parse MsgGT2GS_LeaveGameRequest failed");
+		return -1;
+	}
+
+	Player* p = PLAYER_MGR->get(info->user_id);
+	if (!p) {
+		LogError("cant get Player by user_id(%d)", info->user_id);
+		return -1;
+	}
+	
+	LogInfo("processLeaveGame: user_id(%d)", info->user_id);
 	return info->len;
 }
 

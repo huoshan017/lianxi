@@ -2,6 +2,7 @@
 #include "../libjmy/jmy.h"
 #include "../common/util.h"
 #include "../../proto/src/common.pb.h"
+#include "../../proto/src/server.pb.h"
 #include "gate_server.h"
 #include "game_handler.h"
 #include "global_data.h"
@@ -79,7 +80,8 @@ int ClientHandler::processEnterGameRequest(JmyMsgInfo* info)
 	ci->conn = get_connection(info);
 	CLIENT_MANAGER->insertConnIdId(info->conn_id, ci->id);
 
-	SEND_GAME_MSG(ci->id, MSGID_C2S_ENTER_GAME_REQUEST, info->data, info->len);
+	SEND_GAME_MSG(ci->id, MSGID_GT2GS_ENTER_GAME_REQUEST, info->data, info->len);
+	LogInfo("send message to game server, user_id(%d)", ci->id);
 
 	return info->len;
 }

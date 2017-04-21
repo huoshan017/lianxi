@@ -2,6 +2,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <set>
 #include "../libjmy/jmy_util.h"
 
 enum { MAX_USER_DATA_COUNT = 200000 };
@@ -19,7 +20,7 @@ struct UserData {
 	UserData() : id(0), uid(0), state(USER_STATE_NONE) {}
 };
 
-class UserDataManager
+class UserDataManager : public JmySingleton<UserDataManager>
 {
 public:
 	UserDataManager();
@@ -39,3 +40,5 @@ private:
 	int user_count_;
 	JmyIdGenerator<int> id_gen_;
 };
+
+#define USER_MGR (UserDataManager::getInstance())

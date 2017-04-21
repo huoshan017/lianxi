@@ -32,6 +32,9 @@ static void connector_read_func(MysqlConnectorPool::ConnectorInfo* conn) {
 			}
 			MysqlConnector::Result& r = conn->get_result();
 			MysqlConnectorPool::ResultInfo ri(r);
+			ri.cb_func = ci.callback_func;
+			ri.param = ci.param;
+			ri.param_l = ci.param_l;
 			conn->push_res(ri);
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -48,6 +51,9 @@ static void connector_write_func(MysqlConnectorPool::ConnectorInfo* conn) {
 			MysqlConnector::Result& r = conn->get_result();
 			if (!r.is_empty()) {
 				MysqlConnectorPool::ResultInfo ri(r);
+				ri.cb_func = ci.callback_func;
+				ri.param = ci.param;
+				ri.param_l = ci.param_l;
 				conn->push_res(ri);
 			}
 		}
@@ -144,14 +150,18 @@ int MysqlConnectorPool::run()
 	for (; i<s; ++i) {
 		ci = read_connectors_[i];
 		if (ci->pop_res(ri)) {
-			ri.cb_func(ri.res, ri.param, ri.param_l);
+			if (ri.cb_func) {
+				ri.cb_func(ri.res, ri.param, ri.param_l);
+			}
 		}
 	}
 	s = write_connectors_.size();
 	for (i=0; i<s; ++i) {
 		ci = write_connectors_[i];
 		if (ci->pop_res(ri)) {
-			ri.cb_func(ri.res, ri.param, ri.param_l);
+			if (ri.cb_func) {
+				ri.cb_func(ri.res, ri.param, ri.param_l);
+			}
 		}
 	}
 	return 0;
