@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 enum MysqlTableFieldType {
 	MYSQL_FIELD_TYPE_NONE = 0,
 	MYSQL_FIELD_TYPE_TINYINT = 1,			// TINYINT
@@ -96,4 +98,33 @@ struct MysqlDatabaseConfig {
 	const char* dbname;
 	const MysqlTableInfo* tables_info;
 	const int tables_num;
+};
+
+template <typename T>
+struct MysqlFieldNameValue {
+	std::string field_name;
+	T field_value;
+	MysqlFieldNameValue() {}
+	MysqlFieldNameValue(const char* fn, const T& fv) : field_name(fn), field_value(fv) {}
+	MysqlFieldNameValue(const std::string& fn, const T& fv) : field_name(fn), field_value(fv) {}
+	MysqlFieldNameValue(MysqlFieldNameValue&& fp) : field_name(std::move(fp.field_name)), field_value(std::move(fp.field_value)) {}
+	MysqlFieldNameValue& operator=(MysqlFieldNameValue&& fp) {
+		field_name = std::move(fp.field_name);
+		field_value = std::move(fp.field_value);
+		return *this;
+	}
+};
+
+template <typename T>
+struct MysqlFieldIndexValue {
+	int field_index;
+	T field_value;
+	MysqlFieldIndexValue() : field_index(0) {}
+	MysqlFieldIndexValue(int fi, const T& fv) : field_index(fi), field_value(fv) {}
+	MysqlFieldIndexValue(MysqlFieldIndexValue&& f) : field_index(f.field_index), field_value(f.field_value) {}
+	MysqlFieldIndexValue& operator=(MysqlFieldIndexValue&& f) {
+		field_index = f.field_index;
+		field_value = f.field_value;
+		return *this;
+	}
 };

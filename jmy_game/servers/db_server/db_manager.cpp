@@ -37,24 +37,24 @@ int DBManager::run()
 	return conn_pool_.run();
 }
 
-bool DBManager::pushReadCmd(const char* sql, unsigned int sql_len, mysql_cmd_callback_func cb, void* param, long param_l)
+bool DBManager::pushReadCmd(const char* sql, unsigned int sql_len, mysql_cmd_callback_func cb, void* user_param, long user_param_l)
 {
 	MysqlConnectorPool::CmdInfo cmd;
 	cmd.sql = const_cast<char*>(sql);
 	cmd.sql_len = sql_len;
 	cmd.callback_func = cb;
-	cmd.param = param;
-	cmd.param_l = param_l;
+	cmd.user_param = user_param;
+	cmd.user_param_l = user_param_l;
 	return conn_pool_.push_read_cmd(cmd);
 }
 
-bool DBManager::pushWriteCmd(const char* sql, unsigned int sql_len, mysql_cmd_callback_func cb, void* param, long param_l)
+bool DBManager::pushWriteCmd(const char* sql, unsigned int sql_len, mysql_cmd_callback_func cb, void* user_param, long user_param_l)
 {
 	MysqlConnectorPool::CmdInfo cmd;
 	cmd.sql = const_cast<char*>(sql);
 	cmd.sql_len = sql_len;
 	cmd.callback_func = cb;
-	cmd.param = param;
-	cmd.param_l = param_l;
+	cmd.user_param = user_param;
+	cmd.user_param_l = user_param_l;
 	return conn_pool_.push_write_cmd(cmd);
 }

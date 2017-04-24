@@ -28,3 +28,12 @@
 		 type == MYSQL_FIELD_TYPE_DATETIME \
 		 type == MYSQL_FIELD_TYPE_TIME \
 		 type == MYSQL_FIELD_TYPE_TIMESTAMP)
+
+template <typename T>
+char* mysql_format_field_type(char* buf, int buf_len,  MysqlTableFieldType field_type, const T& field_value)
+{
+	if (field_type == MYSQL_FIELD_TYPE_TINYINT || field_type == MYSQL_FIELD_TYPE_SMALLINT ||
+		field_type == MYSQL_FIELD_TYPE_MEDIUMINT || field_type == MYSQL_FIELD_TYPE_INT) {
+		std::snprintf(buf, buf_len, "");
+	}
+}

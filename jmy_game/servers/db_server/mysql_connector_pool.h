@@ -45,31 +45,31 @@ public:
 	void close();
 
 	struct CmdInfo {
-		CmdInfo() : sql(nullptr), sql_len(0), callback_func(nullptr), param(nullptr), param_l(0) {
+		CmdInfo() : sql(nullptr), sql_len(0), callback_func(nullptr), user_param(nullptr), user_param_l(0) {
 		}
-		CmdInfo(const char* s, unsigned short l) : callback_func(nullptr), param(nullptr), param_l(0) {
+		CmdInfo(const char* s, unsigned short l) : callback_func(nullptr), user_param(nullptr), user_param_l(0) {
 			sql = (char*)jmy_mem_malloc(l);
 			std::memcpy(sql, s, l);
 			sql_len = l;
 		}
-		CmdInfo(CmdInfo&& ci) : sql(ci.sql), sql_len(ci.sql_len), callback_func(ci.callback_func), param(ci.param), param_l(ci.param_l) {
+		CmdInfo(CmdInfo&& ci) : sql(ci.sql), sql_len(ci.sql_len), callback_func(ci.callback_func), user_param(ci.user_param), user_param_l(ci.user_param_l) {
 			ci.sql = nullptr;
 			ci.sql_len = 0;
 			ci.callback_func = nullptr;
-			ci.param = 0;
-			ci.param_l = 0;
+			ci.user_param = 0;
+			ci.user_param_l = 0;
 		}
 		CmdInfo& operator=(CmdInfo&& ci) {
 			sql = ci.sql;
 			sql_len = ci.sql_len;
 			callback_func = ci.callback_func;
-			param = ci.param;
-			param_l = ci.param_l;
+			user_param = ci.user_param;
+			user_param_l = ci.user_param_l;
 			ci.sql = nullptr;
 			ci.sql_len = 0;
 			ci.callback_func = nullptr;
-			ci.param = 0;
-			ci.param_l = 0;
+			ci.user_param = nullptr;
+			ci.user_param_l = 0;
 			return *this;
 		}
 		~CmdInfo() { clear(); }
@@ -80,39 +80,39 @@ public:
 				sql_len = 0;
 			}
 			callback_func = nullptr;
-			param = nullptr;
-			param_l = 0;
+			user_param = nullptr;
+			user_param_l = 0;
 		}
 		char* sql;
 		unsigned short sql_len;
 		mysql_cmd_callback_func callback_func;
-		void* param;
-		long param_l;
+		void* user_param;
+		long user_param_l;
 	};
 
 	struct ResultInfo {
 		MysqlConnector::Result res;
 		mysql_cmd_callback_func cb_func;
-		void* param;
-		long param_l;
-		ResultInfo() : cb_func(nullptr), param(nullptr), param_l(0) {}
+		void* user_param;
+		long user_param_l;
+		ResultInfo() : cb_func(nullptr), user_param(nullptr), user_param_l(0) {}
 		ResultInfo(MysqlConnector::Result& r)
-			: res(std::move(r)), cb_func(nullptr), param(nullptr), param_l(0) {
+			: res(std::move(r)), cb_func(nullptr), user_param(nullptr), user_param_l(0) {
 		}
 		ResultInfo(ResultInfo&& ri)
-			: res(std::move(ri.res)), cb_func(ri.cb_func), param(ri.param), param_l(ri.param_l) {
+			: res(std::move(ri.res)), cb_func(ri.cb_func), user_param(ri.user_param), user_param_l(ri.user_param_l) {
 			ri.cb_func = nullptr;
-			ri.param = 0;
-			ri.param_l = 0;
+			ri.user_param = 0;
+			ri.user_param_l = 0;
 		}
 		ResultInfo& operator=(ResultInfo&& ri) {
 			res = std::move(ri.res);
 			cb_func = ri.cb_func;
-			param = ri.param;
-			param_l = ri.param_l;
+			user_param = ri.user_param;
+			user_param_l = ri.user_param_l;
 			ri.cb_func = nullptr;
-			ri.param = 0;
-			ri.param_l = 0;
+			ri.user_param = 0;
+			ri.user_param_l = 0;
 			return *this;
 		}
 	};
