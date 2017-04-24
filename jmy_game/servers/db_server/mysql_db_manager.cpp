@@ -21,7 +21,7 @@ void MysqlDBManager::clear()
 
 int MysqlDBManager::run()
 {
-	return 0;
+	return conn_pool_.run();
 }
 
 bool MysqlDBManager::insertRecord(const char* table_name, mysql_cmd_callback_func get_last_insert_id_func)

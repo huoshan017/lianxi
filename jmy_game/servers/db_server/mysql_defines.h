@@ -100,6 +100,8 @@ struct MysqlDatabaseConfig {
 	const int tables_num;
 };
 
+typedef int (*mysql_cmd_callback_func)(MysqlConnector::Result& result, void* param, long param_l);
+
 template <typename T>
 struct MysqlFieldNameValue {
 	std::string field_name;

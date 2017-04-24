@@ -41,13 +41,13 @@ public:
 	bool deleteRecord(int table_index, const char* key_name, const KeyType& key_value);
 
 	template <typename KeyType>
-	bool selectRecord(const char* table_name, const char* key_name, const KeyType& key_value);
-	template <typename KeyType, typename... Args>
-	bool selectRecord(const char* table_name, const char* key_name, const KeyType& key_value, const Args&... args);
+	bool selectRecord(const char* table_name, const char* key_name, const KeyType& key_value, mysql_cmd_callback_func get_result_func);
+	template <typename KeyType, typename KeyType2>
+	bool selectRecord(const char* table_name, const char* key_name, const KeyType& key_value, const char* key2_name, const KeyType2& key2_value, mysql_cmd_callback_func get_result_func);
 	template <typename KeyType>
-	bool selectRecord(int table_index, const char* key_name, const KeyType& key_value);
-	template <typename KeyType, typename... Args>
-	bool selectRecord(int table_index, const char* key_name, const KeyType& key_value, const Args&... args);
+	bool selectRecord(int table_index, const char* key_name, const KeyType& key_value, mysql_cmd_callback_func get_result_func);
+	template <typename KeyType, typename KeyType2>
+	bool selectRecord(int table_index, const char* key_name, const KeyType& key_value, const char* key2_name, const KeyType2& key2_value, mysql_cmd_callback_func get_result_func);
 
 private:
 	bool push_read_cmd(const char* sql, unsigned int sql_len, mysql_cmd_callback_func get_result_func, void* param, long param_l);
@@ -294,29 +294,78 @@ bool MysqlDBManager::deleteRecord(int table_index, const char* key_name, const K
 		LogWarn("unsupport field value type");
 		return false;
 	}
-	return true;
+	return push_write_cmd(buf_[0], std::strlen(buf_[0]), nullptr, 0);
 }
 
 template <typename KeyType>
-bool MysqlDBManager::selectRecord(const char* table_name, const char* key_name, const KeyType& key_value)
+bool MysqlDBManager::selectRecord(const char* table_name, const char* key_name, const KeyType& key_value, mysql_cmd_callback_func get_result_func)
 {
-	return true;
+	std::unordered_map<std::string, int>::iterator it = table_name2index_.find(std::string(table_name));
+	if (it == table_name2index_.end())
+		return false;
+	int idx = it->second;
+	return selectRecord(idx, key_name, key_value);
 }
 
-template <typename KeyType, typename... Args>
-bool MysqlDBManager::selectRecord(const char* table_name, const char* key_name, const KeyType& key_value, const Args&... args)
+template <typename KeyType, typename KeyType2>
+bool MysqlDBManager::selectRecord(const char* table_name, const char* key_name, const KeyType& key_value, const char* key2_name, const KeyType2& key2_value, mysql_cmd_callback_func get_result_func)
 {
-	return true;
+	std::unordered_map<std::string, int>::iterator it = table_name2index_.find(std::string(table_name));
+	if (it == table_name2index_.end())
+		return false;
+	return selectRecord(it->second, key_name, key_value, key2_name, key2_value, get_result_func);
 }
 
 template <typename KeyType>
-bool MysqlDBManager::selectRecord(int table_index, const char* key_name, const KeyType& key_value)
+bool MysqlDBManager::selectRecord(int table_index, const char* key_name, const KeyType& key_value, mysql_cmd_callback_func get_result_func)
 {
-	return true;
+	char* table_name = nullptr;
+	int ft = get_field_type(table_index, key_name, (const char**)&table_name);
+	if (ft == MYSQL_FIELD_TYPE_TINYINT || ft == MYSQL_FIELD_TYPE_SMALLINT ||
+		ft == MYSQL_FIELD_TYPE_MEDIUMINT || ft == MYSQL_FIELD_TYPE_INT) {
+		std::snprintf(buf_[0], sizeof(buf_[0]), "SELECT * FROM %s WHERE %s=%d", table_name, key_name, key_value);
+	} else if (ft == MYSQL_FIELD_TYPE_BIGINT) {
+		std::snprintf(buf_[0], sizeof(buf_[0]), "SELECT * FROM %s WHERE %s=%lld", table_name, key_name, key_value);
+	} else if (IS_MYSQL_TEXT_TYPE(ft)){
+		std::snprintf(buf_[0], sizeof(buf_[0]), "SELECT * FROM %s WHERE %s=%s", table_name, key_name, key_value);
+	} else {
+		LogWarn("unsupport field value type");
+		return false;
+	}
+	return push_read_cmd(buf_[0], std::strlen(buf_[0]), get_result_func, nullptr, 0);
 }
 
-template <typename KeyType, typename... Args>
-bool MysqlDBManager::selectRecord(int table_index, const char* key_name, const KeyType& key_value, const Args&... args)
+template <typename KeyType, typename KeyType2>
+bool MysqlDBManager::selectRecord(int table_index, const char* key_name, const KeyType& key_value, const char* key2_name, const KeyType2& key2_value, mysql_cmd_callback_func get_result_func)
 {
-	return true;
+	char tmp[128], tmp2[128];
+	char* table_name = nullptr;
+	int ft = get_field_type(table_index, key_name, (const char**)&table_name);
+	if (ft == MYSQL_FIELD_TYPE_TINYINT || ft == MYSQL_FIELD_TYPE_SMALLINT ||
+		ft == MYSQL_FIELD_TYPE_MEDIUMINT || ft == MYSQL_FIELD_TYPE_INT) {
+		std::snprintf(tmp, sizeof(tmp), "%s=%d", key_name, key_value);
+	} else if (ft == MYSQL_FIELD_TYPE_BIGINT) {
+		std::snprintf(tmp, sizeof(tmp), "%s=%lld", key_name, key_value);
+	} else if (IS_MYSQL_TEXT_TYPE(ft)){
+		std::snprintf(tmp, sizeof(tmp), "%s=%s", key_name, key_value);
+	} else {
+		LogWarn("unsupport field value type");
+		return false;
+	}
+
+	int ft2 = get_field_type(table_index, key2_name, nullptr);
+	if (ft2 == MYSQL_FIELD_TYPE_TINYINT || ft2 == MYSQL_FIELD_TYPE_SMALLINT ||
+		ft2 == MYSQL_FIELD_TYPE_MEDIUMINT || ft2 == MYSQL_FIELD_TYPE_INT) {
+		std::snprintf(tmp2, sizeof(tmp2), "%s=%d", key2_name, key2_value);
+	} else if (ft == MYSQL_FIELD_TYPE_BIGINT) {
+		std::snprintf(tmp2, sizeof(tmp2), "%s=%lld", key2_name, key2_value);
+	} else if (IS_MYSQL_TEXT_TYPE(ft)) {
+		std::snprintf(tmp2, sizeof(tmp2), "%s=%s", key2_name, key2_value);
+	} else {
+		LogWarn("unsupport field value type");
+		return false;
+	}
+
+	std::snprintf(buf_[0], sizeof(buf_[0]), "SELECT * FROM %s WHERE %s AND %s", table_name, tmp, tmp2);
+	return push_read_cmd(buf_[0], std::strlen(buf_[0]), get_result_func, nullptr, 0);
 }

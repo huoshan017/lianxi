@@ -34,8 +34,6 @@ struct MysqlConnPoolConfig {
 	}
 };
 
-typedef int (*mysql_cmd_callback_func)(MysqlConnector::Result& result, void* param, long param_l);
-
 class MysqlConnectorPool
 {
 public:
