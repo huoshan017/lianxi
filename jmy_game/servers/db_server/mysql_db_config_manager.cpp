@@ -8,6 +8,7 @@ MysqlDBConfigManager::MysqlDBConfigManager()
 
 MysqlDBConfigManager::~MysqlDBConfigManager()
 {
+	clear();
 }
 
 bool MysqlDBConfigManager::init(const MysqlDatabaseConfig& config)

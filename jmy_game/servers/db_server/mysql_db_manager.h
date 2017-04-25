@@ -158,7 +158,7 @@ bool MysqlDBManager::insertRecord(int table_index, mysql_cmd_callback_func get_l
 		// field type and value
 		int ft = ti->fields_info[idx].field_type;
 		int flags = ti->fields_info[idx].create_flags;
-		const char* format = mysql_get_field_type_format((MysqlTableFieldType)ft, (MysqlTableCreateFlag)flags);
+		const char* format = mysql_get_field_type_format((MysqlTableFieldType)ft, flags);
 		if (!format) {
 			LogError("field_type(%d), create_flags(%d) get format error", ft, flags);
 			return false;
@@ -209,7 +209,7 @@ bool MysqlDBManager::updateRecord(int table_index, const char* key_name, const K
 		// field type and value
 		int ft = ti->fields_info[idx].field_type;
 		int flags = ti->fields_info[idx].create_flags;
-		const char* format = mysql_get_field_type_format((MysqlTableFieldType)ft, (MysqlTableCreateFlag)flags);
+		const char* format = mysql_get_field_type_format((MysqlTableFieldType)ft, flags);
 		if (!format) {
 			LogError("field_type(%d) create_flags(%d) get format failed", ft, flags);
 			return false;
