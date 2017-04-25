@@ -3,9 +3,9 @@
 #include "../../proto/src/server.pb.h"
 #include "game_server_manager.h"
 #include "user_data_manager.h"
-#include "db_manager.h"
 #include "dbres_callback_funcs.h"
 #include "global_data.h"
+#include "db_server.h"
 
 char GameHandler::tmp_[JMY_MAX_MSG_SIZE];
 
@@ -80,17 +80,16 @@ int GameHandler::processRequireUserDataRequest(JmyMsgInfo* info)
 
 	UserData* user = USER_MGR->get(request.account());
 	if (!user) {
-		std::snprintf(tmp_, sizeof(tmp_), "SELECT * FROM player WHERE `account`='%s'", request.account().c_str());
 		// to load data from database
 		std::string& a = const_cast<std::string&>(GLOBAL_DATA->getAccount(request.account()));
 		if (a == "") {
 			a = GLOBAL_DATA->insertAccount(request.account());
 		}
-		if (!DB_MGR->pushReadCmd(tmp_, strlen(tmp_), DBResCBFuncs::getPlayerInfo, (void*)&a, 0)) {
+		/*if (!DB_MGR.insertRecord("player", ::getPlayerInfo, (void*)&a, 0)) {
 			GLOBAL_DATA->removeAccount(request.account());
 			LogError("push db read cmd(%s) failed", tmp_);
 			return -1;
-		}
+		}*/
 		LogInfo("pushed db read cmd(%s)", tmp_);
 	} else {
 		

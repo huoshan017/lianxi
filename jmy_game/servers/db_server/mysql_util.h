@@ -29,11 +29,23 @@
 		 type == MYSQL_FIELD_TYPE_TIME \
 		 type == MYSQL_FIELD_TYPE_TIMESTAMP)
 
-template <typename T>
-char* mysql_format_field_type(char* buf, int buf_len,  MysqlTableFieldType field_type, const T& field_value)
-{
-	if (field_type == MYSQL_FIELD_TYPE_TINYINT || field_type == MYSQL_FIELD_TYPE_SMALLINT ||
-		field_type == MYSQL_FIELD_TYPE_MEDIUMINT || field_type == MYSQL_FIELD_TYPE_INT) {
-		std::snprintf(buf, buf_len, "");
+inline const char* mysql_get_field_type_format(MysqlTableFieldType ft, int flags) {
+	if (ft == MYSQL_FIELD_TYPE_TINYINT || ft == MYSQL_FIELD_TYPE_SMALLINT ||
+		ft == MYSQL_FIELD_TYPE_MEDIUMINT || ft == MYSQL_FIELD_TYPE_INT) {
+		if (flags & MYSQL_TABLE_CREATE_UNSIGNED) {
+			return "%u";
+		} else {
+			return "%d";
+		}
+	} else if (ft == MYSQL_FIELD_TYPE_BIGINT) {
+		if (flags & MYSQL_TABLE_CREATE_UNSIGNED) {
+			return "%lld";
+		} else {
+			return "%llu";
+		}
+	} else if (IS_MYSQL_TEXT_TYPE(ft) || IS_MYSQL_BINARY_TYPE(ft)) {
+		return "%s";
+	} else {
+		return nullptr;
 	}
 }

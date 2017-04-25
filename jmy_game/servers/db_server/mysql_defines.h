@@ -63,6 +63,8 @@ enum MysqlTableCreateFlag {
 	MYSQL_TABLE_CREATE_NULL = 8,
 	MYSQL_TABLE_CREATE_NOT_NULL = 16,
 	MYSQL_TABLE_CREATE_DEFAULT = 32,
+	MYSQL_TABLE_CREATE_CURRENTTIMESTAMP = 64,
+	MYSQL_TABLE_CREATE_CURRENTTIMESTAMP_ON_UPDATE = 128,
 };
 
 enum MysqlTableIndexType {
@@ -99,8 +101,6 @@ struct MysqlDatabaseConfig {
 	const MysqlTableInfo* tables_info;
 	const int tables_num;
 };
-
-typedef int (*mysql_cmd_callback_func)(MysqlConnector::Result& result, void* param, long param_l);
 
 template <typename T>
 struct MysqlFieldNameValue {

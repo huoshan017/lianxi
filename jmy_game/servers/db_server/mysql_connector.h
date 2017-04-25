@@ -128,3 +128,5 @@ private:
 	enum { MAX_BUFFER_SIZE = 1024*16 };
 	char buf_[MAX_BUFFER_SIZE];
 };
+
+typedef int (*mysql_cmd_callback_func)(MysqlConnector::Result& result, void* param, long param_l);
