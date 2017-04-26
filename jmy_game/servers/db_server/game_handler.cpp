@@ -85,7 +85,7 @@ int GameHandler::processRequireUserDataRequest(JmyMsgInfo* info)
 		if (a == "") {
 			a = GLOBAL_DATA->insertAccount(request.account());
 		}
-		/*if (!DB_MGR.insertRecord("player", ::getPlayerInfo, (void*)&a, 0)) {
+		/*if (!DB_MGR.insertRecord("player", DBResCBFuncs::getPlayerInfo, (void*)&a, 0)) {
 			GLOBAL_DATA->removeAccount(request.account());
 			LogError("push db read cmd(%s) failed", tmp_);
 			return -1;
