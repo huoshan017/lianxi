@@ -1,0 +1,38 @@
+{
+	"db_name" : "jmy_game",
+	"tables" : [
+		{ "name":"t_account",	"primary_key":"account",	"primary_key_index":1,  "engine":"innodb" },
+		{ "name":"t_player",	"primary_key":"uid",		"primary_key_index":2, "engine":"innodb" }
+	],
+
+	"struct_include" : [
+		"db_struct.pb.h"
+	]
+
+	"defines_include" : [
+		"mysql_defines.h"
+	]
+	
+	"t_account" : [
+		{ "name":"id",			"field_type":"int",			"field_length":0,	"index_type":"none",	"create_flags":"auto_increament,unsigned,not null" },
+		{ "name":"account",		"field_type":"varchar",		"field_length":32,  "index_type":"normal",	"create_flags":"not null" },
+		{ "name":"create_time", "field_type":"timestamp",	"field_length":0,	"index_type":"none",	"create_flags":"not null,current_timestamp" },
+		{ "name":"last_login",	"field_type":"timestamp",	"field_length":0,	"index_type":"none",	"create_flags":"not null,current_timestamp" },
+		{ "name":"last_logout", "field_type":"timestamp",	"field_length":0,	"index_type":"none",	"create_flags":"not null,current_timestamp" }
+	],
+
+	"t_player" : [
+		{ "name":"id",			"field_type":"int",					"field_length":0,	"index_type":"none",	"create_flags":"auto_increment,unsigned,not null" },
+		{ "name":"account",		"field_type":"varchar",				"field_length":32,	"index_type":"none",	"create_flags":"not null" },
+		{ "name":"uid",			"field_type":"bigint",				"field_length":0,	"index_type":"normal",	"create_flags":"not null" },
+		{ "name":"nick_name",	"field_type":"varchar",				"field_length":32,	"index_type":"normal",	"create_flags":"not null" },
+		{ "name":"level",		"field_type":"int",					"field_length":0,	"index_type":"none",	"create_flags":"not null" },
+		{ "name":"vip_level",	"field_type":"int",					"field_length":0,	"index_type":"none",	"create_flags":"not null" },
+		{ "name":"exp",			"field_type":"int",					"field_length":0,	"index_type":"none",	"create_flags":"not null" },
+		{ "name":"items",		"field_type":"blob:DBItemList",		"field_length":0,	"index_type":"none",	"create_flags":"not null" },
+		{ "name":"skills",		"field_type":"blob:DBSkillList",	"field_length":0,	"index_type":"none",	"create_flags":"not null" },
+		{ "name":"tasks",		"field_type":"blob:DBTaskList",		"field_length":0,	"index_type":"none",	"create_flags":"not null" },
+		{ "name":"daily_tasks",	"field_type":"blob:DBDailyTaskList","field_length":0,	"index_type":"none",	"create_flags":"not null" },
+		{ "name":"activities",	"field_type":"blob:DBActivityList",	"field_length":0,	"index_type":"none",	"create_flags":"not null" }
+	]
+}
