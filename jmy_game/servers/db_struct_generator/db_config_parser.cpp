@@ -89,13 +89,6 @@ bool DBConfigParser::load(const char* jsonpath)
 		config_.define_include_strings.push_back(v.GetString());
 	}
 
-	// define_include
-	member = (char*)"define_include";
-	if (!doc_.HasMember(member)) {
-		std::cout << member << " member not exist" << std::endl;
-		return false;
-	}
-
 	// tables
 	member = (char*)"tables";
 	if (!doc_.HasMember(member)) {

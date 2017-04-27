@@ -7,11 +7,11 @@
 
 	"struct_include" : [
 		"db_struct.pb.h"
-	]
+	],
 
 	"defines_include" : [
 		"mysql_defines.h"
-	]
+	],
 	
 	"t_account" : [
 		{ "name":"id",			"field_type":"int",			"field_length":0,	"index_type":"none",	"create_flags":"auto_increament,unsigned,not null" },
