@@ -26,7 +26,6 @@ int DBResCBFuncs::getPlayerInfo(MysqlConnector::Result& res, void* param, long p
 			LogError("cant found user agent by account %s", account.c_str());
 			return -1;
 		}
-		user->account = account;
 		std::snprintf(tmp_, sizeof(tmp_), "INSERT ");
 	} else {
 		char** datas = res.fetch();

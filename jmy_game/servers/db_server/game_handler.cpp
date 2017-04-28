@@ -66,8 +66,8 @@ int GameHandler::processRequireUserDataRequest(JmyMsgInfo* info)
 		LogError("not found game agent with conn_id(%d)", info->conn_id);
 		return -1;
 	}
-	int id = GAME_MGR->getIdByConnId(info->conn_id);
-	if (!id) {
+	int game_id = GAME_MGR->getIdByConnId(info->conn_id);
+	if (!game_id) {
 		LogError("cant get game_id by conn_id(%d)");
 		return -1;
 	}

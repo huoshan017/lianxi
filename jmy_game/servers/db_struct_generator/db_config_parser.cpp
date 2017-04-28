@@ -4,7 +4,11 @@
 #include <cassert>
 #include <iostream>
 #include <thread>
+#include <boost/format.hpp>
+#include <boost/tokenizer.hpp>
+#include <boost/algorithm/string.hpp>
 #include "../common/util.h"
+#include "../db_server/mysql_defines.h"
 
 DBConfigParser::DBConfigParser()
 {
@@ -162,7 +166,11 @@ static const char* get_field_type_str(const char* field_type) {
 		return "int";
 	else if (s == "bigint")
 		return "int64_t";
-	else if (s == "varchar" || s == "char" || s == "text")
+	else if (s == "float")
+		return "float";
+	else if (s == "double")
+		return "double";
+	else if (s == "varchar" || s == "char" || s == "tinytext" || s == "text" || s == "longtext")
 		return "std::string";
 	else
 		return nullptr;
@@ -170,10 +178,90 @@ static const char* get_field_type_str(const char* field_type) {
 
 static bool is_field_time_type(const char* field_type) {
 	std::string s(field_type);
-	if (s == "timestamp" || s == "date" || s == "datetime") {
+	if (s == "timestamp" || s == "time" || s == "year" || s == "date" || s == "datetime") {
 		return true;
 	}
 	return false;
+}
+
+static const char* get_field_type_define_str(const char* field_type) {
+	std::string s(field_type);
+	if (s == "tinyint") return "MYSQL_FIELD_TYPE_TINYINT";
+	else if (s == "smallint") return "MYSQL_FIELD_TYPE_SMALLINT";
+	else if (s == "mediumint") return "MYSQL_FIELD_TYPE_MEDIUMINT";
+	else if (s == "int") return "MYSQL_FIELD_TYPE_INT";
+	else if (s == "bigint") return "MYSQL_FIELD_TYPE_BIGINT";
+	else if (s == "float") return "MYSQL_FIELD_TYPE_FLOAT";
+	else if (s == "double") return "MYSQL_FIELD_TYPE_DOUBLE";
+	else if (s == "char") return "MYSQL_FIELD_TYPE_CHAR";
+	else if (s == "varchar") return "MYSQL_FIELD_TYPE_VARCHAR";
+	else if (s == "text") return "MYSQL_FIELD_TYPE_TEXT";
+	else if (s == "tinytext") return "MYSQL_FIELD_TYPE_TINYTEXT";
+	else if (s == "longtext") return "MYSQL_FIELD_TYPE_LONGTEXT";
+	else if (s == "mediumtext") return "MYSQL_FIELD_TYPE_MEDIUMTEXT";
+	else if (s.find("tinyblob") > 0) return "MYSQL_FIELD_TYPE_TINYBLOB";
+	else if (s.find("mediumblob") > 0) return "MYSQL_FIELD_TYPE_MEDIUM_BLOB";
+	else if (s.find("longblob") > 0) return "MYSQL_FIELD_TYPE_LONGBLOB";
+	else if (s == "time") return "MYSQL_FIELD_TYPE_TIME";
+	else if (s == "timestamp") return "MYSQL_FIELD_TYPE_TIMESTAMP";
+	else if (s == "date") return "MYSQL_FIELD_TYPE_DATE";
+	else if (s == "datetime") return "MYSQL_FIELD_TYPE_DATETIME";
+	else if (s == "year") return "MYSQL_FIELD_TYPE_YEAR";
+	else if (s == "enum") return "MYSQL_FIELD_TYPE_ENUM";
+	else if (s == "set") return "MYSQL_FIELD_TYPE_SET";
+	else return nullptr;
+}
+
+static const char* get_field_length_define_str(int field_length) {
+	static char buf[16];
+	if (field_length == 0)
+		return "MYSQL_FIELD_DEFAULT_LENGTH";
+	else {
+		std::snprintf(buf, sizeof(buf), "%d", field_length);
+		return buf;
+	}
+}
+
+static const char* get_field_index_type_define_str(const char* field_index_type) {
+	std::string s(field_index_type);
+	if (s == "none") {
+		return "MYSQL_INDEX_TYPE_NONE"; 
+	} else if (s == "index") {
+		return "MYSQL_INDEX_TYPE_NORMAL";
+	} else if (s == "unique index") {
+		return "MYSQL_INDEX_TYPE_UNIQUE";
+	} else {
+		return nullptr;
+	}
+}
+
+static const char* get_create_flags_define_str(const char* create_flags) {
+	std::string s(create_flags);
+	std::vector<std::string> str_vec;
+	boost::split(str_vec, s, boost::is_any_of(","));
+
+	std::string res;
+	for (size_t i=0; i<str_vec.size(); ++i) {
+		if (i > 0) { res += "|"; }
+		if (str_vec[i] == "auto_increment") {
+			res += "MYSQL_TABLE_CREATE_AUTOINCREMENT";
+		} else if (str_vec[i] == "unsigned") {
+			res += "MYSQL_TABLE_CREATE_UNSIGNED";
+		} else if (str_vec[i] == "null") {
+			res += "MYSQL_TABLE_CREATE_NULL";
+		} else if (str_vec[i] == "not null") {
+			res += "MYSQL_TABLE_CREATE_NOT_NULL";
+		} else if (str_vec[i] == "current_timestamp") {
+			res += "MYSQL_TABLE_CREATE_CURRENTTIMESTAMP";
+		} else if (str_vec[i] == "current_timestamp_on_update") {
+			res += "MYSQL_TABLE_CREATE_CURRENTTIMESTAMP_ON_UPDATE";
+		} else if (str_vec[i] == "zerofill") {
+			res += "MYSQL_TABLE_CREATE_ZEROFILL";
+		} else {
+			return nullptr;
+		}
+	}
+	return res.c_str();
 }
 
 bool DBConfigParser::generate()
@@ -197,7 +285,7 @@ bool DBConfigParser::generate()
 	out_file << "#pragma once" << std::endl;
 	out_file << "#include <string>" << std::endl;
 	for (int i=0; i<(int)config_.struct_include_strings.size(); ++i) {
-		out_file << "#inlude \"" << config_.struct_include_strings[i] << "\"" << std::endl;
+		out_file << "#include \"" << config_.struct_include_strings[i] << "\"" << std::endl;
 	}
 	for (int i=0; i<(int)config_.tables.size(); ++i) {
 		out_file << std::endl << "struct " << config_.tables[i].name << " {" << std::endl;
@@ -227,8 +315,77 @@ bool DBConfigParser::generate()
 	out_file << "#pragma once" << std::endl;
 	int s = (int)config_.define_include_strings.size();
 	for (int i=0; i<s; ++i) {
-		out_file << "include \"" << config_.define_include_strings[i] << "\"" << std::endl;
+		out_file << "#include \"" << config_.define_include_strings[i] << "\"" << std::endl;
 	}
+
+	std::vector<std::string> table_name_list;
+	s = config_.tables.size();
+	for (int i=0; i<s; ++i) {
+		std::string table_field_variable_name = config_.tables[i].name + "_table_fields_info";
+		out_file << "static const MysqlTableFieldInfo " << table_field_variable_name << "[] = {" << std::endl;
+		std::vector<FieldInfo>& f = config_.tables_fields[i];
+		for (int j=0; j<(int)f.size(); ++j) {
+			const char* type_ds = get_field_type_define_str(f[j].field_type.c_str());
+			if (!type_ds) {
+				std::cout << "get_field_type_define_str(" << f[j].field_type << ") failed" << std::endl;
+				return false;
+			}
+			const char* length_ds = get_field_length_define_str(f[j].field_length);
+			if (!length_ds) {
+				std::cout << "get_field_length_define_str(" << f[j].field_length << ") failed" << std::endl;
+				return false;
+			}
+			const char* index_ds = get_field_index_type_define_str(f[j].index_type.c_str());
+			if (!index_ds) {
+				std::cout << "get_field_index_type_define_str(" << f[j].index_type << ") failed" << std::endl;
+				return false;
+			}
+			const char* create_flags_ds = get_create_flags_define_str(f[j].create_flags.c_str());
+			if (!create_flags_ds) {
+				std::cout << "get_create_flags_define_str(" << f[j].create_flags << ") failed" << std::endl;
+				return false;
+			}
+			out_file << "  { \"" << f[j].name << "\", " << type_ds << ", " << length_ds << ", " << index_ds << ", " << create_flags_ds << " }," << std::endl;
+		}
+		out_file << "};" << std::endl;
+
+		std::string table_variable_name = config_.tables[i].name + "_table_info";
+		out_file << "static const MysqlTableInfo " << table_variable_name << " = {" << std::endl;
+		out_file << "  \"" << config_.tables[i].name << "\"," << std::endl;
+		out_file << "  " << config_.tables[i].primary_key_index << "," << std::endl;
+		out_file << "  \"" << config_.tables[i].primary_key << "\"," << std::endl;
+		out_file << "  " << table_field_variable_name << "," << std::endl;
+		out_file << "  sizeof(" << table_field_variable_name << ")/sizeof(" << table_field_variable_name << "[0])," << std::endl;
+
+		if (config_.tables[i].db_engine == "myisam") {
+			out_file << "  " << "MYSQL_ENGINE_MYISAM," << std::endl;
+		} else if (config_.tables[i].db_engine == "innodb") {
+			out_file << "  " << "MYSQL_ENGINE_INNODB," << std::endl;
+		} else {
+			std::cout << "invalid db_engine " << config_.tables[i].db_engine << std::endl;
+			return false;
+		}
+		out_file << "};" << std::endl;
+		table_name_list.push_back(table_variable_name);
+	}
+
+	std::string table_infos_str = config_.db_name + "_tables";
+	out_file << "static const MysqlTableInfo " << table_infos_str << "[] = {" << std::endl;
+	for (int i=0; i<(int)table_name_list.size(); ++i) {
+		out_file << "  " << table_name_list[i] << "," << std::endl;
+	}
+	out_file << "};" << std::endl;
+
+	out_file << "static const MysqlDatabaseConfig s_" << config_.db_name << "_db_config = {" << std::endl;
+	out_file << "  \"" << config_.db_name << "\"," << std::endl;
+	out_file << "  " << table_infos_str << "," << std::endl;
+	out_file << "  sizeof(" << table_infos_str << ")/sizeof(" << table_infos_str << "[0])," << std::endl;
+	out_file << "};" << std::endl;
+
+	out_file.flush();
+	std::this_thread::sleep_for(std::chrono::seconds(1));
+	out_file.close();
+	std::cout << "generated " << db_defines_file_name << std::endl;
 
 	return true;
 }

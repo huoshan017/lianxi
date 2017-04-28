@@ -51,8 +51,6 @@ UserData* UserDataManager::getFree(const std::string& account)
 		user = jmy_mem_malloc<UserData>();
 		users_data_[id] = user;
 	}
-	user->account = account;
-	user->id = id;
 	account2id_map_.insert(std::make_pair(account, id));
 	return user;
 }

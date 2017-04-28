@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <set>
 #include "../libjmy/jmy_util.h"
+#include "db_struct_struct.h"
 
 enum { MAX_USER_DATA_COUNT = 200000 };
 enum UserState {
@@ -13,11 +14,7 @@ enum UserState {
 };
 
 struct UserData {
-	int id;
-	uint64_t uid; // low 32 bits: database index,  high 32 bits: game id
-	std::string account;
-	UserState state;
-	UserData() : id(0), uid(0), state(USER_STATE_NONE) {}
+	t_player player_data;
 };
 
 class UserDataManager : public JmySingleton<UserDataManager>
