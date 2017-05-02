@@ -158,7 +158,9 @@ static const char* get_field_type_str(const char* field_type) {
 	const char* blob_str = "blob:";
 	int idx = s.find(blob_str);
 	if (idx >= 0) {
-		return s.substr(idx+std::strlen(blob_str)).c_str();
+		static std::string ss;
+		ss = s.substr(idx+std::strlen(blob_str)).c_str();
+		return ss.c_str();
 	}
 
 	if (s == "tinyint" || s == "smallint" ||
