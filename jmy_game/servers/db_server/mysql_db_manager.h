@@ -24,8 +24,6 @@ public:
 
 	bool insertRecord(const char* table_name, mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l);
 	template <typename... FieldNameValueArgs>
-	bool insertRecord(const char* table_name, const FieldNameValueArgs&... args);
-	template <typename... FieldNameValueArgs>
 	bool insertRecord(const char* table_name, mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l, const FieldNameValueArgs&... args);
 
 	bool insertRecord(int table_index, mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l);
@@ -104,35 +102,28 @@ private:
 	char buf_[2][1024*128];
 };
 
-template <typename... FieldNameValueArgs>
-bool MysqlDBManager::insertRecord(const char* table_name, const FieldNameValueArgs&... args)
-{
-	int idx = config_mgr_.get_table_index(table_name);
-	if (idx < 0) return false;
-	return insertRecord(idx, args...);
-}
 
 template <typename... FieldNameValueArgs>
 bool MysqlDBManager::insertRecord(const char* table_name, mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l, const FieldNameValueArgs&... args)
 {
 	int idx = config_mgr_.get_table_index(table_name);
-	if (idx < 0) return false;
+	if (idx < 0) {
+		LogError("get table(%s) index failed", table_name);
+		return false;
+	}
 	return insertRecord(idx, get_last_insert_id_func, param, param_l, args...);
-}
-
-template <typename... FieldNameValueArgs>
-bool MysqlDBManager::insertRecord(int table_index, const FieldNameValueArgs&... args)
-{
-	return insertRecord(table_index, nullptr, args...);
 }
 
 template <typename... FieldNameValueArgs>
 bool MysqlDBManager::insertRecord(int table_index, mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l, const FieldNameValueArgs&... args)
 {
 	const MysqlTableInfo* ti = config_mgr_.get_table_info(table_index);
-	if (!ti) return false;
+	if (!ti) {
+		LogError("get table(%d) index failed", table_index);
+		return false;
+	}
 
-	std::tuple<FieldNameValueArgs...> t(args...);
+	const std::tuple<FieldNameValueArgs...> t(args...);
 	size_t s = sizeof...(FieldNameValueArgs);
 	size_t i = 0;
 
@@ -147,15 +138,6 @@ bool MysqlDBManager::insertRecord(int table_index, mysql_cmd_callback_func get_l
 			return false;
 		}
 
-		// field name
-		const char* fn = ti->fields_info[idx].name;
-		if (i == 0) {
-			types_str = fn;
-		} else {
-			types_str += (std::string(", ") + fn);
-		}
-
-		// field type and value
 		int ft = ti->fields_info[idx].field_type;
 		int flags = ti->fields_info[idx].create_flags;
 		const char* format = mysql_get_field_type_format((MysqlTableFieldType)ft, flags);
@@ -181,7 +163,10 @@ template <typename KeyType, typename... FieldNameValueArgs>
 bool MysqlDBManager::updateRecord(const char* table_name, const char* key_name, const KeyType& key_value, const FieldNameValueArgs&... args)
 {
 	int idx = config_mgr_.get_table_index(table_name);
-	if (idx < 0) return false;
+	if (idx < 0) {
+		LogError("get table(%s) index failed", table_name);
+		return false;
+	}
 	return updateRecord(idx, key_name, key_value, args...);
 }
 
@@ -189,8 +174,10 @@ template <typename KeyType, typename... FieldNameValueArgs>
 bool MysqlDBManager::updateRecord(int table_index, const char* key_name, const KeyType& key_value, const FieldNameValueArgs&... args)
 {
 	const MysqlTableInfo* ti = config_mgr_.get_table_info(table_index);
-	if (!ti)
+	if (!ti) {
+		LogError("get table(%d) info failed", table_index);
 		return false;
+	}
 
 	std::tuple<FieldNameValueArgs...> t(args...);
 	size_t s = sizeof...(FieldNameValueArgs);
@@ -237,7 +224,10 @@ template <typename KeyType>
 bool MysqlDBManager::deleteRecord(const char* table_name, const char* key_name, const KeyType& key_value)
 {
 	int idx = config_mgr_.get_table_index(table_name);
-	if (idx < 0) return false;
+	if (idx < 0) {
+		LogError("get table(%s) index failed", table_name);
+		return false;
+	}
 	return deleteRecord(idx, key_name, key_value);
 }
 
@@ -245,7 +235,10 @@ template <typename KeyType>
 bool MysqlDBManager::deleteRecord(int table_index, const char* key_name, const KeyType& key_value)
 {
 	const MysqlTableInfo* ti = config_mgr_.get_table_info(table_index);
-	if (!ti) return false;
+	if (!ti) {
+		LogError("get table(%d) info failed", table_index);
+		return false;
+	}
 	const char* format = config_mgr_.get_field_type_format(table_index, key_name);
 	if (!format) {
 		LogError("table_index(%d) key_name(%s) get field_type format failed", table_index, key_name);
@@ -262,7 +255,10 @@ bool MysqlDBManager::selectRecord(
 		mysql_cmd_callback_func get_result_func)
 {
 	int idx = config_mgr_.get_table_index(table_name);
-	if (idx < 0) return false;
+	if (idx < 0) {
+		LogError("get table(%s) index failed", table_name);
+		return false;
+	}
 	return selectRecord(idx, key_name, key_value, get_result_func);
 }
 
@@ -274,7 +270,10 @@ bool MysqlDBManager::selectRecord(
 		mysql_cmd_callback_func get_result_func)
 {
 	int idx = config_mgr_.get_table_index(table_name);
-	if (idx < 0) return false;
+	if (idx < 0) {
+		LogError("get table(%s) index failed", table_name);
+		return false;
+	}
 	return selectRecord(idx, key_name, key_value, key2_name, key2_value, get_result_func);
 }
 
@@ -286,7 +285,10 @@ bool MysqlDBManager::selectRecord(
 		mysql_cmd_callback_func get_result_func)
 {
 	int idx = config_mgr_.get_table_index(table_name);
-	if (idx < 0) return false;
+	if (idx < 0) {
+		LogError("get table(%s) index failed", table_name);
+		return false;
+	}
 	return selectRecord(idx, key_name, key_value, fields_list, get_result_func);
 }
 
@@ -299,7 +301,10 @@ bool MysqlDBManager::selectRecord(
 		mysql_cmd_callback_func get_result_func)
 {
 	int idx = config_mgr_.get_table_index(table_name);
-	if (idx < 0) return false;
+	if (idx < 0) {
+		LogError("get table(%s) index failed", table_name);
+		return false;
+	}
 	return selectRecord(idx, key_name, key_value, key2_name, key2_value, fields_list, get_result_func);
 }
 
@@ -310,7 +315,10 @@ bool MysqlDBManager::selectRecord(
 		mysql_cmd_callback_func get_result_func)
 {
 	const MysqlTableInfo* ti = config_mgr_.get_table_info(table_index);
-	if (!ti) return false;
+	if (!ti) {
+		LogError("get table(%d) info failed", table_index);
+		return false;
+	}
 	const char* format = config_mgr_.get_field_type_format(table_index, key_name);
 	if (!format) {
 		LogError("table_index(%d) key_name(%s) get field_type format failed", table_index, key_name);
@@ -329,7 +337,10 @@ bool MysqlDBManager::selectRecord(
 		mysql_cmd_callback_func get_result_func)
 {
 	const MysqlTableInfo* ti = config_mgr_.get_table_info(table_index);
-	if (!ti) return false;
+	if (!ti) {
+		LogError("get table(%d) info failed", table_index);
+		return false;
+	}
 	const char* format = config_mgr_.get_field_type_format(table_index, key_name);
 	if (!format) {
 		LogError("table_index(%d) key_name(%s) get field_type format failed", table_index, key_name);
@@ -358,7 +369,10 @@ bool MysqlDBManager::selectRecord(
 	}
 
 	const MysqlTableInfo* ti = config_mgr_.get_table_info(table_index);
-	if (!ti) return false;
+	if (!ti) {
+		LogError("get table(%d) info failed", table_index);
+		return false;
+	}
 	const char* format = config_mgr_.get_field_type_format(table_index, key_name);
 	if (!format) {
 		LogError("table_index(%d) key_name(%s) get field_type format failed", table_index, key_name);
@@ -382,7 +396,10 @@ bool MysqlDBManager::selectRecord(
 	}
 
 	const MysqlTableInfo* ti = config_mgr_.get_table_info(table_index);
-	if (!ti) return false;
+	if (!ti) {
+		LogError("get table(%d) info failed", table_index);
+		return false;
+	}
 	const char* format = config_mgr_.get_field_type_format(table_index, key_name);
 	if (!format) {
 		LogError("table_index(%d) key_name(%s) get field_type format failed", table_index, key_name);

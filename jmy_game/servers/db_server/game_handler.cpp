@@ -6,6 +6,7 @@
 #include "dbres_callback_funcs.h"
 #include "global_data.h"
 #include "db_server.h"
+#include "mysql_defines.h"
 
 char GameHandler::tmp_[JMY_MAX_MSG_SIZE];
 
@@ -85,12 +86,13 @@ int GameHandler::processRequireUserDataRequest(JmyMsgInfo* info)
 		if (a == "") {
 			a = GLOBAL_DATA->insertAccount(request.account());
 		}
-		/*if (!DB_MGR.insertRecord("player", DBResCBFuncs::getPlayerInfo, (void*)&a, 0)) {
+		MysqlFieldNameValue<std::string> nv(std::string("account"), a);
+		if (!DB_MGR.insertRecord("t_player", DBResCBFuncs::getPlayerInfo, (void*)&a, 0, nv)) {
 			GLOBAL_DATA->removeAccount(request.account());
-			LogError("push db read cmd(%s) failed", tmp_);
+			LogError("insert new record(account:%s) failed", a.c_str());
 			return -1;
-		}*/
-		LogInfo("pushed db read cmd(%s)", tmp_);
+		}
+		LogInfo("inserted new record(account:%s)", a.c_str());
 	} else {
 		
 	}

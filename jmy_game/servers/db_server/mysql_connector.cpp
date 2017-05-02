@@ -128,7 +128,6 @@ bool MysqlConnector::store_result()
 		return false;
 	}
 	res_.init(res);
-	LogInfo("stored result 0x%x", res);
 	return true;
 }
 

@@ -109,6 +109,7 @@ struct MysqlFieldNameValue {
 	MysqlFieldNameValue() {}
 	MysqlFieldNameValue(const char* fn, const T& fv) : field_name(fn), field_value(fv) {}
 	MysqlFieldNameValue(const std::string& fn, const T& fv) : field_name(fn), field_value(fv) {}
+	MysqlFieldNameValue(const MysqlFieldNameValue& v) : field_name(v.field_name), field_value(v.field_value) {}
 	MysqlFieldNameValue(MysqlFieldNameValue&& fp) : field_name(std::move(fp.field_name)), field_value(std::move(fp.field_value)) {}
 	MysqlFieldNameValue& operator=(MysqlFieldNameValue&& fp) {
 		field_name = std::move(fp.field_name);
@@ -123,6 +124,7 @@ struct MysqlFieldIndexValue {
 	T field_value;
 	MysqlFieldIndexValue() : field_index(0) {}
 	MysqlFieldIndexValue(int fi, const T& fv) : field_index(fi), field_value(fv) {}
+	MysqlFieldIndexValue(const MysqlFieldIndexValue& v) : field_index(v.field_index), field_value(v.field_value) {}
 	MysqlFieldIndexValue(MysqlFieldIndexValue&& f) : field_index(f.field_index), field_value(f.field_value) {}
 	MysqlFieldIndexValue& operator=(MysqlFieldIndexValue&& f) {
 		field_index = f.field_index;

@@ -199,9 +199,10 @@ static const char* get_field_type_define_str(const char* field_type) {
 	else if (s == "tinytext") return "MYSQL_FIELD_TYPE_TINYTEXT";
 	else if (s == "longtext") return "MYSQL_FIELD_TYPE_LONGTEXT";
 	else if (s == "mediumtext") return "MYSQL_FIELD_TYPE_MEDIUMTEXT";
-	else if (s.find("tinyblob") > 0) return "MYSQL_FIELD_TYPE_TINYBLOB";
-	else if (s.find("mediumblob") > 0) return "MYSQL_FIELD_TYPE_MEDIUM_BLOB";
-	else if (s.find("longblob") > 0) return "MYSQL_FIELD_TYPE_LONGBLOB";
+	else if (s.find("tinyblob") != std::string::npos) return "MYSQL_FIELD_TYPE_TINYBLOB";
+	else if (s.find("mediumblob") != std::string::npos) return "MYSQL_FIELD_TYPE_MEDIUM_BLOB";
+	else if (s.find("blob") != std::string::npos) return "MYSQL_FIELD_TYPE_BLOB";
+	else if (s.find("longblob") != std::string::npos) return "MYSQL_FIELD_TYPE_LONGBLOB";
 	else if (s == "time") return "MYSQL_FIELD_TYPE_TIME";
 	else if (s == "timestamp") return "MYSQL_FIELD_TYPE_TIMESTAMP";
 	else if (s == "date") return "MYSQL_FIELD_TYPE_DATE";
@@ -240,7 +241,8 @@ static const char* get_create_flags_define_str(const char* create_flags) {
 	std::vector<std::string> str_vec;
 	boost::split(str_vec, s, boost::is_any_of(","));
 
-	std::string res;
+	static std::string res;
+	res = "";
 	for (size_t i=0; i<str_vec.size(); ++i) {
 		if (i > 0) { res += "|"; }
 		if (str_vec[i] == "auto_increment") {

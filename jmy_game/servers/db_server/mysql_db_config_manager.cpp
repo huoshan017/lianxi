@@ -1,6 +1,7 @@
 #include "mysql_db_config_manager.h"
 #include "mysql_defines.h"
 #include "mysql_util.h"
+#include "../common/util.h"
 
 MysqlDBConfigManager::MysqlDBConfigManager()
 {
@@ -17,7 +18,9 @@ bool MysqlDBConfigManager::init(const MysqlDatabaseConfig& config)
 
 	int i = 0;
 	for (; i<config.tables_num; ++i) {
-		table_name2index_.insert(std::make_pair(config.tables_info[i].name, i));
+		table_name2index_.insert(std::make_pair(std::string(config.tables_info[i].name), i));
+		LogInfo("insert table(name:%s, index:%d), size(%d) table_name2index_(0x%x)",
+				config.tables_info[i].name, i, table_name2index_.size(), &table_name2index_);
 	}
 
 	table_array_.resize(config.tables_num);
@@ -46,6 +49,7 @@ void MysqlDBConfigManager::clear()
 
 int MysqlDBConfigManager::get_table_index(const char* table_name)
 {
+	LogInfo("table_name2index_.size() = %d, table_name2index_(0x%x)", table_name2index_.size(), &table_name2index_);
 	std::unordered_map<std::string, int>::iterator it = table_name2index_.find(std::string(table_name));
 	if (it == table_name2index_.end()) {
 		return -1;

@@ -23,7 +23,7 @@ bool MysqlDBManager::init(const MysqlDatabaseConfig& config)
 		return false;
 	}
 
-	if (config_mgr_.init(config)) {
+	if (!config_mgr_.init(config)) {
 		LogError("init mysql_db_config_manager (db_name: %s) failed", config.dbname);
 		return false;
 	}
@@ -34,6 +34,7 @@ bool MysqlDBManager::init(const MysqlDatabaseConfig& config)
 
 void MysqlDBManager::clear()
 {
+	config_mgr_.clear();
 	conn_pool_.close();
 }
 
@@ -45,15 +46,20 @@ int MysqlDBManager::run()
 bool MysqlDBManager::insertRecord(const char* table_name, mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l)
 {
 	int idx = config_mgr_.get_table_index(table_name);
-	if (idx < 0) return false;
+	if (idx < 0) {
+		LogError("get table(%s) index failed", table_name);
+		return false;
+	}
 	return insertRecord(idx, get_last_insert_id_func, param, param_l);
 }
 
 bool MysqlDBManager::insertRecord(int table_index, mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l)
 {
 	const MysqlTableInfo* ti = config_mgr_.get_table_info(table_index);
-	if (!ti)
+	if (!ti) {
+		LogError("get table(%d) info failed", table_index);
 		return false;
+	}
 
 	std::snprintf(buf_[0], sizeof(buf_[0]), "INSERT INTO %s", ti->name);
 	return push_insert_cmd(buf_[0], strlen(buf_[0]), get_last_insert_id_func, param, param_l);

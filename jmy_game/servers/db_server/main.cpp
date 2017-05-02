@@ -8,14 +8,13 @@ int main(int argc, char* argv[])
 	(void)argc;
 	(void)argv;
 
-	DBServer server;
-	if (!server.init(ServerConfPath)) {
+	if (!DB_SERVER->init(ServerConfPath)) {
 		std::cout << "init server failed" << std::endl;
 		return -1;
 	}
 
-	server.run();
-	server.close();
+	DB_SERVER->run();
+	DB_SERVER->close();
 
 	return 0;
 }
