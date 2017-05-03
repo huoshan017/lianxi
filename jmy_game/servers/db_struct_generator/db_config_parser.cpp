@@ -261,6 +261,8 @@ static const char* get_create_flags_define_str(const char* create_flags) {
 			res += "MYSQL_TABLE_CREATE_CURRENTTIMESTAMP_ON_UPDATE";
 		} else if (str_vec[i] == "zerofill") {
 			res += "MYSQL_TABLE_CREATE_ZEROFILL";
+		} else if (str_vec[i] == "default") {
+			res += "MYSQL_TABLE_CREATE_DEFAULT";
 		} else {
 			return nullptr;
 		}

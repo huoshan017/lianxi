@@ -16,23 +16,23 @@
 	"t_account" : [
 		{ "name":"id",			"field_type":"int",			"field_length":0,	"index_type":"none",	"create_flags":"auto_increment,unsigned,not null" },
 		{ "name":"account",		"field_type":"varchar",		"field_length":32,  "index_type":"index",	"create_flags":"not null" },
-		{ "name":"create_time", "field_type":"timestamp",	"field_length":0,	"index_type":"none",	"create_flags":"not null,current_timestamp" },
-		{ "name":"last_login",	"field_type":"timestamp",	"field_length":0,	"index_type":"none",	"create_flags":"not null,current_timestamp" },
-		{ "name":"last_logout", "field_type":"timestamp",	"field_length":0,	"index_type":"none",	"create_flags":"not null,current_timestamp" }
+		{ "name":"create_time", "field_type":"timestamp",	"field_length":0,	"index_type":"none",	"create_flags":"not null,default,current_timestamp" },
+		{ "name":"last_login",	"field_type":"timestamp",	"field_length":0,	"index_type":"none",	"create_flags":"not null,default,current_timestamp" },
+		{ "name":"last_logout", "field_type":"timestamp",	"field_length":0,	"index_type":"none",	"create_flags":"not null,default,current_timestamp" }
 	],
 
 	"t_player" : [
 		{ "name":"id",			"field_type":"int",					"field_length":0,	"index_type":"none",			"create_flags":"auto_increment,unsigned,not null" },
 		{ "name":"account",		"field_type":"varchar",				"field_length":32,	"index_type":"index",			"create_flags":"not null" },
-		{ "name":"uid",			"field_type":"bigint",				"field_length":0,	"index_type":"index",			"create_flags":"not null" },
-		{ "name":"nick_name",	"field_type":"varchar",				"field_length":32,	"index_type":"none",			"create_flags":"not null" },
-		{ "name":"level",		"field_type":"int",					"field_length":0,	"index_type":"none",			"create_flags":"not null" },
-		{ "name":"vip_level",	"field_type":"int",					"field_length":0,	"index_type":"none",			"create_flags":"not null" },
-		{ "name":"exp",			"field_type":"int",					"field_length":0,	"index_type":"none",			"create_flags":"not null" },
-		{ "name":"items",		"field_type":"blob:DBItemDataList",		"field_length":0,	"index_type":"none",		"create_flags":"not null" },
-		{ "name":"skills",		"field_type":"blob:DBSkillDataList",	"field_length":0,	"index_type":"none",		"create_flags":"not null" },
-		{ "name":"tasks",		"field_type":"blob:DBTaskDataList",		"field_length":0,	"index_type":"none",		"create_flags":"not null" },
-		{ "name":"daily_tasks",	"field_type":"blob:DBDailyTaskDataList","field_length":0,	"index_type":"none",		"create_flags":"not null" },
-		{ "name":"activities",	"field_type":"blob:DBActivitiesDataList",	"field_length":0,	"index_type":"none",	"create_flags":"not null" }
+		{ "name":"uid",			"field_type":"bigint",				"field_length":0,	"index_type":"index",			"create_flags":"not null,default" },
+		{ "name":"nick_name",	"field_type":"varchar",				"field_length":32,	"index_type":"none",			"create_flags":"not null,default" },
+		{ "name":"level",		"field_type":"int",					"field_length":0,	"index_type":"none",			"create_flags":"not null,default" },
+		{ "name":"vip_level",	"field_type":"int",					"field_length":0,	"index_type":"none",			"create_flags":"not null,default" },
+		{ "name":"exp",			"field_type":"int",					"field_length":0,	"index_type":"none",			"create_flags":"not null,default" },
+		{ "name":"items",		"field_type":"blob:DBItemDataList",		"field_length":0,	"index_type":"none",		"create_flags":"not null,default" },
+		{ "name":"skills",		"field_type":"blob:DBSkillDataList",	"field_length":0,	"index_type":"none",		"create_flags":"not null,default" },
+		{ "name":"tasks",		"field_type":"blob:DBTaskDataList",		"field_length":0,	"index_type":"none",		"create_flags":"not null,default" },
+		{ "name":"daily_tasks",	"field_type":"blob:DBDailyTaskDataList","field_length":0,	"index_type":"none",		"create_flags":"not null,default" },
+		{ "name":"activities",	"field_type":"blob:DBActivitiesDataList",	"field_length":0,	"index_type":"none",	"create_flags":"not null,default" }
 	]
 }
