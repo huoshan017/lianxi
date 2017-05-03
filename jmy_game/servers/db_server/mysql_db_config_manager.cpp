@@ -1,5 +1,4 @@
 #include "mysql_db_config_manager.h"
-#include "mysql_defines.h"
 #include "mysql_util.h"
 #include "../common/util.h"
 
@@ -49,7 +48,6 @@ void MysqlDBConfigManager::clear()
 
 int MysqlDBConfigManager::get_table_index(const char* table_name)
 {
-	LogInfo("table_name2index_.size() = %d, table_name2index_(0x%x)", table_name2index_.size(), &table_name2index_);
 	std::unordered_map<std::string, int>::iterator it = table_name2index_.find(std::string(table_name));
 	if (it == table_name2index_.end()) {
 		return -1;
@@ -87,11 +85,4 @@ const MysqlTableFieldInfo* MysqlDBConfigManager::get_field_info(int table_index,
 
 	int idx = it->second;
 	return &ti->fields_info[idx];
-}
-
-const char* MysqlDBConfigManager::get_field_type_format(int table_index, const char* field_name)
-{
-	const MysqlTableFieldInfo* fi = get_field_info(table_index, field_name);
-	if (!fi) return nullptr;
-	return mysql_get_field_type_format(fi->field_type, fi->create_flags);
 }

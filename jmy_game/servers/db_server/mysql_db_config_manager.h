@@ -3,6 +3,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include "mysql_defines.h"
 
 struct MysqlDatabaseConfig;
 struct MysqlTableInfo;
@@ -20,13 +21,18 @@ public:
 	int get_table_field_index(int table_index, const char* field_name);
 	const MysqlTableInfo* get_table_info(int table_index);
 	const MysqlTableFieldInfo* get_field_info(int table_index, const char* field_name);
-	const char* get_field_type_format(int table_index, const char* field_name);
+	template <typename FieldType>
+	const char* get_field_type_format(int table_index, const char* field_name, const FieldType& value, char* format_buf, int format_buflen) {
+		const MysqlTableFieldInfo* fi = get_field_info(table_index, field_name);
+		if (!fi) return nullptr;
+		return mysql_get_field_value_format(fi->field_type, fi->create_flags, value, format_buf, format_buflen);
+	}
 
 private:
 	typedef std::unordered_map<std::string, int> table_fields_name2index_type;
 
 	std::string db_name_;
-	std::unordered_map<std::string, int> table_name2index_;
+	table_fields_name2index_type table_name2index_;
 	std::vector<const MysqlTableInfo*> table_array_;
 	std::vector<table_fields_name2index_type> table_fields_name2index_array_;
 };

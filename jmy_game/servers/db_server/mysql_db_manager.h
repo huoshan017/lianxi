@@ -91,17 +91,115 @@ public:
 			mysql_cmd_callback_func get_result_func);
 
 private:
+	template <typename FieldNameValueArg>
+	char* format_insert_field_name_str(char* format_buf, int format_buf_len, const FieldNameValueArg& arg);
+	template <typename FirstFieldNameValueArg, typename... RestFieldNameValueArg>
+	char* format_insert_field_name_str(char* format_buf, int format_buf_len, const FirstFieldNameValueArg& first, const RestFieldNameValueArg&... rest);
+
+	template <typename FieldNameValueArg>
+	char* format_insert_field_value_str(int table_index, char* format_buf, int format_buf_len, const FieldNameValueArg& arg);
+	template <typename FirstFieldNameValueArg, typename... RestFieldNameValueArg>
+	char* format_insert_field_value_str(int table_index, char* format_buf, int format_buf_len, const FirstFieldNameValueArg& first, const RestFieldNameValueArg&... rest);
+
+	template <typename FieldNameValueArg>
+	char* format_update_field_value_str(int table_index, const FieldNameValueArg& arg);
+	template <typename FirstFieldNameValueArg, typename... RestFieldNameValueArg>
+	char* format_update_field_value_str(int table_index, const FirstFieldNameValueArg& first, const RestFieldNameValueArg&... rest);
+
 	bool push_read_cmd(const char* sql, unsigned int sql_len, mysql_cmd_callback_func get_result_func, void* param, long param_l);
 	bool push_write_cmd(const char* sql, unsigned int sql_len);
 	bool push_insert_cmd(const char* sql, unsigned int sql_len, mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l);
 	bool push_get_last_insert_id_cmd(mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l);
+	int next_index() {
+		index_ += 1;
+		if (index_ >= (int)(sizeof(buf_)/sizeof(buf_[0])))
+			index_ = 0;
+		return index_;
+	}
+	int next_index2() {
+		index2_ += 1;
+		if (index2_ >= (int)(sizeof(buf2_)/sizeof(buf2_[0])))
+			index2_ = 0;
+		return index2_;
+	}
+	int next_big_index() {
+		big_index_ += 1;
+		if (big_index_ >= (int)(sizeof(big_buf_)/sizeof(big_buf_[0])))
+			big_index_ = 0;
+		return big_index_;
+	}
 
 private:
 	MysqlDBConfigManager config_mgr_;
 	MysqlConnectorPool conn_pool_;
-	char buf_[2][1024*128];
+	char buf_[3][2048];
+	char buf2_[3][2048];
+	char big_buf_[3][1024*128];
+	int index_, index2_, big_index_;
 };
 
+template <typename FieldNameValueArg>
+char* MysqlDBManager::format_insert_field_name_str(char* format_buf, int format_buf_len, const FieldNameValueArg& arg)
+{
+	std::snprintf(format_buf, format_buf_len, "%s", arg.field_name.c_str());
+	return format_buf;
+}
+
+template <typename FirstFieldNameValueArg, typename... RestFieldNameValueArg>
+char* MysqlDBManager::format_insert_field_name_str(char* format_buf, int format_buf_len, const FirstFieldNameValueArg& first, const RestFieldNameValueArg&... rest)
+{
+	char tmp[32];
+	char* t = format_insert_type_str(tmp, sizeof(tmp), first);
+	std::snprintf(buf_[index_], sizeof(buf_[index_]), "%s, ", t);
+	index_ = next_index();
+	return format_insert_type_str(format_buf, format_buf_len, rest...);
+}
+
+template <typename FieldNameValueArg>
+char* MysqlDBManager::format_insert_field_value_str(int table_index, char* format_buf, int format_buf_len, const FieldNameValueArg& arg)
+{
+	const MysqlTableInfo* ti = config_mgr_.get_table_info(table_index);
+	if (!ti) {
+		LogError("get table(%d) info failed", table_index);
+		return nullptr;
+	}
+	int idx = config_mgr_.get_table_field_index(table_index, arg.field_name.c_str());
+	if (idx < 0) {
+		LogError("not found field_name(%s)", arg.field_name.c_str());
+		return nullptr;
+	}
+
+	int ft = ti->fields_info[idx].field_type;
+	int flags = ti->fields_info[idx].create_flags;
+	bool b = mysql_get_field_value_format((MysqlTableFieldType)ft, flags, arg.field_value, format_buf, format_buf_len);
+	if (!b) {
+		LogError("field_type(%d), create_flags(%d) get format error", ft, flags);
+		return nullptr;
+	}
+	return format_buf;
+}
+
+template <typename FirstFieldNameValueArg, typename... RestFieldNameValueArg>
+char* MysqlDBManager::format_insert_field_value_str(int table_index, char* format_buf, int format_buf_len, const FirstFieldNameValueArg& first, const RestFieldNameValueArg&... rest)
+{
+	char tmp[32];
+	char* t = format_insert_field_value_str(tmp, sizeof(tmp), first);
+	std::snprintf(buf2_[index2_], sizeof(buf2_[index2_]), "%s, ", t);
+	index2_ = next_index2();
+	return format_insert_field_value_str(format_buf, format_buf_len, rest...);
+}
+
+template <typename FieldNameValueArg>
+char* MysqlDBManager::format_update_field_value_str(int table_index, const FieldNameValueArg& arg)
+{
+	return nullptr;
+}
+
+template <typename FirstFieldNameValueArg, typename... RestFieldNameValueArg>
+char* MysqlDBManager::format_update_field_value_str(int table_index, const FirstFieldNameValueArg& first, const RestFieldNameValueArg&... rest)
+{
+	return nullptr;
+}
 
 template <typename... FieldNameValueArgs>
 bool MysqlDBManager::insertRecord(const char* table_name, mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l, const FieldNameValueArgs&... args)
@@ -123,40 +221,12 @@ bool MysqlDBManager::insertRecord(int table_index, mysql_cmd_callback_func get_l
 		return false;
 	}
 
-	const std::tuple<FieldNameValueArgs...> t(args...);
-	size_t s = sizeof...(FieldNameValueArgs);
-	size_t i = 0;
+	char* field_names_str = format_insert_field_name_str(buf_[index_], sizeof(buf_[index_]), args...);
+	char* field_values_str = format_insert_field_value_str(table_index, buf2_[index2_], sizeof(buf2_[index2_]), args...);
 
-	std::string types_str;
-	char* tmp_values_str = nullptr;
-	int bi = 0; int bi_max = 1;
-	for (; i<s; ++i) {
-		auto v = std::get<i>(t);
-		int idx = config_mgr_.get_table_field_index(table_index, v.field_name);
-		if (idx < 0) {
-			LogError("not found field_name(%s)", v.field_name);
-			return false;
-		}
-
-		int ft = ti->fields_info[idx].field_type;
-		int flags = ti->fields_info[idx].create_flags;
-		const char* format = mysql_get_field_type_format((MysqlTableFieldType)ft, flags);
-		if (!format) {
-			LogError("field_type(%d), create_flags(%d) get format error", ft, flags);
-			return false;
-		}
-		if (!tmp_values_str) {
-			std::snprintf(buf_[bi], sizeof(buf_[bi]), "%s", format);
-		} else {
-			std::snprintf(buf_[bi], sizeof(buf_[bi]), "%s, %s", tmp_values_str, format);
-		}
-		tmp_values_str = buf_[bi];
-		bi += 1;
-		if (bi > bi_max) bi = 0;
-	}
-
-	std::snprintf(buf_[bi], sizeof(buf_[bi]), "INSERT INTO %s (%s) VALUES (%s)", ti->name, types_str.c_str(), tmp_values_str);
-	return push_insert_cmd(buf_[bi], strlen(buf_[bi]), get_last_insert_id_func, param, param_l);
+	std::snprintf(big_buf_[big_index_], sizeof(big_buf_[big_index_]),
+			"INSERT INTO %s (%s) VALUES (%s)", ti->name, field_names_str, field_values_str);
+	return push_insert_cmd(big_buf_[big_index_], strlen(big_buf_[big_index_]), get_last_insert_id_func, param, param_l);
 }
 
 template <typename KeyType, typename... FieldNameValueArgs>
@@ -179,6 +249,7 @@ bool MysqlDBManager::updateRecord(int table_index, const char* key_name, const K
 		return false;
 	}
 
+#if 0
 	std::tuple<FieldNameValueArgs...> t(args...);
 	size_t s = sizeof...(FieldNameValueArgs);
 	size_t i = 0;
@@ -218,6 +289,8 @@ bool MysqlDBManager::updateRecord(int table_index, const char* key_name, const K
 	}
 	std::snprintf(buf_[bi], sizeof(buf_[bi]), "UPDATE %s SET %s WHERE %s=%s", ti->name, tmp_values_str, key_name, format);
 	return push_write_cmd(buf_[bi], strlen(buf_[bi]));
+#endif
+	return false;
 }
 
 template <typename KeyType>
@@ -239,13 +312,13 @@ bool MysqlDBManager::deleteRecord(int table_index, const char* key_name, const K
 		LogError("get table(%d) info failed", table_index);
 		return false;
 	}
-	const char* format = config_mgr_.get_field_type_format(table_index, key_name);
+	const char* format = config_mgr_.get_field_type_format(table_index, key_name, key_value, buf_[index_], sizeof(buf_[index_]));
 	if (!format) {
 		LogError("table_index(%d) key_name(%s) get field_type format failed", table_index, key_name);
 		return false;
 	}
-	std::snprintf(buf_[0], sizeof(buf_[0]), "DELETE FROM %s WHERE %s=%s", ti->name, key_name, format);
-	return push_write_cmd(buf_[0], std::strlen(buf_[0]));
+	std::snprintf(big_buf_[big_index_], sizeof(big_buf_[big_index_]), "DELETE FROM %s WHERE %s=%s", ti->name, key_name, format);
+	return push_write_cmd(big_buf_[big_index_], std::strlen(big_buf_[big_index_]));
 }
 
 template <typename KeyType>
@@ -319,14 +392,14 @@ bool MysqlDBManager::selectRecord(
 		LogError("get table(%d) info failed", table_index);
 		return false;
 	}
-	const char* format = config_mgr_.get_field_type_format(table_index, key_name);
+	const char* format = config_mgr_.get_field_type_format(table_index, key_name, key_value, buf_[index_], sizeof(buf_[index_]));
 	if (!format) {
 		LogError("table_index(%d) key_name(%s) get field_type format failed", table_index, key_name);
 		return false;
 	}
 
-	std::snprintf(buf_[0], sizeof(buf_[0]), "SELECT * FROM %s WHERE %s=%s", ti->name, key_name, format);
-	return push_read_cmd(buf_[0], std::strlen(buf_[0]), get_result_func, nullptr, 0);
+	std::snprintf(big_buf_[big_index_], sizeof(big_buf_[big_index_]), "SELECT * FROM %s WHERE %s=%s", ti->name, key_name, format);
+	return push_read_cmd(big_buf_[big_index_], std::strlen(big_buf_[big_index_]), get_result_func, nullptr, 0);
 }
 
 template <typename KeyType, typename KeyType2>
@@ -341,20 +414,20 @@ bool MysqlDBManager::selectRecord(
 		LogError("get table(%d) info failed", table_index);
 		return false;
 	}
-	const char* format = config_mgr_.get_field_type_format(table_index, key_name);
+	const char* format = config_mgr_.get_field_type_format(table_index, key_name, key_value, buf_[index_], sizeof(buf_[index_]));
 	if (!format) {
 		LogError("table_index(%d) key_name(%s) get field_type format failed", table_index, key_name);
 		return false;
 	}
 
-	const char* format2 = config_mgr_.get_field_type_format(table_index, key_name);
+	const char* format2 = config_mgr_.get_field_type_format(table_index, key_name, key_value, buf2_[index2_], sizeof(buf2_[index2_]));
 	if (!format2) {
 		LogError("table_index(%d) key_name(%s) get field_type format failed", table_index, key2_name);
 		return false;
 	}
 
-	std::snprintf(buf_[0], sizeof(buf_[0]), "SELECT * FROM %s WHERE %s=%s AND %s=%s", ti->name, key_name, format, key2_name, format2);
-	return push_read_cmd(buf_[0], std::strlen(buf_[0]), get_result_func, nullptr, 0);
+	std::snprintf(big_buf_[big_index_], sizeof(big_buf_[big_index_]), "SELECT * FROM %s WHERE %s=%s AND %s=%s", ti->name, key_name, format, key2_name, format2);
+	return push_read_cmd(big_buf_[big_index_], std::strlen(big_buf_[big_index_]), get_result_func, nullptr, 0);
 }
 
 template <typename KeyType>
@@ -373,14 +446,15 @@ bool MysqlDBManager::selectRecord(
 		LogError("get table(%d) info failed", table_index);
 		return false;
 	}
-	const char* format = config_mgr_.get_field_type_format(table_index, key_name);
+	const char* format = config_mgr_.get_field_type_format(table_index, key_name, key_value, buf_[index_], sizeof(buf_[index_]));
 	if (!format) {
 		LogError("table_index(%d) key_name(%s) get field_type format failed", table_index, key_name);
 		return false;
 	}
 
-	std::snprintf(buf_[0], sizeof(buf_[0]), "SELECT %s FROM %s WHERE %s=%s", boost::join(fields_list, ","), ti->name, key_name, format);
-	return push_read_cmd(buf_[0], std::strlen(buf_[0]), get_result_func, nullptr, 0);
+	std::snprintf(buf_[index_], sizeof(buf_[index_]),
+			"SELECT %s FROM %s WHERE %s=%s", boost::join(fields_list, ","), ti->name, key_name, format);
+	return push_read_cmd(buf_[index_], std::strlen(buf_[index_]), get_result_func, nullptr, 0);
 }
 
 template <typename KeyType, typename KeyType2>
@@ -400,18 +474,19 @@ bool MysqlDBManager::selectRecord(
 		LogError("get table(%d) info failed", table_index);
 		return false;
 	}
-	const char* format = config_mgr_.get_field_type_format(table_index, key_name);
+	const char* format = config_mgr_.get_field_type_format(table_index, key_name, key_value, buf_[index_], sizeof(buf_[index_]));
 	if (!format) {
 		LogError("table_index(%d) key_name(%s) get field_type format failed", table_index, key_name);
 		return false;
 	}
 
-	const char* format2 = config_mgr_.get_field_type_format(table_index, key_name);
+	const char* format2 = config_mgr_.get_field_type_format(table_index, key_name, key_value, buf2_[index2_], sizeof(buf2_[index2_]));
 	if (!format2) {
 		LogError("table_index(%d) key_name(%s) get field_type format failed", table_index, key2_name);
 		return false;
 	}
 
-	std::snprintf(buf_[0], sizeof(buf_[0]), "SELECT %s FROM %s WHERE %s=%s AND %s=%s", boost::join(fields_list, ","), ti->name, key_name, format);
-	return push_read_cmd(buf_[0], std::strlen(buf_[0]), get_result_func, nullptr, 0);
+	std::snprintf(big_buf_[big_index_], sizeof(big_buf_[big_index_]), "SELECT %s FROM %s WHERE %s=%s AND %s=%s",
+			boost::join(fields_list, ","), ti->name, key_name, format);
+	return push_read_cmd(big_buf_[big_index_], std::strlen(big_buf_[big_index_]), get_result_func, nullptr, 0);
 }

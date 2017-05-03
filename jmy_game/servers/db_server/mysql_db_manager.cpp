@@ -1,7 +1,7 @@
 #include "mysql_db_manager.h"
 #include "config_loader.h"
 
-MysqlDBManager::MysqlDBManager()
+MysqlDBManager::MysqlDBManager() : index_(0), big_index_(0)
 {
 }
 

@@ -92,7 +92,7 @@ int GameHandler::processRequireUserDataRequest(JmyMsgInfo* info)
 			LogError("insert new record(account:%s) failed", a.c_str());
 			return -1;
 		}
-		LogInfo("inserted new record(account:%s)", a.c_str());
+		LogInfo("to inserting new record(account:%s)", a.c_str());
 	} else {
 		
 	}
