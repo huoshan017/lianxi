@@ -43,19 +43,20 @@ public:
 	void close();
 
 	struct CmdInfo {
-		CmdInfo() : sql(nullptr), sql_len(0), callback_func(nullptr), user_param(nullptr), user_param_l(0) {
+		CmdInfo() : sql(nullptr), sql_len(0), callback_func(nullptr), user_param(nullptr), user_param_l(0), write_cmd(false) {
 		}
-		CmdInfo(const char* s, unsigned short l) : callback_func(nullptr), user_param(nullptr), user_param_l(0) {
+		CmdInfo(const char* s, unsigned short l) : callback_func(nullptr), user_param(nullptr), user_param_l(0), write_cmd(false) {
 			sql = (char*)jmy_mem_malloc(l);
 			std::memcpy(sql, s, l);
 			sql_len = l;
 		}
-		CmdInfo(CmdInfo&& ci) : sql(ci.sql), sql_len(ci.sql_len), callback_func(ci.callback_func), user_param(ci.user_param), user_param_l(ci.user_param_l) {
+		CmdInfo(CmdInfo&& ci) : sql(ci.sql), sql_len(ci.sql_len), callback_func(ci.callback_func), user_param(ci.user_param), user_param_l(ci.user_param_l), write_cmd(ci.write_cmd) {
 			ci.sql = nullptr;
 			ci.sql_len = 0;
 			ci.callback_func = nullptr;
 			ci.user_param = 0;
 			ci.user_param_l = 0;
+			ci.write_cmd = false;
 		}
 		CmdInfo& operator=(CmdInfo&& ci) {
 			sql = ci.sql;
@@ -63,11 +64,13 @@ public:
 			callback_func = ci.callback_func;
 			user_param = ci.user_param;
 			user_param_l = ci.user_param_l;
+			write_cmd = ci.write_cmd;
 			ci.sql = nullptr;
 			ci.sql_len = 0;
 			ci.callback_func = nullptr;
 			ci.user_param = nullptr;
 			ci.user_param_l = 0;
+			ci.write_cmd = false;
 			return *this;
 		}
 		~CmdInfo() { clear(); }
@@ -80,12 +83,14 @@ public:
 			callback_func = nullptr;
 			user_param = nullptr;
 			user_param_l = 0;
+			write_cmd = false;
 		}
 		char* sql;
 		unsigned short sql_len;
 		mysql_cmd_callback_func callback_func;
 		void* user_param;
 		long user_param_l;
+		bool write_cmd;
 	};
 
 	struct ResultInfo {
@@ -112,6 +117,12 @@ public:
 			ri.user_param = 0;
 			ri.user_param_l = 0;
 			return *this;
+		}
+		~ResultInfo() {
+			clear();
+		}
+		void clear() {
+			res.clear();
 		}
 	};
 

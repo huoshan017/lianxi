@@ -18,8 +18,6 @@ bool MysqlDBConfigManager::init(const MysqlDatabaseConfig& config)
 	int i = 0;
 	for (; i<config.tables_num; ++i) {
 		table_name2index_.insert(std::make_pair(std::string(config.tables_info[i].name), i));
-		LogInfo("insert table(name:%s, index:%d), size(%d) table_name2index_(0x%x)",
-				config.tables_info[i].name, i, table_name2index_.size(), &table_name2index_);
 	}
 
 	table_array_.resize(config.tables_num);

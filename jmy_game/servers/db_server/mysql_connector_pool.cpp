@@ -31,11 +31,20 @@ static void connector_read_func(MysqlConnectorPool::ConnectorInfo* conn) {
 				LogWarn("real read query failed");
 			}
 			MysqlConnector::Result& r = conn->get_result();
-			MysqlConnectorPool::ResultInfo ri(r);
-			ri.cb_func = ci.callback_func;
-			ri.user_param = ci.user_param;
-			ri.user_param_l = ci.user_param_l;
-			conn->push_res(ri);
+			if (ci.write_cmd) {
+				r.clear();
+				LogWarn("write cmd in read mysql_connector");
+			} else {
+				if (r.is_empty()) {
+					r.clear();
+					continue;
+				}
+				MysqlConnectorPool::ResultInfo ri(r);
+				ri.cb_func = ci.callback_func;
+				ri.user_param = ci.user_param;
+				ri.user_param_l = ci.user_param_l;
+				conn->push_res(ri);
+			}
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
@@ -45,17 +54,25 @@ static void connector_write_func(MysqlConnectorPool::ConnectorInfo* conn) {
 	MysqlConnectorPool::CmdInfo ci;
 	while (true) {
 		if (conn->pop(ci)) {
-			if (!conn->connector.real_query(ci.sql, ci.sql_len)) {
-				LogWarn("real query failed");
-			}
-			MysqlConnector::Result& r = conn->get_result();
-			if (!r.is_empty()) {
+			if (!ci.write_cmd) {
+				if (!conn->connector.real_read_query(ci.sql, ci.sql_len)) {
+					LogWarn("real read query failed");
+				}
+				MysqlConnector::Result& r = conn->get_result();
+				if (r.is_empty()) {
+					LogWarn("read cmd empty result");
+				}
 				MysqlConnectorPool::ResultInfo ri(r);
 				ri.cb_func = ci.callback_func;
 				ri.user_param = ci.user_param;
 				ri.user_param_l = ci.user_param_l;
 				conn->push_res(ri);
+			} else {
+				if (!conn->connector.real_query(ci.sql, ci.sql_len)) {
+					LogWarn("real query failed");
+				}
 			}
+			
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
@@ -153,6 +170,7 @@ int MysqlConnectorPool::run()
 			if (ri.cb_func) {
 				ri.cb_func(ri.res, ri.user_param, ri.user_param_l);
 			}
+			ri.clear();
 		}
 	}
 	s = write_connectors_.size();
@@ -162,6 +180,7 @@ int MysqlConnectorPool::run()
 			if (ri.cb_func) {
 				ri.cb_func(ri.res, ri.user_param, ri.user_param_l);
 			}
+			ri.clear();
 		}
 	}
 	return 0;

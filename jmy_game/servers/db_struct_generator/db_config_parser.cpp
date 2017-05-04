@@ -231,7 +231,7 @@ static const char* get_field_index_type_define_str(const char* field_index_type)
 		return "MYSQL_INDEX_TYPE_NONE"; 
 	} else if (s == "index") {
 		return "MYSQL_INDEX_TYPE_NORMAL";
-	} else if (s == "unique index") {
+	} else if (s == "unique") {
 		return "MYSQL_INDEX_TYPE_UNIQUE";
 	} else {
 		return nullptr;
@@ -264,7 +264,11 @@ static const char* get_create_flags_define_str(const char* create_flags) {
 		} else if (str_vec[i] == "default") {
 			res += "MYSQL_TABLE_CREATE_DEFAULT";
 		} else {
-			return nullptr;
+			boost::trim(str_vec[i]);
+			if (str_vec[i] != "") {
+				std::cout << "str_vec[" << i << "]: " << str_vec[i] << " invalid" << std::endl;
+				return nullptr;
+			}
 		}
 	}
 	return res.c_str();

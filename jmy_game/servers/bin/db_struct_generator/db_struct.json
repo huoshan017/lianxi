@@ -16,15 +16,15 @@
 	"t_account" : [
 		{ "name":"id",			"field_type":"int",			"field_length":0,	"index_type":"none",	"create_flags":"auto_increment,unsigned,not null" },
 		{ "name":"account",		"field_type":"varchar",		"field_length":32,  "index_type":"index",	"create_flags":"not null" },
-		{ "name":"create_time", "field_type":"timestamp",	"field_length":0,	"index_type":"none",	"create_flags":"not null,default,current_timestamp" },
-		{ "name":"last_login",	"field_type":"timestamp",	"field_length":0,	"index_type":"none",	"create_flags":"not null,default,current_timestamp" },
-		{ "name":"last_logout", "field_type":"timestamp",	"field_length":0,	"index_type":"none",	"create_flags":"not null,default,current_timestamp" }
+		{ "name":"create_time", "field_type":"timestamp",	"field_length":0,	"index_type":"none",	"create_flags":"not null,default" },
+		{ "name":"last_login",	"field_type":"timestamp",	"field_length":0,	"index_type":"none",	"create_flags":"null" },
+		{ "name":"last_logout", "field_type":"timestamp",	"field_length":0,	"index_type":"none",	"create_flags":"null" }
 	],
 
 	"t_player" : [
 		{ "name":"id",			"field_type":"int",					"field_length":0,	"index_type":"none",			"create_flags":"auto_increment,unsigned,not null" },
-		{ "name":"account",		"field_type":"varchar",				"field_length":32,	"index_type":"index",			"create_flags":"not null" },
-		{ "name":"uid",			"field_type":"bigint",				"field_length":0,	"index_type":"index",			"create_flags":"not null,default" },
+		{ "name":"account",		"field_type":"varchar",				"field_length":32,	"index_type":"unique",			"create_flags":"not null" },
+		{ "name":"uid",			"field_type":"bigint",				"field_length":0,	"index_type":"unique",			"create_flags":"not null,default" },
 		{ "name":"nick_name",	"field_type":"varchar",				"field_length":32,	"index_type":"none",			"create_flags":"not null,default" },
 		{ "name":"level",		"field_type":"int",					"field_length":0,	"index_type":"none",			"create_flags":"not null,default" },
 		{ "name":"vip_level",	"field_type":"int",					"field_length":0,	"index_type":"none",			"create_flags":"not null,default" },

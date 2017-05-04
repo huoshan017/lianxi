@@ -73,6 +73,7 @@ bool MysqlDBManager::push_read_cmd(const char* sql, unsigned int sql_len, mysql_
 	cmd.callback_func = get_result_func;
 	cmd.user_param = user_param;
 	cmd.user_param_l = user_param_l;
+	cmd.write_cmd = false;
 	return conn_pool_.push_read_cmd(cmd);
 }
 
@@ -84,6 +85,7 @@ bool MysqlDBManager::push_write_cmd(const char* sql, unsigned int sql_len)
 	cmd.callback_func = nullptr;
 	cmd.user_param = nullptr;
 	cmd.user_param_l = 0;
+	cmd.write_cmd = true;
 	return conn_pool_.push_write_cmd(cmd);
 }
 
@@ -103,5 +105,6 @@ bool MysqlDBManager::push_get_last_insert_id_cmd(mysql_cmd_callback_func get_las
 	cmd.callback_func = get_last_insert_id_func;
 	cmd.user_param = param;
 	cmd.user_param_l = param_l;
+	cmd.write_cmd = false;
 	return conn_pool_.push_write_cmd(cmd);
 }

@@ -14,7 +14,18 @@ enum UserState {
 };
 
 struct UserData {
+	int game_server_id;
 	t_player player_data;
+	UserData() {
+		game_server_id = 0;
+		player_data.id = 0;
+		player_data.uid = 0;
+		player_data.account = "";
+		player_data.nick_name = "";
+		player_data.level = 0;
+		player_data.exp = 0;
+		player_data.vip_level = 0;
+	}
 };
 
 class UserDataManager : public JmySingleton<UserDataManager>

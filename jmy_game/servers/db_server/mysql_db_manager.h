@@ -92,14 +92,14 @@ public:
 
 private:
 	template <typename FieldNameValueArg>
-	char* format_insert_field_name_str(char* format_buf, int format_buf_len, const FieldNameValueArg& arg);
+	char* format_insert_field_name_str(const char* head_buf, int buf_num, const FieldNameValueArg& arg);
 	template <typename FirstFieldNameValueArg, typename... RestFieldNameValueArg>
-	char* format_insert_field_name_str(char* format_buf, int format_buf_len, const FirstFieldNameValueArg& first, const RestFieldNameValueArg&... rest);
+	char* format_insert_field_name_str(const char* head_buf, int buf_num, const FirstFieldNameValueArg& first, const RestFieldNameValueArg&... rest);
 
 	template <typename FieldNameValueArg>
-	char* format_insert_field_value_str(int table_index, char* format_buf, int format_buf_len, const FieldNameValueArg& arg);
+	char* format_insert_field_value_str(int table_index, const char* head_buf, int buf_num, const FieldNameValueArg& arg);
 	template <typename FirstFieldNameValueArg, typename... RestFieldNameValueArg>
-	char* format_insert_field_value_str(int table_index, char* format_buf, int format_buf_len, const FirstFieldNameValueArg& first, const RestFieldNameValueArg&... rest);
+	char* format_insert_field_value_str(int table_index, const char* head_buf, int buf_num, const FirstFieldNameValueArg& first, const RestFieldNameValueArg&... rest);
 
 	template <typename FieldNameValueArg>
 	char* format_update_field_value_str(int table_index, const FieldNameValueArg& arg);
@@ -128,6 +128,23 @@ private:
 			big_index_ = 0;
 		return big_index_;
 	}
+	bool get_buf_info(int buf_num, char*& buf, int& buf_len) {
+		if (buf_num == 0) {
+			buf = buf_[index_];
+			buf_len = sizeof(buf_[index_]);
+		} else if (buf_num == 1) {
+			buf = buf2_[index2_];
+			buf_len = sizeof(buf2_[index2_]);
+		} else {
+			return false;
+		}
+		return true;
+	}
+	int to_next_index(int buf_num) {
+		if (buf_num == 0) return next_index();
+		else if (buf_num == 1) return next_index2();
+		else return -1;
+	}
 
 private:
 	MysqlDBConfigManager config_mgr_;
@@ -139,24 +156,31 @@ private:
 };
 
 template <typename FieldNameValueArg>
-char* MysqlDBManager::format_insert_field_name_str(char* format_buf, int format_buf_len, const FieldNameValueArg& arg)
+char* MysqlDBManager::format_insert_field_name_str(const char* head_buf, int buf_num, const FieldNameValueArg& arg)
 {
-	std::snprintf(format_buf, format_buf_len, "%s", arg.field_name.c_str());
-	return format_buf;
+	char* buf = nullptr;
+	int buf_len = 0;
+	if (!get_buf_info(buf_num, buf, buf_len)) {
+		return nullptr;
+	}
+	if (!head_buf)
+		std::snprintf(buf, buf_len, "%s", arg.field_name.c_str());
+	else
+		std::snprintf(buf, buf_len, "%s, %s", head_buf, arg.field_name.c_str());
+	return buf;
 }
 
 template <typename FirstFieldNameValueArg, typename... RestFieldNameValueArg>
-char* MysqlDBManager::format_insert_field_name_str(char* format_buf, int format_buf_len, const FirstFieldNameValueArg& first, const RestFieldNameValueArg&... rest)
+char* MysqlDBManager::format_insert_field_name_str(const char* head_buf, int buf_num, const FirstFieldNameValueArg& first, const RestFieldNameValueArg&... rest)
 {
-	char tmp[32];
-	char* t = format_insert_type_str(tmp, sizeof(tmp), first);
-	std::snprintf(buf_[index_], sizeof(buf_[index_]), "%s, ", t);
-	index_ = next_index();
-	return format_insert_type_str(format_buf, format_buf_len, rest...);
+	char* t = format_insert_field_name_str(head_buf, buf_num, first);
+	if (!t) return nullptr;
+	if (to_next_index(buf_num) < 0) return nullptr;
+	return format_insert_field_name_str(t, buf_num, rest...);
 }
 
 template <typename FieldNameValueArg>
-char* MysqlDBManager::format_insert_field_value_str(int table_index, char* format_buf, int format_buf_len, const FieldNameValueArg& arg)
+char* MysqlDBManager::format_insert_field_value_str(int table_index, const char* head_buf, int buf_num, const FieldNameValueArg& arg)
 {
 	const MysqlTableInfo* ti = config_mgr_.get_table_info(table_index);
 	if (!ti) {
@@ -169,24 +193,37 @@ char* MysqlDBManager::format_insert_field_value_str(int table_index, char* forma
 		return nullptr;
 	}
 
+	char* buf = nullptr;
+	int buf_len = 0;
+	if (!get_buf_info(buf_num, buf, buf_len)) {
+		return nullptr;
+	}
+
 	int ft = ti->fields_info[idx].field_type;
 	int flags = ti->fields_info[idx].create_flags;
-	bool b = mysql_get_field_value_format((MysqlTableFieldType)ft, flags, arg.field_value, format_buf, format_buf_len);
+	bool b = mysql_get_field_value_format((MysqlTableFieldType)ft, flags, arg.field_value, buf, buf_len);
 	if (!b) {
 		LogError("field_type(%d), create_flags(%d) get format error", ft, flags);
 		return nullptr;
 	}
-	return format_buf;
+	if (head_buf) {
+		char* prev_buf = buf;
+		if (to_next_index(buf_num) < 0) return nullptr;
+		if (!get_buf_info(buf_num, buf, buf_len)) {
+			return nullptr;
+		}
+		std::snprintf(buf, buf_len, "%s, %s", head_buf, prev_buf);
+	}
+	return buf;
 }
 
 template <typename FirstFieldNameValueArg, typename... RestFieldNameValueArg>
-char* MysqlDBManager::format_insert_field_value_str(int table_index, char* format_buf, int format_buf_len, const FirstFieldNameValueArg& first, const RestFieldNameValueArg&... rest)
+char* MysqlDBManager::format_insert_field_value_str(int table_index, const char* head_buf, int buf_num, const FirstFieldNameValueArg& first, const RestFieldNameValueArg&... rest)
 {
-	char tmp[32];
-	char* t = format_insert_field_value_str(tmp, sizeof(tmp), first);
-	std::snprintf(buf2_[index2_], sizeof(buf2_[index2_]), "%s, ", t);
-	index2_ = next_index2();
-	return format_insert_field_value_str(format_buf, format_buf_len, rest...);
+	char* t = format_insert_field_value_str(table_index, head_buf, buf_num, first);
+	if (!t) return nullptr;
+	if (to_next_index(buf_num) < 0) return nullptr;
+	return format_insert_field_value_str(table_index, head_buf, buf_num, rest...);
 }
 
 template <typename FieldNameValueArg>
@@ -221,12 +258,14 @@ bool MysqlDBManager::insertRecord(int table_index, mysql_cmd_callback_func get_l
 		return false;
 	}
 
-	char* field_names_str = format_insert_field_name_str(buf_[index_], sizeof(buf_[index_]), args...);
-	char* field_values_str = format_insert_field_value_str(table_index, buf2_[index2_], sizeof(buf2_[index2_]), args...);
+	char* field_names_str = format_insert_field_name_str(nullptr, 0, args...);
+	char* field_values_str = format_insert_field_value_str(table_index, nullptr, 1, args...);
 
-	std::snprintf(big_buf_[big_index_], sizeof(big_buf_[big_index_]),
-			"INSERT INTO %s (%s) VALUE (%s)", ti->name, field_names_str, field_values_str);
-	return push_insert_cmd(big_buf_[big_index_], strlen(big_buf_[big_index_]), get_last_insert_id_func, param, param_l);
+	std::snprintf(big_buf_[big_index_], sizeof(big_buf_[big_index_]), "INSERT INTO %s (%s) VALUES (%s)", ti->name, field_names_str, field_values_str);
+	LogInfo("insert sql string: %s", big_buf_[big_index_]);
+	bool res = push_insert_cmd(big_buf_[big_index_], strlen(big_buf_[big_index_]), get_last_insert_id_func, param, param_l);
+	if (!get_last_insert_id_func) return res;
+	return push_get_last_insert_id_cmd(get_last_insert_id_func, param, param_l);
 }
 
 template <typename KeyType, typename... FieldNameValueArgs>

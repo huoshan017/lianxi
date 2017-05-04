@@ -86,8 +86,9 @@ int GameHandler::processRequireUserDataRequest(JmyMsgInfo* info)
 		if (a == "") {
 			a = GLOBAL_DATA->insertAccount(request.account());
 		}
-		MysqlFieldNameValue<const std::string&> nv(std::string("account"), a);
-		if (!DB_MGR.insertRecord("t_player", DBResCBFuncs::getPlayerInfo, (void*)&a, 0, nv)) {
+		MysqlFieldNameValue<const std::string&> account_nv(std::string("account"), a);
+		MysqlFieldNameValue<int> level_nv(std::string("level"), 1);
+		if (!DB_MGR.insertRecord("t_player", DBResCBFuncs::insertPlayerInfo, (void*)&a, (long)game_id, account_nv, level_nv)) {
 			GLOBAL_DATA->removeAccount(request.account());
 			LogError("insert new record(account:%s) failed", a.c_str());
 			return -1;
