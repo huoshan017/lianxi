@@ -75,14 +75,28 @@ inline bool mysql_get_field_value_format(MysqlTableFieldType ft, int flags, int 
 	return false;
 }
 
-inline bool mysql_get_field_value_format(MysqlTableFieldType ft, int flags, long long value, char* format_buf, int format_buf_len)
+inline bool mysql_get_field_value_format(MysqlTableFieldType ft, int flags, uint64_t value, char* format_buf, int format_buf_len)
 {
 	if (ft == MYSQL_FIELD_TYPE_BIGINT) {
 		if (flags & MYSQL_TABLE_CREATE_UNSIGNED) {
-			std::snprintf(format_buf, format_buf_len, "%lld", value);
+			std::snprintf(format_buf, format_buf_len, "%lu", value);
 			return true;
 		} else {
+			std::snprintf(format_buf, format_buf_len, "%ld", value);
+			return true;
+		}
+	}
+	return false;
+}
+
+inline bool mysql_get_field_value_format(MysqlTableFieldType ft, int flags, unsigned long long value, char* format_buf, int format_buf_len)
+{
+	if (ft == MYSQL_FIELD_TYPE_BIGINT) {
+		if (flags & MYSQL_TABLE_CREATE_UNSIGNED) {
 			std::snprintf(format_buf, format_buf_len, "%llu", value);
+			return true;
+		} else {
+			std::snprintf(format_buf, format_buf_len, "%lld", value);
 			return true;
 		}
 	}

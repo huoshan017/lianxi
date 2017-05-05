@@ -291,7 +291,7 @@ const char* MysqlConfigLoader::get_field_create_flags(const MysqlTableFieldInfo&
 			if (s_flags_info[i].flag == MYSQL_TABLE_CREATE_DEFAULT) {
 				if (IS_MYSQL_INT_TYPE(field_info.field_type)) {
 					std::snprintf(buf[bi], sizeof(buf[bi]), "%s %s 0", pbuf, s_flags_info[i].flag_str);
-				} else if (IS_MYSQL_TEXT_TYPE(field_info.field_type)) {
+				} else if (IS_MYSQL_TEXT_TYPE(field_info.field_type) || IS_MYSQL_BINARY_TYPE(field_info.field_type)) {
 					std::snprintf(buf[bi], sizeof(buf[bi]), "%s %s ''", pbuf, s_flags_info[i].flag_str);
 				} else if (field_info.field_type == MYSQL_FIELD_TYPE_TIMESTAMP) {
 					std::snprintf(buf[bi], sizeof(buf[bi]), "%s %s CURRENT_TIMESTAMP", pbuf, s_flags_info[i].flag_str);
@@ -313,7 +313,7 @@ const char* MysqlConfigLoader::get_field_index_type(const MysqlTableFieldInfo& f
 		const char* index_str;
 	};
 	static IndexInfo s_index_info[] = {
-		{ MYSQL_INDEX_TYPE_NONE, "" },
+		{ MYSQL_INDEX_TYPE_NONE, nullptr },
 		{ MYSQL_INDEX_TYPE_NORMAL, "index" },
 		{ MYSQL_INDEX_TYPE_UNIQUE, "unique" }
 	};
@@ -353,28 +353,37 @@ bool MysqlConfigLoader::add_field(const char* table_name, const MysqlTableFieldI
 
 	// create index
 	const char* index_type_str = get_field_index_type(field_info);
-	if (std::memcmp(index_type_str, "index", std::strlen("index")) == 0) {
-		if (IS_MYSQL_TEXT_TYPE(field_info.field_type) || IS_MYSQL_BINARY_TYPE(field_info.field_type)) {
-			int l = mysql_field_default_length(field_info.field_type);
-			if (l < 0) {
-				LogError("field_type(%d) default length invalid", field_info.field_type);
-				return false;
-			}
-			std::snprintf(buf_, sizeof(buf_), "ALTER TABLE `%s` ADD INDEX %s_index ON %s(%d)",
-					table_name, field_info.name, field_info.name, l);
-		} else {
-			std::snprintf(buf_, sizeof(buf_), "ALTER TABLE `%s` ADD INDEX %s_index ON %s",
-					table_name, field_info.name, field_info.name);
+	if (index_type_str) {
+		int l = field_info.type_length;
+		if (l == MYSQL_FIELD_DEFAULT_LENGTH) {
+			l = mysql_field_default_length(field_info.field_type);
 		}
-	} else if (std::memcmp(index_type_str, "unique", std::strlen("unique")) == 0) {
-		std::snprintf(buf_, sizeof(buf_), "ALTER TABLE `%s` ADD UNIQUE ON %s", table_name, field_info.name);
-	} else {
-		LogError("not supported index type(%s)", index_type_str);
-		return false;
-	}
-	if (!connector_->real_query(buf_, strlen(buf_))) {
-		LogError("add field(%s) to table(%s) failed", field_info.name, table_name);
-		return false;
+		if (l < 0) {
+			LogError("field_type(%d) default length invalid", field_info.field_type);
+			return false;
+		}
+
+		if (std::memcmp(index_type_str, "index", std::strlen("index")) == 0) {
+			if (IS_MYSQL_TEXT_TYPE(field_info.field_type) || IS_MYSQL_BINARY_TYPE(field_info.field_type)) {
+				std::snprintf(buf_, sizeof(buf_), "ALTER TABLE `%s` ADD INDEX %s_index (`%s`(%d))", table_name, field_info.name, field_info.name, l);
+			} else {
+				std::snprintf(buf_, sizeof(buf_), "ALTER TABLE `%s` ADD INDEX %s_index (`%s`)", table_name, field_info.name, field_info.name);
+			}
+		} else if (std::memcmp(index_type_str, "unique", std::strlen("unique")) == 0) {
+			if (IS_MYSQL_TEXT_TYPE(field_info.field_type) || IS_MYSQL_BINARY_TYPE(field_info.field_type)) {
+				std::snprintf(buf_, sizeof(buf_), "ALTER TABLE `%s` ADD UNIQUE (`%s`(%d))", table_name, field_info.name, l);
+			} else {
+				std::snprintf(buf_, sizeof(buf_), "ALTER TABLE `%s` ADD UNIQUE (`%s`)", table_name, field_info.name);
+			}
+		} else {
+			LogError("not supported index type(%s)", index_type_str);
+			return false;
+		}
+
+		if (!connector_->real_query(buf_, strlen(buf_))) {
+			LogError("add field(%s) to table(%s) failed", field_info.name, table_name);
+			return false;
+		}
 	}
 	
 	LogInfo("table(%s) add field(%s) success", table_name, field_info.name);

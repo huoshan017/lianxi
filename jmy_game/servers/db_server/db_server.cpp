@@ -4,6 +4,7 @@
 #include "config_data.h"
 #include "user_data_manager.h"
 #include "db_struct_defines.h"
+#include "global_data.h"
 
 DBServer::DBServer() : server_(service_)
 {
@@ -40,6 +41,11 @@ bool DBServer::init(const char* confpath)
 		return false;
 	}
 
+	if (!GLOBAL_DATA->init()) {
+		LogError("failed to init global_data");
+		return false;
+	}
+
 	boost::asio::io_service service;
 	// listen login and gate
 	s_game_config.max_conn = SERVER_CONFIG.max_conn;
@@ -65,6 +71,7 @@ void DBServer::close()
 	//DB_MGR->clear();
 	server_.close();
 	db_mgr_.clear();
+	GLOBAL_DATA->clear();
 }
 
 int DBServer::run()

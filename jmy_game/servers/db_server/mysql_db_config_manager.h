@@ -25,7 +25,9 @@ public:
 	const char* get_field_type_format(int table_index, const char* field_name, const FieldType& value, char* format_buf, int format_buflen) {
 		const MysqlTableFieldInfo* fi = get_field_info(table_index, field_name);
 		if (!fi) return nullptr;
-		return mysql_get_field_value_format(fi->field_type, fi->create_flags, value, format_buf, format_buflen);
+		if (!mysql_get_field_value_format(fi->field_type, fi->create_flags, value, format_buf, format_buflen))
+			return nullptr;
+		return format_buf;
 	}
 
 private:

@@ -7,6 +7,38 @@
 
 char DBResCBFuncs::tmp_[4096];
 
+int DBResCBFuncs::getAllAccounts(MysqlConnector::Result& res, void* param, long param_l)
+{
+	(void)param;
+	(void)param_l;
+	if (res.res_err != 0) {
+		LogError("get all accounts failed, err(%d)", res.res_err);
+		return -1;
+	}
+
+	int num = res.num_rows();
+	if (num == 0 || res.is_empty()) {
+		LogError("get all accounts result is empty");
+		return 0;
+	}
+
+	char** datas = nullptr;
+	while (true) {
+		datas = res.fetch();
+		if (!datas) break;
+		if (res.num_fields() < 1) {
+			LogError("error: result field num less 1");
+			return -1;
+		}
+		const char* account = datas[0];
+		GLOBAL_DATA->insertDBAccount(std::string(account));
+	}
+
+	LogInfo("accounts num is %d", num);
+
+	return 0;
+}
+
 int DBResCBFuncs::insertPlayerInfo(MysqlConnector::Result& res, void* param, long param_l)
 {
 	const std::string& account = *(std::string*)param;
@@ -56,6 +88,8 @@ int DBResCBFuncs::insertPlayerInfo(MysqlConnector::Result& res, void* param, lon
 	user->player_data.uid = uid;
 	user->player_data.id = id;
 	user->player_data.account = account;
+
+	GLOBAL_DATA->insertDBAccount(account);
 	
 	LogInfo("insertPlayerInfo");
 	return 0;
@@ -76,21 +110,16 @@ int DBResCBFuncs::getPlayerInfo(MysqlConnector::Result& res, void* param, long p
 	}
 
 	if (res.num_rows()==0 || res.is_empty()) {
-		UserData* user = USER_MGR->get(account);
-		if (!user) {
-			LogError("cant found user agent by account %s", account.c_str());
-			return -1;
+		LogError("get player info result is empty");
+		return -1;
+	}
+
+	char** datas = res.fetch();
+	int i = 0;
+	while (datas) {
+		for (i=0; i<res.num_fields(); ++i) {
 		}
-		std::snprintf(tmp_, sizeof(tmp_), "INSERT ");
-	} else {
-		char** datas = res.fetch();
-		int i = 0;
-		while (datas) {
-			for (i=0; i<res.num_fields(); ++i) {
-			}
-			datas = res.fetch();
-		}
-		res.clear();
+		datas = res.fetch();
 	}
 
 	LogInfo("getPlayerInfo");
