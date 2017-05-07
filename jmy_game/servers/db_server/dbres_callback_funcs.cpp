@@ -84,6 +84,7 @@ int DBResCBFuncs::insertPlayerInfo(MysqlConnector::Result& res, void* param, lon
 		LogError("account(%s) get free user failed", account.c_str());
 		return -1;
 	}
+
 	user->game_server_id = (int)param_l;
 	user->player_data.uid = uid;
 	user->player_data.id = id;

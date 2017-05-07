@@ -95,7 +95,7 @@ int GameHandler::processRequireUserDataRequest(JmyMsgInfo* info)
 			}
 			LogInfo("to inserting new record(account:%s)", a.c_str());
 		} else {
-			if (!DB_MGR.selectRecord("t_player", "account", a, DBResCBFuncs::getPlayerInfo, (void*)&a, (long)0)) {
+			if (!DB_MGR.selectRecord("t_player", "account", a, DBResCBFuncs::getPlayerInfo, (void*)&a, (long)game_id)) {
 				LogError("select account(%s) record failed", a.c_str());
 				return -1;
 			}
