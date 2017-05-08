@@ -608,7 +608,8 @@ bool DBConfigParser::generate_funcs_file(std::fstream& out_file, const std::stri
 		}
 
 		// get result of select funcs
-		out_file << "inline bool get_result_of_select_" << config_.tables[i].name << "_fields(MysqlConnector::Result& res) {" << std::endl;
+		out_file << "inline bool get_result_of_select_" << config_.tables[i].name
+			<< "_fields(MysqlConnector::Result& res, " << config_.tables[i].name << "& data) {" << std::endl;
 		out_file << "	if (res.res_err != 0) {" << std::endl;
 		out_file << "		LogError(\"result(%d) is not no error\", res.res_err);" << std::endl;
 		out_file << "		return -1;" << std::endl;
