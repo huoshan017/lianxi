@@ -9,7 +9,7 @@
 static JmyResendConfig s_retran_config = {
 	RESEND_MAX_CACHED_SEND_BUFFER_COUNT,
 	RESEND_ACK_RECV_COUNT
-;
+};
 static JmyId2MsgHandler s_game_handlers[] = {
 	{ MSGID_GS2DS_CONNECT_DB_REQUEST, GameHandler::processConnectDBRequest },
 	{ MSGID_GS2DS_REQUIRE_USER_DATA_REQUEST, GameHandler::processRequireUserDataRequest }

@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <set>
 #include "../libjmy/jmy_util.h"
-#include "db_struct_struct.h"
+#include "db_struct_structs.h"
 
 enum { MAX_USER_DATA_COUNT = 200000 };
 enum UserState {

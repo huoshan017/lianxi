@@ -18,7 +18,8 @@
 	"funcs_include" : [
 		"../../proto/src/db_struct.pb.h",
 		"mysql_db_manager.h",
-		"db_server.h"
+		"db_server.h",
+		"db_struct_structs.h"
 	],
 	
 	"t_account" : [
