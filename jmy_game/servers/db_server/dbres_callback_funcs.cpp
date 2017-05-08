@@ -119,6 +119,7 @@ int DBResCBFuncs::getPlayerInfo(MysqlConnector::Result& res, void* param, long p
 	int i = 0;
 	while (datas) {
 		for (i=0; i<res.num_fields(); ++i) {
+			
 		}
 		datas = res.fetch();
 	}

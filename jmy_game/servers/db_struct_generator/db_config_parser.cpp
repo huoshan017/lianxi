@@ -190,15 +190,22 @@ void DBConfigParser::clear()
 {
 }
 
-static const char* get_field_type_str(const char* field_type) {
-	std::string s(field_type);
+static const char* get_blob_user_define_data(const std::string& field_type) {
 	const char* blob_str = "blob:";
-	int idx = s.find(blob_str);
+	int idx = field_type.find(blob_str);
 	if (idx >= 0) {
 		static std::string ss;
-		ss = s.substr(idx+std::strlen(blob_str)).c_str();
+		ss = field_type.substr(idx+std::strlen(blob_str)).c_str();
 		return ss.c_str();
 	}
+	return nullptr;
+}
+
+static const char* get_field_type_str(const char* field_type) {
+	std::string s(field_type);
+	const char* type_str = get_blob_user_define_data(s);
+	if (type_str)
+		return type_str;
 
 	if (s == "tinyint" || s == "smallint" ||
 		s == "mediumint" || s == "int")
@@ -618,7 +625,53 @@ bool DBConfigParser::generate_funcs_file(std::fstream& out_file, const std::stri
 		out_file << "		LogError(\"result is empty\");" << std::endl;
 		out_file << "		return -1;" << std::endl;
 		out_file << "	}" << std::endl;
-		out_file << "}" << std::endl;
+		out_file << "	char** datas = res.fetch();" << std::endl;
+		int m = 0;
+		for (int n=0; n<(int)config_.tables_fields[i].size(); ++n) {
+			const std::string& field_type = config_.tables_fields[i][n].field_type;
+			const std::string& create_flags = config_.tables_fields[i][n].create_flags;
+			const std::string& field_name = config_.tables_fields[i][n].name;
+			if (can_select_field_type(field_type)) {
+				if (field_type == std::string("tinyint") ||
+						field_type == std::string("smallint") ||
+						field_type == std::string("mediumint") ||
+						field_type == std::string("int")) {
+					if (create_flags.find("unsigned") != std::string::npos) {
+						out_file << "	data." << field_name << " = (unsigned int)std::strtoul(datas[" << m << "], nullptr, 10);" << std::endl;
+					} else {
+						out_file << "	data." << field_name << " = std::atoi(datas[" << m << "])" << std::endl;
+					}
+				} else if (field_type == std::string("bigint")) {
+					if (create_flags.find("unsigned") != std::string::npos) {
+						out_file << "	data." << field_name << " = (uint64_t)std::strtoull(datas[" << m << "], nullptr, 10);" << std::endl;
+					} else {
+						out_file << "	data." << field_name << " = (int64_t)std::strtoull(datas[" << m << "], nullptr, 10);" << std::endl;
+					}
+				} else if (field_type.find("blob") != std::string::npos) {
+					const char* user_define = get_blob_user_define_data(field_type);
+					if (!user_define) {
+						std::cout << "user define data from " << field_type << " not found" << std::endl;
+						return false;
+					}
+					out_file << "	" << user_define << " ud" << std::endl;
+					out_file << "	if (ud.ParseFromArray(datas[" << m << "], std::strlen(datas[" << m << "]))) {" << std::endl;
+					out_file <<	"		std::cout << \"user define \"" << user_define << "\" parse failed\"" << std::endl;
+					out_file << "		return false;" << std::endl;
+					out_file << "	}" << std::endl;
+					out_file << "	data." << field_name << " = ud;" << std::endl;
+				} else if (field_type.find("text") != std::string::npos ||
+						field_type == std::string("char") ||
+						field_type == std::string("varchar")) {
+					out_file << "	data." << field_name << " = datas[" << m << "];" << std::endl;
+				} else {
+					std::cout << "unsupported field type " << field_type << std::endl;
+					return false;
+				}
+				m += 1;
+			}
+		}
+		out_file << "	return true;" << std::endl;
+		out_file << "}" << std::endl << std::endl;
 	}
 
 	out_file.flush();
