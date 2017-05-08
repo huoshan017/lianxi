@@ -7,8 +7,8 @@
 #include "conn_handler.h"
 
 static JmyResendConfig s_retran_config = {
-	RETRANSMISSION_MAX_CACHED_SEND_BUFFER_COUNT,
-	RETRANSMISSION_ACK_RECV_COUNT
+	RESEND_MAX_CACHED_SEND_BUFFER_COUNT,
+	RESEND_ACK_RECV_COUNT
 };
 static JmyId2MsgHandler s_conn_handlers[] = {
 	{ MSGID_LS2CS_CONNECT_CONFIG_REQUEST, ConnHandler::processLoginConnect },

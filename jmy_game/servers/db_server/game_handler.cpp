@@ -7,6 +7,7 @@
 #include "global_data.h"
 #include "db_server.h"
 #include "mysql_defines.h"
+#include "db_struct_funcs.h"
 
 char GameHandler::tmp_[JMY_MAX_MSG_SIZE];
 
@@ -88,14 +89,13 @@ int GameHandler::processRequireUserDataRequest(JmyMsgInfo* info)
 			MysqlFieldNameValue<int> level_nv(std::string("level"), 1);
 			MysqlFieldNameValue<const std::string&> nickname_nv(std::string("nick_name"), "");
 			MysqlFieldNameValue<int> viplevel_nv(std::string("vip_level"), 0);
-			LogInfo("account = %s, request account = %s", a.c_str(), request.account().c_str());
 			if (!DB_MGR.insertRecord("t_player", DBResCBFuncs::insertPlayerInfo, (void*)&a, (long)game_id, account_nv, level_nv, nickname_nv, viplevel_nv)) {
 				LogError("insert new record(account:%s) failed", a.c_str());
 				return -1;
 			}
 			LogInfo("to inserting new record(account:%s)", a.c_str());
 		} else {
-			if (!DB_MGR.selectRecord("t_player", "account", a, DBResCBFuncs::getPlayerInfo, (void*)&a, (long)game_id)) {
+			if (!select_t_player_fields_by_account(a, DBResCBFuncs::getPlayerInfo, (void*)&a, (long)game_id)) {
 				LogError("select account(%s) record failed", a.c_str());
 				return -1;
 			}

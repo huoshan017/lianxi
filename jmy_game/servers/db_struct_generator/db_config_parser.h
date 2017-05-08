@@ -22,6 +22,7 @@ public:
 		std::string primary_key;
 		int primary_key_index;
 		std::string db_engine;
+		std::vector<std::string> select_keys;
 	};
 
 	struct FieldInfo {
@@ -36,12 +37,17 @@ public:
 		std::string db_name;
 		std::vector<std::string> struct_include_strings;
 		std::vector<std::string> define_include_strings;
+		std::vector<std::string> funcs_include_strings;
 		std::vector<TableInfo> tables;
 		std::vector<std::vector<FieldInfo> > tables_fields;
 	};
 
 private:
 	bool parse_table_fields(const char* table_name, std::vector<FieldInfo>& fields);
+	bool generate_defines_file(std::fstream& out_file, const std::string& file_name);
+	bool generate_structs_file(std::fstream& out_file, const std::string& file_name);
+	bool generate_funcs_file(std::fstream& out_file, const std::string& file_name);
+	const char* get_field_format_for_func(const std::vector<FieldInfo>& field_vec, const std::string& field_name);
 
 private:
 	rapidjson::Document doc_;

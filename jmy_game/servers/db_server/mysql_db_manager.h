@@ -62,6 +62,13 @@ public:
 	template <typename KeyType>
 	bool selectRecord(const char* table_name,
 			const char* key_name, const KeyType& key_value,
+			const char** field_name_array, int field_name_array_length,
+			mysql_cmd_callback_func get_result_func,
+			void* param, long param_l);
+
+	template <typename KeyType>
+	bool selectRecord(const char* table_name,
+			const char* key_name, const KeyType& key_value,
 			const std::list<const char*>& fields_list,
 			mysql_cmd_callback_func get_result_func,
 			void* param, long param_l);
@@ -101,6 +108,10 @@ public:
 			const std::list<const char*>& fields_list,
 			mysql_cmd_callback_func get_result_func,
 			void* param, long param_l);
+
+	bool pushSelectCmd(const char* sql, unsigned int sql_len, mysql_cmd_callback_func get_result_func, void* param, long param_l) {
+		return push_read_cmd(sql, sql_len, get_result_func, param, param_l);
+	}
 
 private:
 	template <typename FieldNameValueArg>
@@ -392,6 +403,60 @@ bool MysqlDBManager::selectRecord(
 }
 
 template <typename KeyType>
+bool MysqlDBManager::selectRecord(const char* table_name,
+			const char* key_name, const KeyType& key_value,
+			const char** field_name_array, int field_name_array_length,
+			mysql_cmd_callback_func get_result_func,
+			void* param, long param_l)
+{
+	int table_index = config_mgr_.get_table_index(table_name);
+	if (table_index < 0) {
+		LogError("get table(%s) index failed", table_name);
+		return false;
+	}
+
+	if (field_name_array_length == 0) {
+		return selectRecord(table_index, key_name, key_value, get_result_func, param, param_l);
+	}
+
+	const MysqlTableInfo* ti = config_mgr_.get_table_info(table_index);
+	if (!ti) {
+		LogError("get table(%d) info failed", table_index);
+		return false;
+	}
+
+	char* buf = nullptr; int buf_len = 0;
+	if (!get_buf_info(0, buf, buf_len)) {
+		return false;
+	}
+
+	const char* key_value_format = config_mgr_.get_field_type_format(table_index, key_name, key_value, buf, buf_len);
+	if (!key_value_format) {
+		LogError("table_index(%d) key_name(%s) get field_type format failed", table_index, key_name);
+		return false;
+	}
+
+	char* fields_name_format = nullptr; 
+	if (!get_buf_info(1, fields_name_format, buf_len)) {
+		return false;
+	}
+
+	char* prev_buf = nullptr;
+	for (int i=0; i<field_name_array_length; ++i) {
+		if (!prev_buf)
+			std::snprintf(fields_name_format, buf_len, "%s", field_name_array[i]);
+		else
+			std::snprintf(fields_name_format, buf_len, "%s, %s", prev_buf, field_name_array[i]);
+		prev_buf = fields_name_format;
+		to_next_index(1);
+	}
+
+	std::snprintf(big_buf_[big_index_], sizeof(big_buf_[big_index_]),
+			"SELECT %s FROM %s WHERE %s=%s", fields_name_format, ti->name, key_name, key_value_format);
+	return push_read_cmd(big_buf_[big_index_], std::strlen(big_buf_[big_index_]), get_result_func, param, param_l);
+}
+
+template <typename KeyType>
 bool MysqlDBManager::selectRecord(
 		const char* table_name,
 		const char* key_name, const KeyType& key_value,
@@ -484,7 +549,7 @@ bool MysqlDBManager::selectRecord(
 		void* param, long param_l)
 {
 	if (fields_list.size() == 0) {
-		return selectRecord(table_index, key_name, key_value, get_result_func);
+		return selectRecord(table_index, key_name, key_value, get_result_func, param, param_l);
 	}
 
 	const MysqlTableInfo* ti = config_mgr_.get_table_info(table_index);
@@ -492,15 +557,21 @@ bool MysqlDBManager::selectRecord(
 		LogError("get table(%d) info failed", table_index);
 		return false;
 	}
-	const char* format = config_mgr_.get_field_type_format(table_index, key_name, key_value, buf_[index_], sizeof(buf_[index_]));
+
+	char* buf = nullptr;
+	int buf_len = 0;
+	if (!get_buf_info(0, buf, buf_len)) {
+		return false;
+	}
+
+	const char* format = config_mgr_.get_field_type_format(table_index, key_name, key_value, buf, buf_len);
 	if (!format) {
 		LogError("table_index(%d) key_name(%s) get field_type format failed", table_index, key_name);
 		return false;
 	}
 
-	std::snprintf(buf_[index_], sizeof(buf_[index_]),
-			"SELECT %s FROM %s WHERE %s=%s", boost::join(fields_list, ","), ti->name, key_name, format);
-	return push_read_cmd(buf_[index_], std::strlen(buf_[index_]), get_result_func, param, param_l);
+	std::snprintf(big_buf_[big_index_], sizeof(big_buf_[big_index_]), "SELECT %s FROM %s WHERE %s=%s", boost::join(fields_list, ","), ti->name, key_name, format);
+	return push_read_cmd(big_buf_[big_index_], std::strlen(big_buf_[big_index_]), get_result_func, param, param_l);
 }
 
 template <typename KeyType, typename KeyType2>
@@ -513,7 +584,7 @@ bool MysqlDBManager::selectRecord(
 		void* param, long param_l)
 {
 	if (fields_list.size() == 0) {
-		return selectRecord(table_index, key_name, key_value, key2_name, key2_value, get_result_func);
+		return selectRecord(table_index, key_name, key_value, key2_name, key2_value, get_result_func, param, param_l);
 	}
 
 	const MysqlTableInfo* ti = config_mgr_.get_table_info(table_index);

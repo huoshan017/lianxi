@@ -8,8 +8,8 @@
 
 /* connect login handler config */
 static JmyResendConfig s_retran_config = {
-	RETRANSMISSION_MAX_CACHED_SEND_BUFFER_COUNT,
-	RETRANSMISSION_ACK_RECV_COUNT
+	RESEND_MAX_CACHED_SEND_BUFFER_COUNT,
+	RESEND_ACK_RECV_COUNT
 };
 static JmyId2MsgHandler s_login_handlers[] = {
 	{ MSGID_S2C_LOGIN_RESPONSE, LoginHandler::processLogin },

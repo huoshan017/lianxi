@@ -8,8 +8,8 @@
 
 /* connect config handler config */
 static JmyResendConfig s_retran_config = {
-	RETRANSMISSION_MAX_CACHED_SEND_BUFFER_COUNT,
-	RETRANSMISSION_ACK_RECV_COUNT
+	RESEND_MAX_CACHED_SEND_BUFFER_COUNT,
+	RESEND_ACK_RECV_COUNT
 };
 static JmyId2MsgHandler s_conn_gate_handlers[] = {
 	{ MSGID_GT2GS_CONNECT_GATE_RESPONSE, ConnGateHandler::processConnectGateResponse },

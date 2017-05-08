@@ -1,8 +1,10 @@
 {
 	"db_name" : "jmy_game",
 	"tables" : [
-		{ "name":"t_account",	"primary_key":"id",		"primary_key_index":0,  "engine":"innodb" },
-		{ "name":"t_player",	"primary_key":"id",		"primary_key_index":0, "engine":"innodb" }
+		{ "name":"t_account",  "primary_key":"id",  "primary_key_index":0,  "engine":"innodb",  "select_key": ["account"] },
+		{ "name":"t_player",  "primary_key":"id",  "primary_key_index":0,  "engine":"innodb",  "select_key": ["account", "uid"] },
+		{ "name":"t_friend",  "primary_key":"id",  "primary_key_index":0,  "engine":"innodb",  "select_key": ["player1", "player2"] },
+		{ "name":"t_guild",  "primary_key":"id",  "primary_key_index":0,  "engine":"innodb",  "select_key": ["name"] }
 	],
 
 	"struct_include" : [
@@ -11,6 +13,11 @@
 
 	"defines_include" : [
 		"mysql_defines.h"
+	],
+
+	"funcs_include" : [
+		"mysql_db_manager.h",
+		"db_server.h"
 	],
 	
 	"t_account" : [
@@ -24,8 +31,9 @@
 	"t_player" : [
 		{ "name":"id",			"field_type":"int",					"field_length":0,	"index_type":"none",			"create_flags":"auto_increment,unsigned,not null" },
 		{ "name":"account",		"field_type":"varchar",				"field_length":32,	"index_type":"unique",			"create_flags":"not null" },
-		{ "name":"uid",			"field_type":"bigint",				"field_length":0,	"index_type":"index",			"create_flags":"not null,default" },
+		{ "name":"uid",			"field_type":"bigint",				"field_length":0,	"index_type":"index",			"create_flags":"not null,default,unsigned" },
 		{ "name":"nick_name",	"field_type":"varchar",				"field_length":32,	"index_type":"none",			"create_flags":"not null,default" },
+		{ "name":"sex",			"field_type":"tinyint",				"field_length":0,	"index_type":"none",			"create_flags":"not null,default" },
 		{ "name":"level",		"field_type":"int",					"field_length":0,	"index_type":"none",			"create_flags":"not null,default" },
 		{ "name":"vip_level",	"field_type":"int",					"field_length":0,	"index_type":"none",			"create_flags":"not null,default" },
 		{ "name":"exp",			"field_type":"int",					"field_length":0,	"index_type":"none",			"create_flags":"not null,default" },
@@ -34,5 +42,18 @@
 		{ "name":"tasks",		"field_type":"blob:DBTaskDataList",		"field_length":0,	"index_type":"none",		"create_flags":"not null,default" },
 		{ "name":"daily_tasks",	"field_type":"blob:DBDailyTaskDataList","field_length":0,	"index_type":"none",		"create_flags":"not null,default" },
 		{ "name":"activities",	"field_type":"blob:DBActivitiesDataList",	"field_length":0,	"index_type":"none",	"create_flags":"not null,default" }
+	],
+
+	"t_friend" : [
+		{ "name":"id",			"field_type":"int",					"field_length":0,	"index_type":"none",			"create_flags":"auto_increment,unsigned,not null" },
+		{ "name":"player1",		"field_type":"bigint",				"field_length":0,	"index_type":"index",			"create_flags":"not null,unsigned" },
+		{ "name":"player2",		"field_type":"bigint",				"field_length":0,	"index_type":"index",			"create_flags":"not null,unsigned" }
+	],
+
+	"t_guild" : [
+		{ "name":"id",			"field_type":"int",					"field_length":0,	"index_type":"none",			"create_flags":"auto_increment,unsigned,not null" },
+		{ "name":"name",		"field_type":"varchar",				"field_length":32,	"index_type":"index",			"create_flags":"not null,default" },
+		{ "name":"create_player", "field_type":"bigint",			"field_length":0,	"index_type":"unique",			"create_flags":"not null,default,unsigned" },
+		{ "name":"create_timestamp","field_type":"timestamp",		"field_length":0,	"index_type":"none",			"create_flags":"not null,default" }
 	]
 }
