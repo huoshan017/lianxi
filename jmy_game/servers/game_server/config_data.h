@@ -43,7 +43,7 @@ static JmyClientConfig s_gate_config = {
 /* conn db_server configures */
 static JmyId2MsgHandler s_conn_db_handlers[] = {
 	{ MSGID_DS2GS_CONNECT_DB_RESPONSE, ConnDBHandler::processConnectDBResponse },
-	{ MSGID_DS2GS_CONNECT_DB_RESPONSE, ConnDBHandler::processConnectDBResponse }
+	{ MSGID_DS2GS_REQUIRE_USER_DATA_RESPONSE, ConnDBHandler::processRequireUserDataResponse }
 };
 static JmyBaseEventHandlers s_conn_db_base_event_handlers = {
 	ConnDBHandler::onConnect,

@@ -620,11 +620,11 @@ bool DBConfigParser::generate_funcs_file(std::fstream& out_file, const std::stri
 			<< "_fields(MysqlConnector::Result& res, " << config_.tables[i].name << "& data) {" << std::endl;
 		out_file << "	if (res.res_err != 0) {" << std::endl;
 		out_file << "		LogError(\"result(%d) is not no error\", res.res_err);" << std::endl;
-		out_file << "		return -1;" << std::endl;
+		out_file << "		return false;" << std::endl;
 		out_file << "	}" << std::endl;
 		out_file << "	if (res.num_rows()==0 || res.is_empty()) {" << std::endl;
 		out_file << "		LogError(\"result is empty\");" << std::endl;
-		out_file << "		return -1;" << std::endl;
+		out_file << "		return false;" << std::endl;
 		out_file << "	}" << std::endl;
 		out_file << "	char** datas = res.fetch();" << std::endl;
 		int m = 0;
@@ -654,15 +654,13 @@ bool DBConfigParser::generate_funcs_file(std::fstream& out_file, const std::stri
 						std::cout << "user define data from " << field_type << " not found" << std::endl;
 						return false;
 					}
-					out_file << "	" << user_define << " ud" << user_define << ";" << std::endl;
-					out_file << "	if (ud" << user_define << ".ParseFromArray(datas[" << m << "], std::strlen(datas[" << m << "]))) {" << std::endl;
-					out_file <<	"		std::cout << \"user define " << user_define << " parse failed\";" << std::endl;
+					//out_file << "	" << user_define << " ud" << user_define << ";" << std::endl;
+					out_file << "	if (!data." << field_name << ".ParseFromArray(datas[" << m << "], std::strlen(datas[" << m << "]))) {" << std::endl;
+					out_file <<	"		LogError(\"user define " << user_define << " parse failed\");" << std::endl;
 					out_file << "		return false;" << std::endl;
 					out_file << "	}" << std::endl;
-					out_file << "	data." << field_name << " = ud" << user_define << ";" << std::endl;
-				} else if (field_type.find("text") != std::string::npos ||
-						field_type == std::string("char") ||
-						field_type == std::string("varchar")) {
+					//out_file << "	data." << field_name << " = ud" << user_define << ";" << std::endl;
+				} else if (field_type.find("text") != std::string::npos || field_type == std::string("char") || field_type == std::string("varchar")) {
 					out_file << "	data." << field_name << " = datas[" << m << "];" << std::endl;
 				} else {
 					std::cout << "unsupported field type " << field_type << std::endl;

@@ -122,10 +122,18 @@ bool PlayerManager::free(Player* p)
 bool PlayerManager::addAccountId(const std::string& account, int user_id)
 {
 	int id = 0;
-	if (!account2id_map_.find_1(account, id))
+	if (account2id_map_.find_1(account, id))
 		return false;
 	account2id_map_.insert(account, user_id);
 	return true;
+}
+
+int PlayerManager::getUserIdByAccount(const std::string& account)
+{
+	int user_id = 0;
+	if (!account2id_map_.find_1(account, user_id))
+		return 0;
+	return user_id;
 }
 
 bool PlayerManager::removeAccountId(const std::string& account)
@@ -144,4 +152,22 @@ Player* PlayerManager::getByAccount(const std::string& account)
 	if (!account2id_map_.find_1(account, user_id))
 		return nullptr;
 	return get(user_id);
+}
+
+int PlayerManager::getUserIdbyUid(uint64_t unique_id)
+{
+	int user_id = 0;
+	if (!uid2id_map_.find_1(unique_id, user_id)) {
+		return 0;
+	}
+	return user_id;
+}
+
+uint64_t PlayerManager::getUidByUserId(int user_id)
+{
+	uint64_t unique_id = 0;
+	if (!uid2id_map_.find_2(user_id, unique_id)) {
+		return 0;
+	}
+	return unique_id;
 }

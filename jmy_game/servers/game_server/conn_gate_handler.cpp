@@ -83,6 +83,11 @@ int ConnGateHandler::processEnterGame(JmyMsgInfo* info)
 	}
 
 	int user_id = info->user_id;
+	if (user_id <= 0) {
+		LogError("user_id %d invalid", user_id);
+		return -1;
+	}
+
 	Player* p = PLAYER_MGR->get(user_id);
 	// player not found, send message to db_server
 	if (!p) {
@@ -93,14 +98,14 @@ int ConnGateHandler::processEnterGame(JmyMsgInfo* info)
 			LogError("serialize msg MsgGS2DS_RequireUserDataRequest failed");
 			return -1;
 		}
-		if (GLOBAL_DATA->sendDB(MSGID_GS2DS_REQUIRE_USER_DATA_REQUEST, tmp_, user_data_req.ByteSize()) < 0) {
+		if (GLOBAL_DATA->sendDB(user_id, MSGID_GS2DS_REQUIRE_USER_DATA_REQUEST, tmp_, user_data_req.ByteSize()) < 0) {
 			LogError("send msg MsgGS2DS_RequireUserDataRequest failed");
 			return -1;
 		}
 		LogInfo("send MsgGS2DS_RequireUserDataRequest to db_server");
 	} else {
 		MsgGS2GT_EnterGameResponse response;
-		if (response.SerializeToArray(tmp_, sizeof(tmp_))) {
+		if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
 			LogError("serialize MsgGS2GT_EnterGameResponse failed");
 			return -1;
 		}

@@ -1,4 +1,5 @@
 syntax="proto3";
+import "db_struct.proto";
 
 enum MsgIdTypeServer {
 	MSGID_SERVER_NONE					= 0;
@@ -156,9 +157,26 @@ message MsgGS2DS_RequireUserDataRequest {
 	string account = 1;
 }
 
+// db data for user
+message MsgUserDBData {
+	int32 id = 1;
+	int64 uid = 3;
+	string nick_name = 4;
+	int32 sex = 5;
+	int32 level = 6;
+	int32 vip_level = 7;
+	int32 exp = 8;
+	DBItemDataList items = 9;
+	DBSkillDataList skills = 10;
+	DBTaskDataList tasks = 11;
+	DBDailyTaskDataList daily_tasks = 12;
+	DBActivitiesDataList activities = 13;
+}
+
 // db -> game  [MSGID_GS2DS_REQUIRE_USER_DATA_RESPONSE]
 message MsgDS2GS_RequireUserDataResponse {
 	string account = 1;
+	MsgUserDBData user_data = 2;
 }
 
 // game -> db  [MSGID_GS2DS_CONNECT_DB_REQUEST]

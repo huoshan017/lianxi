@@ -40,8 +40,8 @@ static JmyClientConfig s_login_config = {
 
 /* connect game handler config */
 static JmyId2MsgHandler s_game_handlers[] = {
-	{ MSGID_C2S_ENTER_GAME_REQUEST, GameHandler::processEnterGame },
-	{ MSGID_C2S_RECONNECT_REQUEST, GameHandler::processReconnect }
+	{ MSGID_S2C_ENTER_GAME_RESPONSE, GameHandler::processEnterGame },
+	{ MSGID_S2C_RECONNECT_RESPONSE, GameHandler::processReconnect }
 };
 static JmyBaseEventHandlers s_game_base_event_handlers = {
 	GameHandler::onConnect,

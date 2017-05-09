@@ -4,6 +4,7 @@
 #include "../../proto/src/server.pb.h"
 #include "config_loader.h"
 #include "global_data.h"
+#include "player.h"
 
 char ConnDBHandler::tmp_[JMY_MAX_MSG_SIZE];
 
@@ -70,17 +71,29 @@ int ConnDBHandler::processRequireUserDataResponse(JmyMsgInfo* info)
 		LogError("parse MsgGS2GT_EnterGameResponse failed");
 		return -1;
 	}
+
+	int user_id = PLAYER_MGR->getUserIdByAccount(response.account());
+	if (user_id <= 0) {
+		LogError("get user id by account(%s) failed", response.account().c_str());
+		return -1;
+	}
+	Player* p = PLAYER_MGR->malloc(user_id, response.user_data().uid());
+	if (!p) {
+		LogError("malloc new Player by pair(user_id:%d, unique_id:%llu) failed", user_id, response.user_data().uid());
+		return -1;
+	}
 	
 	MsgGS2GT_EnterGameResponse rsp_to_gt;
+	rsp_to_gt.set_account(response.account());
 	if (!rsp_to_gt.SerializeToArray(tmp_, sizeof(tmp_))) {
 		LogError("serialize MsgGS2GT_EnterGameResponse failed");
 		return -1;
 	}
-	if (GLOBAL_DATA->sendGate(info->user_id, MSGID_GS2GT_ENTER_GAME_RESPONSE, tmp_, rsp_to_gt.ByteSize()) < 0) {
+	if (GLOBAL_DATA->sendGate(user_id, MSGID_GS2GT_ENTER_GAME_RESPONSE, tmp_, rsp_to_gt.ByteSize()) < 0) {
 		LogError("send MsgGS2GT_EnterGameResponse failed");
 		return -1;
 	}
-	LogInfo("processRequireUserDataResponse: ");
+	LogInfo("processRequireUserDataResponse");
 	return info->len;
 }
 

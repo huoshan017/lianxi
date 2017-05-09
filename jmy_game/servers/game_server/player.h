@@ -31,9 +31,12 @@ public:
 	bool free(int unique_id);
 	bool free(Player* player);
 	bool addAccountId(const std::string& account, int user_id);
+	int getUserIdByAccount(const std::string& account);
 	bool removeAccountId(const std::string& account);
 	bool removeAccountId(int user_id);
 	Player* getByAccount(const std::string& account);
+	int getUserIdbyUid(uint64_t unique_id);
+	uint64_t getUidByUserId(int user_id);
 
 private:
 	Player** player_array_;

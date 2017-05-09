@@ -113,6 +113,10 @@ public:
 		return push_read_cmd(sql, sql_len, get_result_func, param, param_l);
 	}
 
+	bool pushWriteCmd(const char* sql, unsigned int sql_len) {
+		return push_write_cmd(sql, sql_len);
+	}
+
 private:
 	template <typename FieldNameValueArg>
 	char* format_insert_field_name_str(const char* head_buf, int buf_num, const FieldNameValueArg& arg);
@@ -437,18 +441,19 @@ bool MysqlDBManager::selectRecord(const char* table_name,
 	}
 
 	char* fields_name_format = nullptr; 
-	if (!get_buf_info(1, fields_name_format, buf_len)) {
-		return false;
-	}
-
 	char* prev_buf = nullptr;
 	for (int i=0; i<field_name_array_length; ++i) {
+		if (!get_buf_info(1, fields_name_format, buf_len)) {
+			return false;
+		}
 		if (!prev_buf)
 			std::snprintf(fields_name_format, buf_len, "%s", field_name_array[i]);
 		else
 			std::snprintf(fields_name_format, buf_len, "%s, %s", prev_buf, field_name_array[i]);
+
 		prev_buf = fields_name_format;
-		to_next_index(1);
+		if (to_next_index(1) < 0)
+			return false;
 	}
 
 	std::snprintf(big_buf_[big_index_], sizeof(big_buf_[big_index_]),

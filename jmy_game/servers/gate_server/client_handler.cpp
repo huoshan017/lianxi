@@ -78,6 +78,7 @@ int ClientHandler::processEnterGameRequest(JmyMsgInfo* info)
 	char* reconn_session = get_session_code(session_buf_, RECONN_SESSION_CODE_BUF_LENGTH);
 	ci->reconn_session = reconn_session;
 	ci->conn = get_connection(info);
+	// insert mapping: conn_id -> id
 	CLIENT_MANAGER->insertConnIdId(info->conn_id, ci->id);
 
 	SEND_GAME_MSG(ci->id, MSGID_GT2GS_ENTER_GAME_REQUEST, info->data, info->len);

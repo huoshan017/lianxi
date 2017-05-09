@@ -2,6 +2,7 @@
 
 #include "../libjmy/jmy_singleton.hpp"
 #include <set>
+#include <unordered_map>
 #include <string>
 
 class GlobalData : public JmySingleton<GlobalData>
@@ -40,7 +41,7 @@ public:
 	}
 
 	bool findDBAccount(const std::string& account) {
-		return db_accounts_.find(account) != accounts_.end();
+		return db_accounts_.find(account) != db_accounts_.end();
 	}
 	bool insertDBAccount(const std::string& account) {
 		if (findDBAccount(account)) return false;
@@ -48,9 +49,32 @@ public:
 		return true;
 	}
 
+	void setAccount2UserId(const std::string& account, int user_id) {
+		std::unordered_map<std::string, int>::iterator it = userid2accounts_.find(account);
+		if (it != userid2accounts_.end()) {
+			it->second = user_id;
+		} else {
+			userid2accounts_.insert(std::make_pair(account, user_id));
+		}
+	}
+
+	int getUserIdByAccount(const std::string& account) {
+		std::unordered_map<std::string, int>::iterator it = userid2accounts_.find(account);
+		if (it == userid2accounts_.end()) return 0;
+		return it->second;
+	}
+
+	bool deleteUserIdByAccount(const std::string& account) {
+		std::unordered_map<std::string, int>::iterator it = userid2accounts_.find(account);
+		if (it == userid2accounts_.end()) return false;
+		userid2accounts_.erase(account);
+		return true;
+	}
+
 private:
 	std::set<std::string> accounts_;
 	std::set<std::string> db_accounts_;
+	std::unordered_map<std::string, int> userid2accounts_;
 };
 
 #define GLOBAL_DATA (GlobalData::getInstance())

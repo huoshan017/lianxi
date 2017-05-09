@@ -19,6 +19,9 @@ int GameHandler::onConnect(JmyEventInfo* info)
 
 int GameHandler::onDisconnect(JmyEventInfo* info)
 {
+	if (GAME_MGR->getByConnId(info->conn_id)) {
+		GAME_MGR->removeByConnId(info->conn_id);
+	}
 	LogInfo("ondisconnect conn_id(%d)", info->conn_id);
 	return 0;
 }
@@ -41,10 +44,13 @@ int GameHandler::processConnectDBRequest(JmyMsgInfo* info)
 		return -1;
 	}
 	int game_id = request.game_id();
-	GameAgent* agent = GAME_MGR->newAgent(game_id, (JmyTcpConnectionMgr*)info->param, info->conn_id);
+	GameAgent* agent = GAME_MGR->get(game_id);
 	if (!agent) {
-		LogError("create game agent with game_id(%d), conn_id(%d) failed", game_id, info->conn_id);
-		return -1;
+		agent = GAME_MGR->newAgent(game_id, (JmyTcpConnectionMgr*)info->param, info->conn_id);
+		if (!agent) {
+			LogError("create game agent with game_id(%d), conn_id(%d) failed", game_id, info->conn_id);
+			return -1;
+		}
 	}
 
 	MsgDS2GS_ConnectDBResponse response;
@@ -68,9 +74,16 @@ int GameHandler::processRequireUserDataRequest(JmyMsgInfo* info)
 		LogError("not found game agent with conn_id(%d)", info->conn_id);
 		return -1;
 	}
+
 	int game_id = GAME_MGR->getIdByConnId(info->conn_id);
 	if (!game_id) {
 		LogError("cant get game_id by conn_id(%d)");
+		return -1;
+	}
+
+	int user_id = info->user_id;
+	if (user_id <= 0) {
+		LogError("user_id %d is invalid", user_id);
 		return -1;
 	}
 
@@ -83,8 +96,9 @@ int GameHandler::processRequireUserDataRequest(JmyMsgInfo* info)
 	UserData* user = USER_MGR->get(request.account());
 	if (!user) {
 		const std::string& a = const_cast<std::string&>(GLOBAL_DATA->getAccount(request.account()));
+		GLOBAL_DATA->setAccount2UserId(a, user_id);
 		// not found in db, insert new record
-		if (!GLOBAL_DATA->findDBAccount(request.account())) {
+		if (!GLOBAL_DATA->findDBAccount(a)) {
 			MysqlFieldNameValue<const std::string&> account_nv(std::string("account"), a);
 			MysqlFieldNameValue<int> level_nv(std::string("level"), 1);
 			MysqlFieldNameValue<const std::string&> nickname_nv(std::string("nick_name"), "");
@@ -104,7 +118,7 @@ int GameHandler::processRequireUserDataRequest(JmyMsgInfo* info)
 	} else {
 		MsgDS2GS_RequireUserDataResponse response;
 		response.set_account(request.account());
-		if (response.SerializeToArray(tmp_, sizeof(tmp_))) {
+		if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
 			LogError("serialize MsgDS2GS_RequireUserDataResponse failed");
 			return -1;
 		}

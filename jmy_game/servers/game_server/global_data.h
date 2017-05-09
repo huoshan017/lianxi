@@ -21,6 +21,10 @@ public:
 		if (!db_conn_) return -1;
 		return db_conn_->send(msg_id, data, len);
 	}
+	int sendDB(int user_id, int msg_id, const char* data, unsigned short len) {
+		if (!db_conn_) return -1;
+		return db_conn_->send(user_id, msg_id, data, len);
+	}
 
 private:
 	JmyTcpConnection* gate_conn_;

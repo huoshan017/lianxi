@@ -74,9 +74,9 @@ int GameHandler::processEnterGameResponse(JmyMsgInfo* info)
 		return -1;
 	}
 
-	ClientInfo* client_info = CLIENT_MANAGER->getClientInfoByConnId(info->user_id);
+	ClientInfo* client_info = CLIENT_MANAGER->getClientInfo(info->user_id);
 	if (!client_info) {
-		send_error(client_info->conn, PROTO_ERROR_ENTER_GAME_INVALID_ACCOUNT);
+		//send_error(client_info->conn, PROTO_ERROR_ENTER_GAME_INVALID_ACCOUNT);
 		LogError("cant get ClientInfo by id(%d)", info->user_id);
 		return -1;
 	}

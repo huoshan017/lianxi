@@ -11,5 +11,5 @@ public:
 	static int getPlayerUid(MysqlConnector::Result& res, void* param, long param_l);
 
 private:
-	static char tmp_[4096];
+	static char tmp_[4096*128];
 };
