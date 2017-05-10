@@ -10,6 +10,7 @@
 #include "db_struct_funcs.h"
 
 char GameHandler::tmp_[JMY_MAX_MSG_SIZE];
+t_player GameHandler::tmp_player_;
 
 int GameHandler::onConnect(JmyEventInfo* info)
 {
@@ -99,17 +100,13 @@ int GameHandler::processRequireUserDataRequest(JmyMsgInfo* info)
 		GLOBAL_DATA->setAccount2UserId(a, user_id);
 		// not found in db, insert new record
 		if (!GLOBAL_DATA->findDBAccount(a)) {
-			MysqlFieldNameValue<const std::string&> account_nv(std::string("account"), a);
-			MysqlFieldNameValue<int> level_nv(std::string("level"), 1);
-			MysqlFieldNameValue<const std::string&> nickname_nv(std::string("nick_name"), "");
-			MysqlFieldNameValue<int> viplevel_nv(std::string("vip_level"), 0);
-			if (!DB_MGR.insertRecord("t_player", DBResCBFuncs::insertPlayerInfo, (void*)&a, (long)game_id, account_nv, level_nv, nickname_nv, viplevel_nv)) {
-				LogError("insert new record(account:%s) failed", a.c_str());
+			tmp_player_.account = a;
+			if (!db_insert_t_player_record(tmp_player_, DBResCBFuncs::insertPlayerInfo, (void*)&a, (long)game_id)) {
 				return -1;
 			}
 			LogInfo("to inserting new record(account:%s)", a.c_str());
 		} else {
-			if (!select_t_player_fields_by_account(a, DBResCBFuncs::getPlayerInfo, (void*)&a, (long)game_id)) {
+			if (!db_select_t_player_fields_by_account(a, DBResCBFuncs::getPlayerInfo, (void*)&a, (long)game_id)) {
 				LogError("select account(%s) record failed", a.c_str());
 				return -1;
 			}

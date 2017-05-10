@@ -42,7 +42,7 @@ int DBResCBFuncs::getAllAccounts(MysqlConnector::Result& res, void* param, long 
 
 	int num = res.num_rows();
 	if (num == 0 || res.is_empty()) {
-		LogError("get all accounts result is empty");
+		LogInfo("get all accounts result is empty");
 		return 0;
 	}
 
@@ -78,26 +78,14 @@ int DBResCBFuncs::insertPlayerInfo(MysqlConnector::Result& res, void* param, lon
 		return 0;
 	}
 
-	if (res.res_err != 0) {
-		LogError("insert player(%s) info failed, err(%d)", account.c_str(), res.res_err);
+	int id = mysql_get_last_insert_id(res);
+	if (id <= 0) {
+		LogError("account(%s) get last insert id invalid", account.c_str());
 		return -1;
 	}
-
-	if (res.num_rows() == 0 || res.is_empty()) {
-		LogError("insert player(%s) result is empty", account.c_str());
-		return -1;	
-	}
-
-	char** datas = res.fetch();
-	if (!datas) {
-		LogError("cant get data from result");
-		return -1;
-	}
-
-	int id = std::atoi(datas[0]);
 	uint64_t uid = id + (((uint64_t)game_id<<32)&0xffffffff00000000);
 
-	MysqlFieldNameValue<uint64_t> nv(std::string("uid"), uid);
+	MysqlFieldNameValue<uint64_t> nv("uid", uid);
 	if (!DB_MGR.updateRecord("t_player", "account", account, nv)) {
 		LogError("update player account(%s) uid(%llu) failed", account.c_str(), uid);
 		return -1;
@@ -148,7 +136,7 @@ int DBResCBFuncs::getPlayerInfo(MysqlConnector::Result& res, void* param, long p
 		return -1;
 	}
 
-	if (!get_result_of_select_t_player_fields(res, user->player_data)) {
+	if (!db_get_result_of_select_t_player(res, user->player_data)) {
 		LogError("get result of select player info failed");
 		return -1;
 	}

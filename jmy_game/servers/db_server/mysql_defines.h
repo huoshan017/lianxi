@@ -3,31 +3,33 @@
 #include <string>
 
 enum MysqlTableFieldType {
-	MYSQL_FIELD_TYPE_NONE = 0,
-	MYSQL_FIELD_TYPE_TINYINT = 1,		// TINYINT
-	MYSQL_FIELD_TYPE_SMALLINT = 2,		// SMALLINT
-	MYSQL_FIELD_TYPE_MEDIUMINT = 3,		// MEDIUMINT
-	MYSQL_FIELD_TYPE_INT = 4,			// INT
-	MYSQL_FIELD_TYPE_BIGINT = 5,		// BIGINT
-	MYSQL_FIELD_TYPE_FLOAT = 6,			// FLOAT
-	MYSQL_FIELD_TYPE_DOUBLE = 7,		// DOUBLE
-	MYSQL_FIELD_TYPE_DATE = 8,			// DATE
-	MYSQL_FIELD_TYPE_DATETIME = 9,		// DATETIME
-	MYSQL_FIELD_TYPE_TIMESTAMP = 10,	// TIMESTAMP
-	MYSQL_FIELD_TYPE_TIME = 11,			// TIME
-	MYSQL_FIELD_TYPE_YEAR = 12,			// YEAR
-	MYSQL_FIELD_TYPE_CHAR = 13,			// CHAR
-	MYSQL_FIELD_TYPE_VARCHAR = 14,		// VARCHAR
-	MYSQL_FIELD_TYPE_TINYBLOB = 15,		// TINYBLOB
-	MYSQL_FIELD_TYPE_TINYTEXT = 16,		// TINYTEXT
-	MYSQL_FIELD_TYPE_BLOB = 17,			// BLOB
-	MYSQL_FIELD_TYPE_TEXT = 18,			// TEXT
-	MYSQL_FIELD_TYPE_MEDIUMBLOB = 19,	// MEDIUMBLOB
-	MYSQL_FIELD_TYPE_MEDIUMTEXT = 20,	// MEDIUMTEXT
-	MYSQL_FIELD_TYPE_LONGBLOB = 21,		// LONGBLOB
-	MYSQL_FIELD_TYPE_LONGTEXT = 22,		// LONGTEXT
-	MYSQL_FIELD_TYPE_ENUM = 23,			// ENUM
-	MYSQL_FIELD_TYPE_SET = 24,			// SET
+	MYSQL_FIELD_TYPE_NONE		= 0,
+	MYSQL_FIELD_TYPE_TINYINT	= 1,	// TINYINT
+	MYSQL_FIELD_TYPE_SMALLINT	= 2,	// SMALLINT
+	MYSQL_FIELD_TYPE_MEDIUMINT	= 3,	// MEDIUMINT
+	MYSQL_FIELD_TYPE_INT		= 4,	// INT
+	MYSQL_FIELD_TYPE_BIGINT		= 5,	// BIGINT
+	MYSQL_FIELD_TYPE_FLOAT		= 6,	// FLOAT
+	MYSQL_FIELD_TYPE_DOUBLE		= 7,	// DOUBLE
+	MYSQL_FIELD_TYPE_DATE		= 8,	// DATE
+	MYSQL_FIELD_TYPE_DATETIME	= 9,	// DATETIME
+	MYSQL_FIELD_TYPE_TIMESTAMP	= 10,	// TIMESTAMP
+	MYSQL_FIELD_TYPE_TIME		= 11,	// TIME
+	MYSQL_FIELD_TYPE_YEAR		= 12,	// YEAR
+	MYSQL_FIELD_TYPE_CHAR		= 13,	// CHAR
+	MYSQL_FIELD_TYPE_BINARY		= 14,	// BINARY
+	MYSQL_FIELD_TYPE_VARBINARY	= 15,	// VARBINARY
+	MYSQL_FIELD_TYPE_VARCHAR	= 16,	// VARCHAR
+	MYSQL_FIELD_TYPE_TINYBLOB	= 17,	// TINYBLOB
+	MYSQL_FIELD_TYPE_TINYTEXT	= 18,	// TINYTEXT
+	MYSQL_FIELD_TYPE_BLOB		= 19,	// BLOB
+	MYSQL_FIELD_TYPE_TEXT		= 20,	// TEXT
+	MYSQL_FIELD_TYPE_MEDIUMBLOB = 21,	// MEDIUMBLOB
+	MYSQL_FIELD_TYPE_MEDIUMTEXT = 22,	// MEDIUMTEXT
+	MYSQL_FIELD_TYPE_LONGBLOB	= 23,	// LONGBLOB
+	MYSQL_FIELD_TYPE_LONGTEXT	= 24,	// LONGTEXT
+	MYSQL_FIELD_TYPE_ENUM		= 25,	// ENUM
+	MYSQL_FIELD_TYPE_SET		= 26,	// SET
 	MYSQL_FIELD_TYPE_MAX,
 };
 
@@ -47,6 +49,8 @@ enum {
 	MYSQL_FIELD_DEFAULT_LENGTH_YEAR = 4,
 	MYSQL_FIELD_DEFAULT_LENGTH_CHAR = 255,
 	MYSQL_FIELD_DEFAULT_LENGTH_VARCHAR = 65530,
+	MYSQL_FIELD_DEFAULT_LENGTH_BINARY = 8000,
+	MYSQL_FIELD_DEFAULT_LENGTH_VARBINARY = 8000,
 	MYSQL_FIELD_DEFAULT_LENGTH_TINYBLOB = 255,
 	MYSQL_FIELD_DEFAULT_LENGTH_TINYTEXT = 255,
 	MYSQL_FIELD_DEFAULT_LENGTH_BLOB = 65535,
@@ -103,20 +107,24 @@ struct MysqlDatabaseConfig {
 	const int tables_num;
 };
 
+#if 0
 template <typename T>
 struct MysqlFieldNameValue {
-	std::string field_name;
-	T field_value;
+	const std::string& field_name;
+	const T& field_value;
+	MysqlFieldNameValue() {}
+	MysqlFieldNameValue(const std::string& fn, const T& fv) : field_name(fn), field_value(fv) {}
+	MysqlFieldNameValue(const MysqlFieldNameValue& v) = delete;
+};
+#endif
+
+template <typename T>
+struct MysqlFieldNameValue {
+	const char* field_name;
+	const T& field_value;
 	MysqlFieldNameValue() {}
 	MysqlFieldNameValue(const char* fn, const T& fv) : field_name(fn), field_value(fv) {}
-	MysqlFieldNameValue(const std::string& fn, const T& fv) : field_name(fn), field_value(fv) {}
-	MysqlFieldNameValue(const MysqlFieldNameValue& v) : field_name(v.field_name), field_value(v.field_value) {}
-	MysqlFieldNameValue(MysqlFieldNameValue&& fp) : field_name(std::move(fp.field_name)), field_value(std::move(fp.field_value)) {}
-	MysqlFieldNameValue& operator=(MysqlFieldNameValue&& fp) {
-		field_name = std::move(fp.field_name);
-		field_value = std::move(fp.field_value);
-		return *this;
-	}
+	MysqlFieldNameValue(const MysqlFieldNameValue& v) = delete;
 };
 
 template <typename T>
@@ -125,11 +133,5 @@ struct MysqlFieldIndexValue {
 	T field_value;
 	MysqlFieldIndexValue() : field_index(0) {}
 	MysqlFieldIndexValue(int fi, const T& fv) : field_index(fi), field_value(fv) {}
-	MysqlFieldIndexValue(const MysqlFieldIndexValue& v) : field_index(v.field_index), field_value(v.field_value) {}
-	MysqlFieldIndexValue(MysqlFieldIndexValue&& f) : field_index(f.field_index), field_value(f.field_value) {}
-	MysqlFieldIndexValue& operator=(MysqlFieldIndexValue&& f) {
-		field_index = f.field_index;
-		field_value = f.field_value;
-		return *this;
-	}
+	MysqlFieldIndexValue(const MysqlFieldIndexValue& v) = delete;
 };

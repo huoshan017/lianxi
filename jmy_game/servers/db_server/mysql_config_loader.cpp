@@ -191,6 +191,22 @@ const char* MysqlConfigLoader::get_field_type(const MysqlTableFieldInfo& field_i
 				std::snprintf(buf, sizeof(buf), "VARCHAR(%d)", field_info.type_length);
 		}
 		break;
+	case MYSQL_FIELD_TYPE_BINARY:
+		{
+			if (field_info.type_length == MYSQL_FIELD_DEFAULT_LENGTH)
+				std::snprintf(buf, sizeof(buf), "BINARY(%d)", MYSQL_FIELD_DEFAULT_LENGTH_BINARY);
+			else
+				std::snprintf(buf, sizeof(buf), "BINARY(%d)", field_info.type_length);
+		}
+		break;
+	case MYSQL_FIELD_TYPE_VARBINARY:
+		{
+			if (field_info.type_length == MYSQL_FIELD_DEFAULT_LENGTH)
+				std::snprintf(buf, sizeof(buf), "VARBINARY(%d)", MYSQL_FIELD_DEFAULT_LENGTH_VARBINARY);
+			else
+				std::snprintf(buf, sizeof(buf), "VARBINARY(%d)", field_info.type_length);
+		}
+		break;
 	case MYSQL_FIELD_TYPE_TINYBLOB:
 		{
 			if (field_info.type_length == MYSQL_FIELD_DEFAULT_LENGTH)
@@ -291,7 +307,7 @@ const char* MysqlConfigLoader::get_field_create_flags(const MysqlTableFieldInfo&
 			if (s_flags_info[i].flag == MYSQL_TABLE_CREATE_DEFAULT) {
 				if (IS_MYSQL_INT_TYPE(field_info.field_type)) {
 					std::snprintf(buf[bi], sizeof(buf[bi]), "%s %s 0", pbuf, s_flags_info[i].flag_str);
-				} else if (IS_MYSQL_TEXT_TYPE(field_info.field_type) || IS_MYSQL_BINARY_TYPE(field_info.field_type)) {
+				} else if (IS_MYSQL_TEXT_TYPE(field_info.field_type) || IS_MYSQL_BINARY_TYPE(field_info.field_type) || IS_MYSQL_BLOB_TYPE(field_info.field_type)) {
 					std::snprintf(buf[bi], sizeof(buf[bi]), "%s %s ''", pbuf, s_flags_info[i].flag_str);
 				} else if (field_info.field_type == MYSQL_FIELD_TYPE_TIMESTAMP) {
 					std::snprintf(buf[bi], sizeof(buf[bi]), "%s %s CURRENT_TIMESTAMP", pbuf, s_flags_info[i].flag_str);
@@ -364,13 +380,13 @@ bool MysqlConfigLoader::add_field(const char* table_name, const MysqlTableFieldI
 		}
 
 		if (std::memcmp(index_type_str, "index", std::strlen("index")) == 0) {
-			if (IS_MYSQL_TEXT_TYPE(field_info.field_type) || IS_MYSQL_BINARY_TYPE(field_info.field_type)) {
+			if (IS_MYSQL_TEXT_TYPE(field_info.field_type) || IS_MYSQL_BINARY_TYPE(field_info.field_type) || IS_MYSQL_BLOB_TYPE(field_info.field_type)) {
 				std::snprintf(buf_, sizeof(buf_), "ALTER TABLE `%s` ADD INDEX %s_index (`%s`(%d))", table_name, field_info.name, field_info.name, l);
 			} else {
 				std::snprintf(buf_, sizeof(buf_), "ALTER TABLE `%s` ADD INDEX %s_index (`%s`)", table_name, field_info.name, field_info.name);
 			}
 		} else if (std::memcmp(index_type_str, "unique", std::strlen("unique")) == 0) {
-			if (IS_MYSQL_TEXT_TYPE(field_info.field_type) || IS_MYSQL_BINARY_TYPE(field_info.field_type)) {
+			if (IS_MYSQL_TEXT_TYPE(field_info.field_type) || IS_MYSQL_BINARY_TYPE(field_info.field_type) || IS_MYSQL_BLOB_TYPE(field_info.field_type)) {
 				std::snprintf(buf_, sizeof(buf_), "ALTER TABLE `%s` ADD UNIQUE (`%s`(%d))", table_name, field_info.name, l);
 			} else {
 				std::snprintf(buf_, sizeof(buf_), "ALTER TABLE `%s` ADD UNIQUE (`%s`)", table_name, field_info.name);

@@ -1,6 +1,8 @@
 #pragma once
 
 #include "mysql_defines.h"
+#include "mysql_connector.h"
+#include <iostream>
 
 #define IS_MYSQL_INT_TYPE(type) \
 		(type == MYSQL_FIELD_TYPE_TINYINT || \
@@ -18,6 +20,9 @@
 		 type == MYSQL_FIELD_TYPE_LONGTEXT)
 
 #define IS_MYSQL_BINARY_TYPE(type) \
+		(type == MYSQL_FIELD_TYPE_BINARY || type == MYSQL_FIELD_TYPE_VARBINARY)
+
+#define IS_MYSQL_BLOB_TYPE(type) \
 		(type == MYSQL_FIELD_TYPE_TINYBLOB || \
 		 type == MYSQL_FIELD_TYPE_MEDIUMBLOB || \
 		 type == MYSQL_FIELD_TYPE_BLOB || \
@@ -46,6 +51,8 @@ inline long mysql_field_default_length(MysqlTableFieldType field_type) {
 		MYSQL_FIELD_DEFAULT_LENGTH_YEAR,
 		MYSQL_FIELD_DEFAULT_LENGTH_CHAR,
 		MYSQL_FIELD_DEFAULT_LENGTH_VARCHAR,
+		MYSQL_FIELD_DEFAULT_LENGTH_BINARY,
+		MYSQL_FIELD_DEFAULT_LENGTH_VARBINARY,
 		MYSQL_FIELD_DEFAULT_LENGTH_TINYBLOB,
 		MYSQL_FIELD_DEFAULT_LENGTH_TINYTEXT,
 		MYSQL_FIELD_DEFAULT_LENGTH_BLOB,
@@ -61,7 +68,24 @@ inline long mysql_field_default_length(MysqlTableFieldType field_type) {
 	return field_length_array[field_type];
 }
 
-inline bool mysql_get_field_value_format(MysqlTableFieldType ft, int flags, int value, char* format_buf, int format_buf_len) {
+template <typename FieldType>
+inline bool mysql_get_field_value_format(MysqlTableFieldType ft, int flags, const FieldType& value, char* format_buf, int format_buf_len) {
+	(void)flags;
+	if (IS_MYSQL_BINARY_TYPE(ft) || IS_MYSQL_BLOB_TYPE(ft)) {
+		if (value.SerializeToArray(format_buf, format_buf_len)) {
+			if (value.ByteSize() == 0) {
+				std::snprintf(format_buf, format_buf_len, "\'\'");
+			} else {
+				format_buf[value.ByteSize()] = '\0';
+			}
+			return true;
+		}
+	}
+	return false;
+}
+
+template <>
+inline bool mysql_get_field_value_format<int>(MysqlTableFieldType ft, int flags, const int& value, char* format_buf, int format_buf_len) {
 	if (ft == MYSQL_FIELD_TYPE_TINYINT || ft == MYSQL_FIELD_TYPE_SMALLINT ||
 		ft == MYSQL_FIELD_TYPE_MEDIUMINT || ft == MYSQL_FIELD_TYPE_INT) {
 		if (flags & MYSQL_TABLE_CREATE_UNSIGNED) {
@@ -75,7 +99,8 @@ inline bool mysql_get_field_value_format(MysqlTableFieldType ft, int flags, int 
 	return false;
 }
 
-inline bool mysql_get_field_value_format(MysqlTableFieldType ft, int flags, uint64_t value, char* format_buf, int format_buf_len)
+template <>
+inline bool mysql_get_field_value_format<uint64_t>(MysqlTableFieldType ft, int flags, const uint64_t& value, char* format_buf, int format_buf_len)
 {
 	if (ft == MYSQL_FIELD_TYPE_BIGINT) {
 		if (flags & MYSQL_TABLE_CREATE_UNSIGNED) {
@@ -89,7 +114,8 @@ inline bool mysql_get_field_value_format(MysqlTableFieldType ft, int flags, uint
 	return false;
 }
 
-inline bool mysql_get_field_value_format(MysqlTableFieldType ft, int flags, int64_t value, char* format_buf, int format_buf_len)
+template <>
+inline bool mysql_get_field_value_format<int64_t>(MysqlTableFieldType ft, int flags, const int64_t& value, char* format_buf, int format_buf_len)
 {
 	if (ft == MYSQL_FIELD_TYPE_BIGINT) {
 		if (flags & MYSQL_TABLE_CREATE_UNSIGNED) {
@@ -103,7 +129,8 @@ inline bool mysql_get_field_value_format(MysqlTableFieldType ft, int flags, int6
 	return false;
 }
 
-inline bool mysql_get_field_value_format(MysqlTableFieldType ft, int flags, unsigned long long value, char* format_buf, int format_buf_len)
+template <>
+inline bool mysql_get_field_value_format<unsigned long long>(MysqlTableFieldType ft, int flags, const unsigned long long& value, char* format_buf, int format_buf_len)
 {
 	if (ft == MYSQL_FIELD_TYPE_BIGINT) {
 		if (flags & MYSQL_TABLE_CREATE_UNSIGNED) {
@@ -117,7 +144,8 @@ inline bool mysql_get_field_value_format(MysqlTableFieldType ft, int flags, unsi
 	return false;
 }
 
-inline bool mysql_get_field_value_format(MysqlTableFieldType ft, int flags, double value, char* format_buf, int format_buf_len)
+template <>
+inline bool mysql_get_field_value_format<double>(MysqlTableFieldType ft, int flags, const double& value, char* format_buf, int format_buf_len)
 {
 	(void)flags;
 	if (ft == MYSQL_FIELD_TYPE_FLOAT || ft == MYSQL_FIELD_TYPE_DOUBLE) {
@@ -137,7 +165,8 @@ inline bool mysql_get_field_value_format(MysqlTableFieldType ft, int flags, cons
 	return false;
 }
 
-inline bool mysql_get_field_value_format(MysqlTableFieldType ft, int flags, const std::string& value, char* format_buf, int format_buf_len)
+template <>
+inline bool mysql_get_field_value_format<std::string>(MysqlTableFieldType ft, int flags, const std::string& value, char* format_buf, int format_buf_len)
 {
 	(void)flags;
 	if (IS_MYSQL_TEXT_TYPE(ft) || IS_MYSQL_BINARY_TYPE(ft)) {
@@ -147,12 +176,22 @@ inline bool mysql_get_field_value_format(MysqlTableFieldType ft, int flags, cons
 	return false;
 }
 
-inline bool mysql_get_field_value_format(MysqlTableFieldType ft, int flags, std::string& value, char* format_buf, int format_buf_len)
-{
-	(void)flags;
-	if (IS_MYSQL_TEXT_TYPE(ft) || IS_MYSQL_BINARY_TYPE(ft)) {
-		std::snprintf(format_buf, format_buf_len, "\'%s\'", value.c_str());
-		return true;
+inline int mysql_get_last_insert_id(MysqlConnector::Result& res) {
+	if (res.res_err != 0) {
+		std::cout << "get last insert id failed, err(" << res.res_err << ")" << std::endl;
+		return -1;
 	}
-	return false;
+
+	if (res.num_rows() == 0 || res.is_empty()) {
+		std::cout << "get last insert id failed, result is empty" << std::endl;
+		return -1;	
+	}
+
+	char** datas = res.fetch();
+	if (!datas) {
+		std::cout << "cant get data from result" << std::endl;
+		return -1;
+	}
+
+	return std::atoi(datas[0]);
 }

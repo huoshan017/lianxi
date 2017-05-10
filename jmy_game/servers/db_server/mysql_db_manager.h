@@ -196,9 +196,9 @@ char* MysqlDBManager::format_insert_field_name_str(const char* head_buf, int buf
 		return nullptr;
 	}
 	if (!head_buf)
-		std::snprintf(buf, buf_len, "%s", arg.field_name.c_str());
+		std::snprintf(buf, buf_len, "%s", arg.field_name);
 	else
-		std::snprintf(buf, buf_len, "%s, %s", head_buf, arg.field_name.c_str());
+		std::snprintf(buf, buf_len, "%s, %s", head_buf, arg.field_name);
 	return buf;
 }
 
@@ -220,7 +220,7 @@ char* MysqlDBManager::format_insert_field_value_str(int table_index, const char*
 		return nullptr;
 	}
 	
-	const MysqlTableFieldInfo* field_info = config_mgr_.get_field_info(table_index, arg.field_name.c_str());
+	const MysqlTableFieldInfo* field_info = config_mgr_.get_field_info(table_index, arg.field_name);
 	if (!field_info) {
 		return nullptr;
 	}
@@ -257,7 +257,7 @@ char* MysqlDBManager::format_update_field_value_str(int table_index, const char*
 	if (!get_buf_info(buf_num, buf, buf_len)) {
 		return nullptr;
 	}
-	const MysqlTableFieldInfo* field_info = config_mgr_.get_field_info(table_index, arg.field_name.c_str());
+	const MysqlTableFieldInfo* field_info = config_mgr_.get_field_info(table_index, arg.field_name);
 	if (!field_info) {
 		return nullptr;
 	}
@@ -268,7 +268,7 @@ char* MysqlDBManager::format_update_field_value_str(int table_index, const char*
 		return nullptr;
 	}
 
-	std::snprintf(buf, buf_len, "%s=%s", arg.field_name.c_str(), tmp);
+	std::snprintf(buf, buf_len, "%s=%s", arg.field_name, tmp);
 
 	if (head_buf) {
 		char* prev_buf = buf;

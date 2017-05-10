@@ -46,8 +46,10 @@ private:
 	bool parse_table_fields(const char* table_name, std::vector<FieldInfo>& fields);
 	bool generate_defines_file(std::fstream& out_file, const std::string& file_name);
 	bool generate_structs_file(std::fstream& out_file, const std::string& file_name);
-	bool generate_funcs_file(std::fstream& out_file, const std::string& file_name);
+	bool generate_funcs_file(std::fstream& out_file, std::fstream& out_file2, const std::string& file_name);
 	const char* get_field_format_for_func(const std::vector<FieldInfo>& field_vec, const std::string& field_name);
+	bool generate_insert_record_func(std::fstream& out_file, std::fstream& out_file2, const TableInfo& table_info, std::vector<FieldInfo>& fields);
+	bool generate_update_record_func(std::fstream& out_file, std::fstream& out_file2, const TableInfo& table_info, std::vector<FieldInfo>& fields);
 
 private:
 	rapidjson::Document doc_;
