@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <set>
 #include "../libjmy/jmy_util.h"
-#include "db_struct_structs.h"
+#include "db_tables_struct.h"
 
 enum { MAX_USER_DATA_COUNT = 200000 };
 enum UserState {
@@ -18,13 +18,6 @@ struct UserData {
 	t_player player_data;
 	UserData() {
 		game_server_id = 0;
-		player_data.id = 0;
-		player_data.uid = 0;
-		player_data.account = "";
-		player_data.nick_name = "";
-		player_data.level = 0;
-		player_data.exp = 0;
-		player_data.vip_level = 0;
 	}
 };
 

@@ -1,5 +1,5 @@
 syntax="proto3";
-import "db_struct.proto";
+import "db_field_struct.proto";
 
 enum MsgIdTypeServer {
 	MSGID_SERVER_NONE					= 0;
@@ -170,7 +170,7 @@ message MsgUserDBData {
 	DBSkillDataList skills = 10;
 	DBTaskDataList tasks = 11;
 	DBDailyTaskDataList daily_tasks = 12;
-	DBActivitiesDataList activities = 13;
+	DBActivityDataList activities = 13;
 }
 
 // db -> game  [MSGID_GS2DS_REQUIRE_USER_DATA_RESPONSE]

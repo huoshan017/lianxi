@@ -10,6 +10,7 @@
 #include "../common/util.h"
 #include "../db_server/mysql_defines.h"
 #include "../db_server/mysql_util.h"
+#include "db_field_config_parser.h"
 
 DBConfigParser::DBConfigParser()
 {
@@ -75,7 +76,7 @@ bool DBConfigParser::load(const char* jsonpath)
 	}
 
 	// defines_include
-	member = (char*)"defines_include";
+	member = (char*)"define_include";
 	if (!doc_.HasMember(member)) {
 		std::cout << member << " member not exist" << std::endl;
 		return false;
@@ -88,14 +89,14 @@ bool DBConfigParser::load(const char* jsonpath)
 	for (int i=0; i<s; ++i) {
 		rapidjson::Value& v = doc_[member].GetArray()[i];
 		if (!v.IsString()) {
-			std::cout << "defines_include member type is not string" << std::endl;
+			std::cout << "define_include member type is not string" << std::endl;
 			return false;
 		}
 		config_.define_include_strings.push_back(v.GetString());
 	}
 
 	// funcs_include
-	member = (char*)"funcs_include";
+	member = (char*)"func_include";
 	if (!doc_.HasMember(member)) {
 		std::cout << member << "member not exist" << std::endl;
 		return false;
@@ -108,7 +109,7 @@ bool DBConfigParser::load(const char* jsonpath)
 	for (int i=0; i<s; ++i) {
 		rapidjson::Value& v = doc_[member].GetArray()[i];
 		if (!v.IsString()) {
-			std::cout << "funcs_include member type is not string" << std::endl;
+			std::cout << "func_include member type is not string" << std::endl;
 			return false;
 		}
 		config_.funcs_include_strings.push_back(v.GetString());
@@ -180,6 +181,27 @@ bool DBConfigParser::load(const char* jsonpath)
 			config_.tables[i].select_keys.push_back(key);
 		}
 	}
+
+	// field struct
+	member = (char*)"field_structs";
+	if (!doc_.HasMember(member)) {
+		std::cout << member << " member not exist" << std::endl;
+		return false;
+	}
+	std::string field_config_path = doc_[member].GetString();
+
+	DBFieldConfigParser field_config_parser;
+	if (!field_config_parser.load(field_config_path.c_str())) {
+		std::cout << "load field config " << field_config_path << " failed" << std::endl;
+		return false;
+	}
+
+	if (!field_config_parser.generate()) {
+		std::cout << "generate field struct failed" << std::endl;
+		return false;
+	}
+
+	field_config_parser.clear();
 	
 	jsonpath_ = jsonpath;
 	std::cout << "load " << jsonpath << " success" << std::endl;
@@ -209,25 +231,38 @@ static const char* get_blob_user_define_data(const std::string& field_type) {
 	return nullptr;
 }
 
-static const char* get_field_type_str(const char* field_type) {
-	std::string s(field_type);
+static const char* get_field_type_str(const DBConfigParser::FieldInfo& field_info) {
+	std::string s(field_info.field_type);
 	const char* type_str = get_blob_user_define_data(s);
 	if (type_str)
 		return type_str;
 
 	if (s == "tinyint" || s == "smallint" ||
-		s == "mediumint" || s == "int")
-		return "int";
-	else if (s == "bigint")
-		return "int64_t";
-	else if (s == "float")
+		s == "mediumint" || s == "int") {
+		if (field_info.create_flags.find("unsigned") != std::string::npos)
+			return "unsigned int";
+		else
+			return "int";
+	} else if (s == "bigint") {
+		if (field_info.create_flags.find("unsigned") != std::string::npos)
+			return "uint64_t";
+		else
+			return "int64_t";
+	} else if (s == "float")
 		return "float";
 	else if (s == "double")
 		return "double";
-	else if (s == "varchar" || s == "char" || s == "tinytext" || s == "text"  || s == "mediumtext" || s == "longtext")
+	else if (s == "varchar" || s == "char" || s == "tinytext" || s == "text"  || s == "mediumtext" || s == "longtext") {
 		return "std::string";
-	else
-		return nullptr;
+	}
+	return nullptr;
+}
+
+static bool is_basic_field_type(const std::string& field_type) {
+	if (field_type == "tinyint" || field_type == "smallint" || field_type == "mediumint" || field_type == "int" || field_type == "bigint" ||
+		field_type == "float" || field_type == "double")
+		return true;
+	return false;
 }
 
 static bool is_field_time_type(const char* field_type) {
@@ -266,7 +301,7 @@ static const char* get_field_type_define_str(const char* field_type) {
 	else if (s == "year") return "MYSQL_FIELD_TYPE_YEAR";
 	else if (s == "enum") return "MYSQL_FIELD_TYPE_ENUM";
 	else if (s == "set") return "MYSQL_FIELD_TYPE_SET";
-	else return nullptr;
+	return nullptr;
 }
 
 static const char* get_field_length_define_str(int field_length) {
@@ -344,13 +379,13 @@ bool DBConfigParser::generate()
 	}
 	std::cout << "file name is " << file_name.c_str() << std::endl;
 
-	if (!generate_defines_file(out_file, file_name))
+	if (!generate_define_file(out_file, file_name))
 		return false;
 
-	if (!generate_structs_file(out_file, file_name))
+	if (!generate_struct_file(out_file, out_file2, file_name))
 		return false;
 
-	if (!generate_funcs_file(out_file, out_file2,  file_name))
+	if (!generate_func_file(out_file, out_file2, file_name))
 		return false;
 
 	return true;
@@ -415,18 +450,50 @@ static const char* get_field_type_default_value(const std::string& field_type) {
 		return "0";
 	else if (field_type == "float" || field_type == "double")
 		return "0.f";
-	//else if (field_type == "char" || field_type == "varchar" || field_type == "tinytext" || field_type == "text" || field_type == "mediumtext" || field_type == "longtext")
-	//	return "";
 	else
 		return nullptr;
 }
 
-bool DBConfigParser::generate_structs_file(std::fstream& out_file, const std::string& file_name)
+static void gen_get_field_func(std::fstream& out_file, const DBConfigParser::FieldInfo& field_info, const char* field_type_str) {
+	out_file << "  " << field_type_str << " get_" << field_info.name << "() const {" << std::endl;
+	out_file << "    return " << field_info.name << ";" << std::endl;
+	out_file <<	"  }" << std::endl;
+}
+
+static void gen_get_mutable_field_func(std::fstream& out_file, const DBConfigParser::FieldInfo& field_info, const char* field_type_str) {
+	out_file << "  " << field_type_str << "& get_mutable_" << field_info.name << "() {" << std::endl;
+	out_file << "    return " << field_info.name << ";" << std::endl;
+	out_file << "  }" << std::endl;
+}
+
+static void gen_get_const_obj_field_func(std::fstream& out_file, const DBConfigParser::FieldInfo& field_info, const char* field_type_str) {
+	out_file << "  const " << field_type_str << "& get_" << field_info.name << "() const {" << std::endl;
+	out_file << "    return " << field_info.name << ";" << std::endl;
+	out_file << "  }" << std::endl;
+}
+
+static void gen_set_field_func(std::fstream& out_file, const DBConfigParser::FieldInfo& field_info, const char* field_type_str) {
+	out_file << "  void set_" << field_info.name << "(" << field_type_str << " data) {" << std::endl;
+	out_file << "    " << field_info.name << " = data;" << std::endl;
+	out_file << "  }" << std::endl;
+}
+
+static void gen_set_const_obj_field_func(std::fstream& out_file, const DBConfigParser::FieldInfo& field_info, const char* field_type_str) {
+	out_file << "  void set_" << field_info.name << "(const " << field_type_str << "& data) {" << std::endl;
+	out_file << "    " << field_info.name << " = data;" << std::endl;
+	out_file << "  }" << std::endl;
+}
+
+bool DBConfigParser::generate_struct_file(std::fstream& out_file, std::fstream& out_file2, const std::string& file_name)
 {
-	std::string db_struct_file_name = file_name + "_structs.h";
+	std::string db_struct_file_name = file_name + "_struct.h";
 	out_file.open(db_struct_file_name, std::ios::out);
-	out_file << "// Generated by the db_struct_generator.  DO NOT EDIT!" << std::endl;
-	out_file << "// source: " << jsonpath_ << std::endl;
+	std::string db_struct_cpp_file_name = file_name + "_struct.cpp";
+	out_file2.open(db_struct_cpp_file_name, std::ios::out);
+
+	//////// .h
+	out_file << "// Generated by the db_generator.  DO NOT EDIT!" << std::endl;
+	out_file << "// source: " << jsonpath_ << std::endl << std::endl;
 	out_file << "#pragma once" << std::endl;
 	out_file << "#include <string>" << std::endl;
 	out_file << "#include <list>" << std::endl;
@@ -434,31 +501,103 @@ bool DBConfigParser::generate_structs_file(std::fstream& out_file, const std::st
 		out_file << "#include \"" << config_.struct_include_strings[i] << "\"" << std::endl;
 	}
 	out_file << std::endl;
+	//////// .h
+
+	//////// .cpp
+	out_file2 << "// Generated by the db_generator.  DO NOT EDIT!" << std::endl;
+	out_file2 << "// source: " << jsonpath_ << std::endl << std::endl;
+	out_file2 << "#include \"" << db_struct_file_name << "\"" << std::endl;
+	//////// .cpp
 
 	for (int i=0; i<(int)config_.tables.size(); ++i) {
-		out_file << std::endl << "struct " << config_.tables[i].name << " {" << std::endl;
 		std::vector<FieldInfo>& fi_vec = config_.tables_fields[i];
-		std::vector<FieldInfo>::iterator it = fi_vec.begin();
-		for (; it!=fi_vec.end(); ++it) {
-			FieldInfo& fi = *it;
-			if (!is_field_time_type(fi.field_type.c_str())) {
-				const char* ft_str = get_field_type_str(fi.field_type.c_str());
+		std::vector<FieldInfo>::iterator it;
+		//////// .h
+		{
+			out_file << std::endl << "class " << config_.tables[i].name << " {" << std::endl;
+			out_file << "public:" << std::endl;
+			// constructor declaration
+			out_file << "  " << config_.tables[i].name << "();" << std::endl;
+			// function declaration
+			for (it=fi_vec.begin(); it!=fi_vec.end(); ++it) {
+				FieldInfo& fi = *it;
+				if (is_field_time_type(fi.field_type.c_str()))
+					continue;
+				const char* ft_str = get_field_type_str(fi);
 				if (!ft_str) {
 					std::cout << "get invalid field type " << fi.field_type.c_str() << std::endl;
 					return false;
 				}
-				out_file << "  " << ft_str << " " << fi.name << ";" << std::endl;
+				bool is_basic_type = is_basic_field_type(fi.field_type);
+				// getter and setter
+				if (is_basic_type) {
+					gen_get_field_func(out_file, fi, ft_str);
+					gen_set_field_func(out_file, fi, ft_str);
+				} else {
+					gen_get_mutable_field_func(out_file, fi, ft_str);
+					gen_get_const_obj_field_func(out_file, fi, ft_str);
+					gen_set_const_obj_field_func(out_file, fi, ft_str);
+				}
 			}
-		}
+			
+			// update functions declaration
+			out_file << std::endl;
 
-		out_file << "  " << config_.tables[i].name << "() {" << std::endl;
-		for (it=fi_vec.begin(); it!=fi_vec.end(); ++it) {
-			const char* ds = get_field_type_default_value((*it).field_type);
-			if (!ds) continue;
-			out_file << "    " << (*it).name << " = " << ds << ";" << std::endl;
+			// members
+			out_file << "private:" << std::endl;
+			// field member
+			for (it=fi_vec.begin(); it!=fi_vec.end(); ++it) {
+				FieldInfo& fi = *it;
+				if (!is_field_time_type(fi.field_type.c_str())) {
+					const char* ft_str = get_field_type_str(fi);
+					if (!ft_str) {
+						std::cout << "get invalid field type " << fi.field_type.c_str() << std::endl;
+						return false;
+					}
+					out_file << "  " << ft_str << " " << fi.name << ";" << std::endl;
+				}
+			}
+			// field value is changed member
+			it = fi_vec.begin();
+			for (; it!=fi_vec.end(); ++it) {
+				FieldInfo& fi = *it;
+				// primary key can not be changed
+				if (fi.name == config_.tables[i].primary_key)
+					continue;
+				if (is_field_time_type(fi.field_type.c_str()))
+					continue;
+				out_file << "  uint8_t " << fi.name << "_state;" << std::endl;
+			}
+			out_file << "};" << std::endl << std::endl;
 		}
-		out_file << "  }" << std::endl;
-		out_file << "};" << std::endl; 
+		//////// .h
+
+		//////// .cpp
+		{
+			// constructor: init member
+			out_file2 << config_.tables[i].name << "::" << config_.tables[i].name << "() : " << std::endl;
+			for (it=fi_vec.begin(); it!=fi_vec.end(); ++it) {
+				const char* ds = get_field_type_default_value((*it).field_type);
+				if (!ds) continue;
+				out_file2 << "  " << (*it).name << "(" << ds << ")," << std::endl;
+			}
+			for (it=fi_vec.begin(); it!=fi_vec.end(); ++it) {
+				FieldInfo& fi = *it;
+				if (fi.name != config_.tables[i].primary_key && !is_field_time_type(fi.field_type.c_str())) {
+					if (fi.name == fi_vec[fi_vec.size()-1].name) {
+						out_file2 << "  " << fi.name << "_state(0)" << std::endl;
+					} else {
+						out_file2 << "  " << fi.name << "_state(0)," << std::endl;
+					}
+				}
+			}
+			out_file2 << "{" << std::endl << "}" << std::endl << std::endl;
+
+			// update functions definition
+
+			out_file2 << std::endl;
+		}
+		//////// .cpp
 	}
 	out_file.flush();
 	std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -467,10 +606,10 @@ bool DBConfigParser::generate_structs_file(std::fstream& out_file, const std::st
 	return true;
 }
 
-bool DBConfigParser::generate_defines_file(std::fstream& out_file, const std::string& file_name)
+bool DBConfigParser::generate_define_file(std::fstream& out_file, const std::string& file_name)
 {
 	// generate db define file
-	std::string db_defines_file_name = file_name + "_defines.h";
+	std::string db_defines_file_name = file_name + "_define.h";
 	out_file.open(db_defines_file_name, std::ios::out);
 	out_file << "// Generated by the db_struct_generator.  DO NOT EDIT!" << std::endl;
 	out_file << "// source: " << jsonpath_ << std::endl;
@@ -612,10 +751,10 @@ static bool can_select_field_type(const std::string& field_type) {
 	return false;
 }
 
-bool DBConfigParser::generate_funcs_file(std::fstream& out_file, std::fstream& out_file2, const std::string& file_name)
+bool DBConfigParser::generate_func_file(std::fstream& out_file, std::fstream& out_file2, const std::string& file_name)
 {
 	// generate db define file
-	std::string db_funcs_file_name = file_name + "_funcs.h";
+	std::string db_funcs_file_name = file_name + "_func.h";
 	out_file.open(db_funcs_file_name, std::ios::out);
 	out_file << "// Generated by the db_struct_generator.  DO NOT EDIT!" << std::endl;
 	out_file << "// source: " << jsonpath_ << std::endl;
@@ -626,7 +765,7 @@ bool DBConfigParser::generate_funcs_file(std::fstream& out_file, std::fstream& o
 	}
 	out_file << std::endl;
 	
-	std::string db_funcs_file_cpp_name = file_name + "_funcs.cpp";
+	std::string db_funcs_file_cpp_name = file_name + "_func.cpp";
 	out_file2.open(db_funcs_file_cpp_name, std::ios::out);
 	out_file2 << "// Generated by the db_struct_generator. DO NOT EDIT!" << std::endl;
 	out_file2 << "// source: " << jsonpath_ << std::endl;
@@ -758,7 +897,7 @@ bool DBConfigParser::generate_insert_record_func(std::fstream& out_file, std::fs
 	std::string format_params_string;
 	for (int i=0; i<(int)fields.size(); ++i) {
 		if (i == table_info.primary_key_index) continue;
-		const char* field_type_str = get_field_type_str(fields[i].field_type.c_str());
+		const char* field_type_str = get_field_type_str(fields[i]);
 		if (!field_type_str) {
 			std::cout << "get field type(" << fields[i].field_type << ") string failed" << std::endl;
 			continue;

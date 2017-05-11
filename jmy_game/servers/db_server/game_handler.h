@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../libjmy/jmy_const.h"
-#include "db_struct_structs.h"
+#include "db_tables_struct.h"
 
 struct JmyMsgInfo;
 struct JmyEventInfo;

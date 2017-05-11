@@ -7,21 +7,24 @@
 		{ "name":"t_guild",  "primary_key":"id",  "primary_key_index":0,  "engine":"innodb",  "select_key": ["name"] }
 	],
 
+	"field_structs" : "db_field_struct.json",
+
 	"struct_include" : [
-		"../../proto/src/db_struct.pb.h"
+		"../../proto/src/db_field_struct.pb.h"
 	],
 
-	"defines_include" : [
+	"define_include" : [
 		"mysql_defines.h"
 	],
 
-	"funcs_include" : [
-		"../../proto/src/db_struct.pb.h",
+	"func_include" : [
+		"../../proto/src/db_field_struct.pb.h",
 		"mysql_db_manager.h",
 		"db_server.h",
-		"db_struct_structs.h"
+		"db_tables_struct.h"
 	],
 	
+
 	"t_account" : [
 		{ "name":"id",			"field_type":"int",			"field_length":0,	"index_type":"none",	"create_flags":"auto_increment,unsigned,not null" },
 		{ "name":"account",		"field_type":"varchar",		"field_length":32,  "index_type":"index",	"create_flags":"not null" },
@@ -31,19 +34,19 @@
 	],
 
 	"t_player" : [
-		{ "name":"id",			"field_type":"int",					"field_length":0,	"index_type":"none",			"create_flags":"auto_increment,unsigned,not null" },
-		{ "name":"account",		"field_type":"varchar",				"field_length":32,	"index_type":"unique",			"create_flags":"not null,default" },
-		{ "name":"uid",			"field_type":"bigint",				"field_length":0,	"index_type":"index",			"create_flags":"not null,default,unsigned" },
-		{ "name":"nick_name",	"field_type":"varchar",				"field_length":32,	"index_type":"none",			"create_flags":"not null,default" },
-		{ "name":"sex",			"field_type":"tinyint",				"field_length":0,	"index_type":"none",			"create_flags":"not null,default" },
-		{ "name":"level",		"field_type":"int",					"field_length":0,	"index_type":"none",			"create_flags":"not null,default" },
-		{ "name":"vip_level",	"field_type":"int",					"field_length":0,	"index_type":"none",			"create_flags":"not null,default" },
-		{ "name":"exp",			"field_type":"int",					"field_length":0,	"index_type":"none",			"create_flags":"not null,default" },
-		{ "name":"items",		"field_type":"blob:DBItemDataList",		"field_length":0,	"index_type":"none",		"create_flags":"not null" },
-		{ "name":"skills",		"field_type":"blob:DBSkillDataList",	"field_length":0,	"index_type":"none",		"create_flags":"not null" },
-		{ "name":"tasks",		"field_type":"blob:DBTaskDataList",		"field_length":0,	"index_type":"none",		"create_flags":"not null" },
-		{ "name":"daily_tasks",	"field_type":"blob:DBDailyTaskDataList","field_length":0,	"index_type":"none",		"create_flags":"not null" },
-		{ "name":"activities",	"field_type":"blob:DBActivitiesDataList",	"field_length":0,	"index_type":"none",	"create_flags":"not null" }
+		{ "name":"id",			"field_type":"int",					"field_length":0,	"index_type":"none",		"create_flags":"auto_increment,unsigned,not null" },
+		{ "name":"account",		"field_type":"varchar",				"field_length":32,	"index_type":"unique",		"create_flags":"not null,default" },
+		{ "name":"uid",			"field_type":"bigint",				"field_length":0,	"index_type":"index",		"create_flags":"not null,default,unsigned" },
+		{ "name":"nick_name",	"field_type":"varchar",				"field_length":32,	"index_type":"none",		"create_flags":"not null,default" },
+		{ "name":"sex",			"field_type":"tinyint",				"field_length":0,	"index_type":"none",		"create_flags":"not null,default" },
+		{ "name":"level",		"field_type":"int",					"field_length":0,	"index_type":"none",		"create_flags":"not null,default" },
+		{ "name":"vip_level",	"field_type":"int",					"field_length":0,	"index_type":"none",		"create_flags":"not null,default" },
+		{ "name":"exp",			"field_type":"int",					"field_length":0,	"index_type":"none",		"create_flags":"not null,default" },
+		{ "name":"items",		"field_type":"blob:DBItemDataList",		"field_length":0,	"index_type":"none",	"create_flags":"not null" },
+		{ "name":"skills",		"field_type":"blob:DBSkillDataList",	"field_length":0,	"index_type":"none",	"create_flags":"not null" },
+		{ "name":"tasks",		"field_type":"blob:DBTaskDataList",		"field_length":0,	"index_type":"none",	"create_flags":"not null" },
+		{ "name":"daily_tasks",	"field_type":"blob:DBDailyTaskDataList","field_length":0,	"index_type":"none",	"create_flags":"not null" },
+		{ "name":"activities",	"field_type":"blob:DBActivityDataList",	"field_length":0,	"index_type":"none",	"create_flags":"not null" }
 	],
 
 	"t_friend" : [

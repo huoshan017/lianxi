@@ -7,7 +7,7 @@
 #include "global_data.h"
 #include "db_server.h"
 #include "mysql_defines.h"
-#include "db_struct_funcs.h"
+#include "db_tables_func.h"
 
 char GameHandler::tmp_[JMY_MAX_MSG_SIZE];
 t_player GameHandler::tmp_player_;
@@ -100,7 +100,7 @@ int GameHandler::processRequireUserDataRequest(JmyMsgInfo* info)
 		GLOBAL_DATA->setAccount2UserId(a, user_id);
 		// not found in db, insert new record
 		if (!GLOBAL_DATA->findDBAccount(a)) {
-			tmp_player_.account = a;
+			tmp_player_.set_account(a);
 			if (!db_insert_t_player_record(tmp_player_, DBResCBFuncs::insertPlayerInfo, (void*)&a, (long)game_id)) {
 				return -1;
 			}

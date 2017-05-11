@@ -5,7 +5,7 @@
 #include "global_data.h"
 #include "db_server.h"
 #include "game_server_manager.h"
-#include "db_struct_funcs.h"
+#include "db_tables_func.h"
 #include <string>
 
 char DBResCBFuncs::tmp_[4096*128];
@@ -98,9 +98,6 @@ int DBResCBFuncs::insertPlayerInfo(MysqlConnector::Result& res, void* param, lon
 	}
 
 	user->game_server_id = (int)param_l;
-	user->player_data.uid = uid;
-	user->player_data.id = id;
-	user->player_data.account = account;
 
 	GLOBAL_DATA->insertDBAccount(account);
 	
@@ -143,18 +140,18 @@ int DBResCBFuncs::getPlayerInfo(MysqlConnector::Result& res, void* param, long p
 
 	MsgDS2GS_RequireUserDataResponse response;
 	response.set_account(account);
-	response.mutable_user_data()->set_id(user->player_data.id);
-	response.mutable_user_data()->set_uid(user->player_data.uid);
-	response.mutable_user_data()->set_nick_name(user->player_data.nick_name);
-	response.mutable_user_data()->set_sex(user->player_data.sex);
-	response.mutable_user_data()->set_exp(user->player_data.exp);
-	response.mutable_user_data()->set_level(user->player_data.level);
-	response.mutable_user_data()->set_vip_level(user->player_data.vip_level);
-	response.mutable_user_data()->set_allocated_items(&user->player_data.items);
-	response.mutable_user_data()->set_allocated_skills(&user->player_data.skills);
-	response.mutable_user_data()->set_allocated_tasks(&user->player_data.tasks);
-	response.mutable_user_data()->set_allocated_daily_tasks(&user->player_data.daily_tasks);
-	response.mutable_user_data()->set_allocated_activities(&user->player_data.activities);
+	response.mutable_user_data()->set_id(user->player_data.get_id());
+	response.mutable_user_data()->set_uid(user->player_data.get_uid());
+	response.mutable_user_data()->set_nick_name(user->player_data.get_nick_name());
+	response.mutable_user_data()->set_sex(user->player_data.get_sex());
+	response.mutable_user_data()->set_exp(user->player_data.get_exp());
+	response.mutable_user_data()->set_level(user->player_data.get_level());
+	response.mutable_user_data()->set_vip_level(user->player_data.get_vip_level());
+	response.mutable_user_data()->set_allocated_items(&user->player_data.get_mutable_items());
+	response.mutable_user_data()->set_allocated_skills(&user->player_data.get_mutable_skills());
+	response.mutable_user_data()->set_allocated_tasks(&user->player_data.get_mutable_tasks());
+	response.mutable_user_data()->set_allocated_daily_tasks(&user->player_data.get_mutable_daily_tasks());
+	response.mutable_user_data()->set_allocated_activities(&user->player_data.get_mutable_activities());
 	if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
 		LogError("serialize MsgDS2GS_RequireUserDataResponse failed");
 		return -1;

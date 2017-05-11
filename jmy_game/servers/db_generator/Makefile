@@ -4,8 +4,8 @@ INCLUDES = -I$(PWD)
 
 CCFLAGS = -g -Wall -O0 -std=c++11 -DJEMALLOC_NO_DEMANGLE -fPIC
 OBJDIR = $(PWD)/obj
-TARGET_EXE = db_struct_generator
-TARGET_DIR = $(PWD)/../bin/db_struct_generator
+TARGET_EXE = db_generator
+TARGET_DIR = $(PWD)/../bin/db_generator
 TARGET = $(TARGET_DIR)/$(TARGET_EXE)
 
 SRCS = $(wildcard *.cpp)

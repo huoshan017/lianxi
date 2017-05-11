@@ -1,7 +1,7 @@
 #include "db_config_parser.h"
 #include <iostream>
 
-#define DB_STRUCT_JSON "./db_struct.json"
+#define DB_STRUCT_JSON "./db_tables.json"
 
 int main(int argc, char** argv)
 {
