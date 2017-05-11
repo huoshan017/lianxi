@@ -5,10 +5,8 @@ cd ../..
 cd ./servers/bin/db_generator
 ./generate_files.sh
 
-cd ./proto
+cd ../../../proto
 ./gen_proto.sh
-cd ..
 
-cd ../../..
-cd ./servers
+cd ../servers
 make
