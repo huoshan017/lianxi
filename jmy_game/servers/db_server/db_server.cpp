@@ -3,7 +3,7 @@
 #include "config_loader.h"
 #include "config_data.h"
 #include "user_data_manager.h"
-#include "db_struct_defines.h"
+#include "db_tables_define.h"
 #include "global_data.h"
 
 DBServer::DBServer() : server_(service_)

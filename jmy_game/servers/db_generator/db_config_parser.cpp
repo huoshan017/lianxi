@@ -7,7 +7,7 @@
 #include <boost/format.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/algorithm/string.hpp>
-#include "../common/util.h"
+//#include "../common/util.h"
 #include "../db_server/mysql_defines.h"
 #include "../db_server/mysql_util.h"
 #include "db_field_config_parser.h"
@@ -363,6 +363,24 @@ static const char* get_create_flags_define_str(const char* create_flags) {
 	return res.c_str();
 }
 
+static bool can_select_field_type(const std::string& field_type) {
+	if (field_type == std::string("int") ||
+		field_type == std::string("tinyint") ||
+		field_type == std::string("smallint") ||
+		field_type == std::string("mediumint") ||
+		field_type == std::string("int") ||
+		field_type == std::string("bigint") ||
+		field_type.find("blob:") != std::string::npos ||
+		field_type.find("text") != std::string::npos ||
+		field_type == std::string("char") ||
+		field_type == std::string("varchar") ||
+		field_type == std::string("binary") ||
+		field_type == std::string("varbinary")) {
+		return true;
+	}
+	return false;
+}
+
 bool DBConfigParser::generate()
 {
 	// generate db struct file
@@ -475,12 +493,14 @@ static void gen_get_const_obj_field_func(std::fstream& out_file, const DBConfigP
 static void gen_set_field_func(std::fstream& out_file, const DBConfigParser::FieldInfo& field_info, const char* field_type_str) {
 	out_file << "  void set_" << field_info.name << "(" << field_type_str << " data) {" << std::endl;
 	out_file << "    " << field_info.name << " = data;" << std::endl;
+	out_file << "    " << field_info.name << "_state = 1;" << std::endl;
 	out_file << "  }" << std::endl;
 }
 
 static void gen_set_const_obj_field_func(std::fstream& out_file, const DBConfigParser::FieldInfo& field_info, const char* field_type_str) {
 	out_file << "  void set_" << field_info.name << "(const " << field_type_str << "& data) {" << std::endl;
 	out_file << "    " << field_info.name << " = data;" << std::endl;
+	out_file << "    " << field_info.name << "_state = 1;" << std::endl;
 	out_file << "  }" << std::endl;
 }
 
@@ -561,9 +581,6 @@ bool DBConfigParser::generate_struct_file(std::fstream& out_file, std::fstream& 
 			it = fi_vec.begin();
 			for (; it!=fi_vec.end(); ++it) {
 				FieldInfo& fi = *it;
-				// primary key can not be changed
-				if (fi.name == config_.tables[i].primary_key)
-					continue;
 				if (is_field_time_type(fi.field_type.c_str()))
 					continue;
 				out_file << "  uint8_t " << fi.name << "_state;" << std::endl;
@@ -581,14 +598,13 @@ bool DBConfigParser::generate_struct_file(std::fstream& out_file, std::fstream& 
 				if (!ds) continue;
 				out_file2 << "  " << (*it).name << "(" << ds << ")," << std::endl;
 			}
+			bool b = false;
 			for (it=fi_vec.begin(); it!=fi_vec.end(); ++it) {
 				FieldInfo& fi = *it;
-				if (fi.name != config_.tables[i].primary_key && !is_field_time_type(fi.field_type.c_str())) {
-					if (fi.name == fi_vec[fi_vec.size()-1].name) {
-						out_file2 << "  " << fi.name << "_state(0)" << std::endl;
-					} else {
-						out_file2 << "  " << fi.name << "_state(0)," << std::endl;
-					}
+				if (!is_field_time_type(fi.field_type.c_str())) {
+					if (b) out_file2 << "," << std::endl;
+					out_file2 << "  " << fi.name << "_state(0)";
+					b = true;
 				}
 			}
 			out_file2 << "{" << std::endl << "}" << std::endl << std::endl;
@@ -603,6 +619,11 @@ bool DBConfigParser::generate_struct_file(std::fstream& out_file, std::fstream& 
 	std::this_thread::sleep_for(std::chrono::seconds(1));
 	out_file.close();
 	std::cout << "generated " << db_struct_file_name << std::endl;
+
+	out_file2.flush();
+	std::this_thread::sleep_for(std::chrono::seconds(1));
+	out_file2.close();
+	std::cout << "generated " << db_struct_cpp_file_name << std::endl;
 	return true;
 }
 
@@ -733,24 +754,6 @@ const char* DBConfigParser::get_field_format_for_func(const std::vector<FieldInf
 	return buf;
 }
 
-static bool can_select_field_type(const std::string& field_type) {
-	if (field_type == std::string("int") ||
-		field_type == std::string("tinyint") ||
-		field_type == std::string("smallint") ||
-		field_type == std::string("mediumint") ||
-		field_type == std::string("int") ||
-		field_type == std::string("bigint") ||
-		field_type.find("blob:") != std::string::npos ||
-		field_type.find("text") != std::string::npos ||
-		field_type == std::string("char") ||
-		field_type == std::string("varchar") ||
-		field_type == std::string("binary") ||
-		field_type == std::string("varbinary")) {
-		return true;
-	}
-	return false;
-}
-
 bool DBConfigParser::generate_func_file(std::fstream& out_file, std::fstream& out_file2, const std::string& file_name)
 {
 	// generate db define file
@@ -827,15 +830,15 @@ bool DBConfigParser::generate_func_file(std::fstream& out_file, std::fstream& ou
 				if (field_type == std::string("tinyint") || field_type == std::string("smallint") ||
 					field_type == std::string("mediumint") || field_type == std::string("int")) {
 					if (create_flags.find("unsigned") != std::string::npos) {
-						out_file2 << "	data." << field_name << " = (unsigned int)std::strtoul(datas[" << m << "], nullptr, 10);" << std::endl;
+						out_file2 << "	data.set_" << field_name << "((unsigned int)std::strtoul(datas[" << m << "], nullptr, 10));" << std::endl;
 					} else {
-						out_file2 << "	data." << field_name << " = std::atoi(datas[" << m << "]);" << std::endl;
+						out_file2 << "	data.set_" << field_name << "(std::atoi(datas[" << m << "]));" << std::endl;
 					}
 				} else if (field_type == std::string("bigint")) {
 					if (create_flags.find("unsigned") != std::string::npos) {
-						out_file2 << "	data." << field_name << " = (uint64_t)std::strtoull(datas[" << m << "], nullptr, 10);" << std::endl;
+						out_file2 << "	data.set_" << field_name << "((uint64_t)std::strtoull(datas[" << m << "], nullptr, 10));" << std::endl;
 					} else {
-						out_file2 << "	data." << field_name << " = (int64_t)std::strtoull(datas[" << m << "], nullptr, 10);" << std::endl;
+						out_file2 << "	data.set_" << field_name << "((int64_t)std::strtoull(datas[" << m << "], nullptr, 10));" << std::endl;
 					}
 				} else if (field_type.find("blob")!=std::string::npos || field_type.find("binary")!=std::string::npos) {
 					const char* user_define = get_blob_user_define_data(field_type);
@@ -844,13 +847,14 @@ bool DBConfigParser::generate_func_file(std::fstream& out_file, std::fstream& ou
 						return false;
 					}
 					//out_file << "	" << user_define << " ud" << user_define << ";" << std::endl;
-					out_file2 << "	if (!data." << field_name << ".ParseFromArray(datas[" << m << "], std::strlen(datas[" << m << "]))) {" << std::endl;
+					out_file2 << "	if (!data.get_mutable_" << field_name
+						<< "().ParseFromArray(datas[" << m << "], std::strlen(datas[" << m << "]))) {" << std::endl;
 					out_file2 << "		LogError(\"user define " << user_define << " parse failed\");" << std::endl;
 					out_file2 << "		return false;" << std::endl;
 					out_file2 << "	}" << std::endl;
 					//out_file << "	data." << field_name << " = ud" << user_define << ";" << std::endl;
 				} else if (field_type.find("text") != std::string::npos || field_type == std::string("char") || field_type == std::string("varchar")) {
-					out_file2 << "	data." << field_name << " = datas[" << m << "];" << std::endl;
+					out_file2 << "	data.set_" << field_name << "(datas[" << m << "]);" << std::endl;
 				} else {
 					std::cout << "unsupported field type " << field_type << std::endl;
 					return false;
@@ -899,11 +903,12 @@ bool DBConfigParser::generate_insert_record_func(std::fstream& out_file, std::fs
 		if (i == table_info.primary_key_index) continue;
 		const char* field_type_str = get_field_type_str(fields[i]);
 		if (!field_type_str) {
-			std::cout << "get field type(" << fields[i].field_type << ") string failed" << std::endl;
+			//std::cout << "get field type(" << fields[i].field_type << ") string failed" << std::endl;
 			continue;
 		}
 		std::string nv = "nv_" + fields[i].name;
-		out_file2 << "	MysqlFieldNameValue<" << field_type_str << "> " << nv << "(\"" << fields[i].name << "\", data." << fields[i].name << ");" << std::endl; 
+		out_file2 << "	MysqlFieldNameValue<" << field_type_str << "> " << nv
+			<< "(\"" << fields[i].name << "\", data.get_" << fields[i].name << "()" << ");" << std::endl; 
 		if (format_params_string == "") {
 			format_params_string = nv;
 		} else {
