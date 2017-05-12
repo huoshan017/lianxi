@@ -84,6 +84,17 @@ enum MysqlEngineType {
 	MYSQL_ENGINE_INNODB = 1,
 };
 
+enum MysqlTableFieldValueState {
+	MYSQL_TABLE_FIELD_STATE_IDLE	= 0,
+	MYSQL_TABLE_FIELD_STATE_INITED	= 1,
+	MYSQL_TABLE_FIELD_STATE_CHANGED = 2,
+	MYSQL_TABLE_FIELD_STATE_COMMITTING = 3,
+};
+
+enum {
+	MYSQL_MAX_KEYS_COUNT = 3,
+};
+
 struct MysqlTableFieldInfo {
 	const char* name;
 	MysqlTableFieldType field_type;

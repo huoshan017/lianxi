@@ -23,6 +23,8 @@ public:
 		int primary_key_index;
 		std::string db_engine;
 		std::vector<std::string> select_keys;
+		std::vector<std::string> update_keys;
+		std::vector<std::string> delete_keys;
 	};
 
 	struct FieldInfo {
@@ -49,8 +51,12 @@ private:
 	bool generate_struct_file(std::fstream& out_file, std::fstream& out_file2, const std::string& file_name);
 	bool generate_func_file(std::fstream& out_file, std::fstream& out_file2, const std::string& file_name);
 	const char* get_field_format_for_func(const std::vector<FieldInfo>& field_vec, const std::string& field_name);
-	bool generate_insert_record_func(std::fstream& out_file, std::fstream& out_file2, const TableInfo& table_info, std::vector<FieldInfo>& fields);
-	bool generate_update_record_func(std::fstream& out_file, std::fstream& out_file2, const TableInfo& table_info, std::vector<FieldInfo>& fields);
+
+	bool gen_insert_record_func(std::fstream& out_file, std::fstream& out_file2, const TableInfo& table_info, std::vector<FieldInfo>& fields);
+	bool gen_update_record_func(std::fstream& out_file, std::fstream& out_file2, const TableInfo& table_info, std::vector<FieldInfo>& fields, const std::string& update_key);
+	bool gen_select_record_func(std::fstream& out_file, std::fstream& out_file2, int table_index, int select_key_index);
+	bool gen_get_result_of_select_record_func(std::fstream& out_file, std::fstream& out_file2, int table_index);
+	bool gen_delete_record_func(std::fstream& out_file, std::fstream& out_file2, const TableInfo& table_info, std::vector<FieldInfo>& fields, const std::string& delete_key);
 
 private:
 	rapidjson::Document doc_;

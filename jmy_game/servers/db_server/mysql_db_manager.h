@@ -32,10 +32,18 @@ public:
 	template <typename... FieldNameValueArgs>
 	bool insertRecord(int table_index, mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l, const FieldNameValueArgs&... args);
 
+	template <typename KeyType>
+	bool updateRecord(const char* table_name, const char* key_name, const KeyType& key_value, const char* format_values_string);
+	template <typename KeyType>
+	bool updateRecord(int table_index, const char* key_name, const KeyType& key_value, const char* format_values_string);
 	template <typename KeyType, typename... FieldNameValueArgs>
 	bool updateRecord(const char* table_name, const char* key_name, const KeyType& key_value, const FieldNameValueArgs&... args);
 	template <typename KeyType, typename... FieldNameValueArgs>
 	bool updateRecord(int table_index, const char* key_name, const KeyType& key_value, const FieldNameValueArgs&... args);
+	template <typename KeyType, typename KeyType2>
+	bool updateRecord(const char* table_name, const char* key_name, const KeyType& key_value, const char* key2_name, const KeyType2& key2_value, const char* format_values_string);
+	template <typename KeyType, typename KeyType2>
+	bool updateRecord(int table_index, const char* key_name, const KeyType& key_value, const char* key2_name, const KeyType2& key2_value, const char* format_values_string);
 
 	template <typename KeyType>
 	bool deleteRecord(const char* table_name, const char* key_name, const KeyType& key_value);
@@ -318,6 +326,58 @@ bool MysqlDBManager::insertRecord(int table_index, mysql_cmd_callback_func get_l
 	return push_insert_cmd(big_buf_[big_index_], strlen(big_buf_[big_index_]), get_last_insert_id_func, param, param_l);
 }
 
+template <typename KeyType>
+bool MysqlDBManager::updateRecord(const char* table_name, const char* key_name, const KeyType& key_value, const char* format_values_string)
+{
+	int idx = config_mgr_.get_table_index(table_name);
+	if (idx < 0) {
+		LogError("get table(%s) index failed", table_name);
+		return false;
+	}
+	return updateRecord(idx, key_name, key_value, format_values_string);
+}
+
+template <typename KeyType>
+bool MysqlDBManager::updateRecord(int table_index, const char* key_name, const KeyType& key_value, const char* format_values_string)
+{
+	const MysqlTableInfo* ti = config_mgr_.get_table_info(table_index);
+	if (!ti) {
+		LogError("get table(%d) info failed", table_index);
+		return false;
+	}
+	char tmp[128];
+	const char* key_format = config_mgr_.get_field_type_format(table_index, key_name, key_value, tmp, sizeof(tmp));
+	std::snprintf(big_buf_[big_index_], sizeof(big_buf_[big_index_]), "UPDATE %s SET %s WHERE %s=%s", ti->name, format_values_string, key_name, key_format);
+	return push_write_cmd(big_buf_[big_index_], strlen(big_buf_[big_index_]));
+}
+
+template <typename KeyType, typename KeyType2>
+bool MysqlDBManager::updateRecord(const char* table_name, const char* key_name, const KeyType& key_value, const char* key2_name, const KeyType2& key2_value, const char* format_values_string)
+{
+	int idx = config_mgr_.get_table_index(table_name);
+	if (idx < 0) {
+		LogError("get table(%s) index failed", table_name);
+		return false;
+	}
+	return updateRecord(idx, key_name, key_value, key2_name, key2_value, format_values_string);
+}
+
+template <typename KeyType, typename KeyType2>
+bool MysqlDBManager::updateRecord(int table_index, const char* key_name, const KeyType& key_value, const char* key2_name, const KeyType2& key2_value, const char* format_values_string)
+{
+	const MysqlTableInfo* ti = config_mgr_.get_table_info(table_index);
+	if (!ti) {
+		LogError("get table(%d) info failed", table_index);
+		return false;
+	}
+	char tmp[128];
+	const char* key_format = config_mgr_.get_field_type_format(table_index, key_name, key_value, tmp, sizeof(tmp));
+	char tmp2[128];
+	const char* key2_format = config_mgr_.get_field_type_format(table_index, key2_name, key2_value, tmp2, sizeof(tmp2));
+	std::snprintf(big_buf_[big_index_], sizeof(big_buf_[big_index_]), "UPDATE %s SET %s WHERE %s=%s", ti->name, format_values_string, key_name, key_format, key2_name, key2_format);
+	return push_write_cmd(big_buf_[big_index_], strlen(big_buf_[big_index_]));
+}
+
 template <typename KeyType, typename... FieldNameValueArgs>
 bool MysqlDBManager::updateRecord(const char* table_name, const char* key_name, const KeyType& key_value, const FieldNameValueArgs&... args)
 {
@@ -340,7 +400,7 @@ bool MysqlDBManager::updateRecord(int table_index, const char* key_name, const K
 
 	const char* format = format_update_field_value_str(table_index, nullptr, 0, args...);
 	if (!format) return false;
-	char tmp[32];
+	char tmp[128];
 	const char* key_format = config_mgr_.get_field_type_format(table_index, key_name, key_value, tmp, sizeof(tmp));
 	if (!key_format) return false;
 	std::snprintf(big_buf_[big_index_], sizeof(big_buf_[big_index_]), "UPDATE %s SET %s WHERE %s=%s", ti->name, format, key_name, key_format);
