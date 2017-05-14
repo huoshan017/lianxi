@@ -1,6 +1,6 @@
 #pragma once
 
-#include "mysql_connector.h"
+#include "../mysql/mysql_connector.h"
 
 class DBResCBFuncs {
 public:

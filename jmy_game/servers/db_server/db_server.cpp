@@ -26,12 +26,7 @@ bool DBServer::init(const char* confpath)
 		return false;
 	}
 
-	/*if (!DB_MGR->init()) {
-		LogError("failed to init db_manager");
-		return false;
-	}*/
-
-	if (!db_mgr_.init(s_jmy_game_db_config)) {
+	if (!db_mgr_.init(SERVER_CONFIG.mysql_host, SERVER_CONFIG.mysql_user, SERVER_CONFIG.mysql_password, s_jmy_game_db_config)) {
 		LogError("failed to init mysql_db_manager");
 		return false;
 	}

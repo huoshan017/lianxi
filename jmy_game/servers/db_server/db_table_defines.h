@@ -1,6 +1,6 @@
 #pragma once
 
-#include "mysql_defines.h"
+#include "../mysql/mysql_defines.h"
 
 static const MysqlTableFieldInfo s_jmy_game_account_table_fields_info[] = {
 	{ "id",				MYSQL_FIELD_TYPE_INT,		MYSQL_FIELD_DEFAULT_LENGTH,	MYSQL_INDEX_TYPE_NONE,		MYSQL_TABLE_CREATE_AUTOINCREMENT|MYSQL_TABLE_CREATE_UNSIGNED|MYSQL_TABLE_CREATE_NOT_NULL },

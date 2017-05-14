@@ -1,5 +1,5 @@
 #include "mysql_db_manager.h"
-#include "config_loader.h"
+//#include "config_loader.h"
 
 MysqlDBManager::MysqlDBManager() : index_(0), big_index_(0)
 {
@@ -9,15 +9,14 @@ MysqlDBManager::~MysqlDBManager()
 {
 }
 
-bool MysqlDBManager::init(const MysqlDatabaseConfig& config)
+bool MysqlDBManager::init(const std::string& host, const std::string& user, const std::string& password, const MysqlDatabaseConfig& config)
 {
 	// init mysql connector pool
 	MysqlConnPoolConfig conn_pool_config(
-			const_cast<char*>(SERVER_CONFIG.mysql_host.c_str()),
-			const_cast<char*>(SERVER_CONFIG.mysql_user.c_str()),
-			const_cast<char*>(SERVER_CONFIG.mysql_password.c_str()),
-			const_cast<char*>(SERVER_CONFIG.mysql_dbname.c_str()),
-			const_cast<MysqlDatabaseConfig*>(&config));
+			const_cast<char*>(host.c_str()),
+			const_cast<char*>(user.c_str()),
+			const_cast<char*>(password.c_str()),
+			const_cast<char*>(config.dbname), const_cast<MysqlDatabaseConfig*>(&config));
 	if (!conn_pool_.init(conn_pool_config)) {
 		LogError("init mysql_connector_pool (db_name: %s) failed", config.dbname);
 		return false;

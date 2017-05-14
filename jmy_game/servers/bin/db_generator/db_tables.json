@@ -18,16 +18,16 @@
 
 	"struct_include" : [
 		"../../proto/src/db_field_struct.pb.h",
-		"mysql_defines.h"
+		"../mysql/mysql_defines.h"
 	],
 
 	"define_include" : [
-		"mysql_defines.h"
+		"../mysql/mysql_defines.h"
 	],
 
 	"func_include" : [
 		"../../proto/src/db_field_struct.pb.h",
-		"mysql_db_manager.h",
+		"../mysql/mysql_db_manager.h",
 		"db_server.h",
 		"db_tables_struct.h"
 	],
@@ -63,9 +63,9 @@
 	],
 
 	"t_guild" : [
-		{ "name":"id",			"field_type":"int",			"field_length":0,	"index_type":"none",			"create_flags":"auto_increment,unsigned,not null" },
-		{ "name":"name",		"field_type":"varchar",		"field_length":32,	"index_type":"index",			"create_flags":"not null,default" },
-		{ "name":"create_player", "field_type":"bigint",	"field_length":0,	"index_type":"unique",			"create_flags":"not null,default,unsigned" },
-		{ "name":"create_time",	"field_type":"timestamp",	"field_length":0,	"index_type":"none",			"create_flags":"not null,default" }
+		{ "name":"id",			"field_type":"int",			"field_length":0,	"index_type":"none",		"create_flags":"auto_increment,unsigned,not null" },
+		{ "name":"name",		"field_type":"varchar",		"field_length":32,	"index_type":"unique",		"create_flags":"not null,default" },
+		{ "name":"create_player", "field_type":"bigint",	"field_length":0,	"index_type":"unique",		"create_flags":"not null,default,unsigned" },
+		{ "name":"create_time",	"field_type":"timestamp",	"field_length":0,	"index_type":"none",		"create_flags":"not null,default" }
 	]
 }

@@ -3,7 +3,7 @@
 #include "boost/asio.hpp"
 #include "../libjmy/jmy_tcp_server.h"
 #include "../libjmy/jmy_singleton.hpp"
-#include "mysql_db_manager.h"
+#include "../mysql/mysql_db_manager.h"
 
 class DBServer : public JmySingleton<DBServer>
 {

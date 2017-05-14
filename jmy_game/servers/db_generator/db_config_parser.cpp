@@ -292,21 +292,6 @@ static const char* get_field_type_str(const DBConfigParser::FieldInfo& field_inf
 	return nullptr;
 }
 
-#if 0
-static const char* get_field_type_str(const std::vector<DBConfigParser::FieldInfo>& fields, const std::string& field_name) {
-	std::vector<DBConfigParser::FieldInfo>::const_iterator it = fields.begin();
-	for (; it!=fields.end(); ++it) {
-		if (it->name == field_name) {
-			break;
-		}
-	}
-	if (it == fields.end())
-		return nullptr;
-
-	return get_field_type_str(*it);
-}
-#endif
-
 static bool is_basic_field_type(const std::string& field_type) {
 	if (field_type == "tinyint" || field_type == "smallint" || field_type == "mediumint" || field_type == "int" || field_type == "bigint" ||
 		field_type == "float" || field_type == "double")
@@ -573,6 +558,12 @@ static void gen_get_field_state_func(std::fstream& out_file, const DBConfigParse
 	out_file << "  }" << std::endl;
 }
 
+static void gen_set_field_state_func(std::fstream& out_file, const DBConfigParser::FieldInfo& field_info) {
+	out_file << "  void set_" << field_info.name << "_state(MysqlTableFieldValueState state) {" << std::endl;
+	out_file << "    " << field_info.name << "_state = state;" << std::endl;
+	out_file << "  }" << std::endl;
+}
+
 bool DBConfigParser::generate_struct_file(std::fstream& out_file, std::fstream& out_file2, const std::string& file_name)
 {
 	std::string db_struct_file_name = file_name + "_struct.h";
@@ -630,6 +621,7 @@ bool DBConfigParser::generate_struct_file(std::fstream& out_file, std::fstream& 
 					gen_set_const_obj_field_func(out_file, fi, ft_str);
 				}
 				gen_get_field_state_func(out_file, fi);
+				gen_set_field_state_func(out_file, fi);
 			}
 			
 			// update functions declaration
@@ -1063,11 +1055,11 @@ bool DBConfigParser::gen_update_record_func(std::fstream& out_file, std::fstream
 
 	std::string func_title;
 	if (ks == 1) {
-		func_title = "bool db_update_" + std::string(table_info.name) + "_record_by_" + keys[0] + "(const " + table_info.name + "& data)";
+		func_title = "bool db_update_" + std::string(table_info.name) + "_record_by_" + keys[0] + "(" + table_info.name + "& data)";
 	} else if (ks == 2) {
-		func_title = "bool db_update_" + std::string(table_info.name) + "_record_by_" + keys[0] + "_and_" + keys[1] + "(const " + table_info.name + "& data)";
+		func_title = "bool db_update_" + std::string(table_info.name) + "_record_by_" + keys[0] + "_and_" + keys[1] + "(" + table_info.name + "& data)";
 	} else if (ks == 3) {
-		func_title = "bool db_update_" + std::string(table_info.name) + "_record_by_" + keys[0] + "_and_" + keys[1] + "_and_" + keys[2] + "(const " + table_info.name + "& data)";
+		func_title = "bool db_update_" + std::string(table_info.name) + "_record_by_" + keys[0] + "_and_" + keys[1] + "_and_" + keys[2] + "(" + table_info.name + "& data)";
 	}
 
 	//////// .h
@@ -1086,34 +1078,44 @@ bool DBConfigParser::gen_update_record_func(std::fstream& out_file, std::fstream
 		if (!field_type_str)
 			continue;
 
+		std::string field_name = "field_" + fields[i].name;
+		out_file2 << "  char* " << field_name << " = nullptr;" << std::endl;
 		out_file2 << "  if (data.get_" << fields[i].name << "_state() == MYSQL_TABLE_FIELD_STATE_CHANGED) {" << std::endl;
+		out_file2 << "    " << field_name << " = (char*)\"" << fields[i].name << "\";" << std::endl;
+		out_file2 << "  }" << std::endl;
+
 		std::string nv = "nv_" + fields[i].name;
-		out_file2 << "    MysqlFieldNameValue<" << field_type_str << "> " << nv
-			<< "(\"" << fields[i].name << "\", data.get_" << fields[i].name << "()" << ");" << std::endl;
+		out_file2 << "  MysqlFieldNameValue<" << field_type_str << "> " << nv
+			<< "(\"" << fields[i].name << "\", data.get_" << fields[i].name << "()" << ");" << std::endl; 
 		if (format_params_string == "") {
 			format_params_string = nv;
 		} else {
 			format_params_string += (", " + nv);
 		}
-		out_file2 << "  }" << std::endl;
 	}
 	out_file2 << "  if (!DB_MGR.updateRecord(\"" << table_info.name << "\", ";
 	if (ks > 0) {
-		const char* ft = get_field_format_for_func(fields, keys[0]);
-		out_file2 << ft;
+		out_file2 << "\"" << keys[0] << "\", " << "data.get_" << keys[0] << "()";
 	}
 	if (ks > 1) {
-		const char* ft = get_field_format_for_func(fields, keys[1]);
-		out_file2 << ", " << ft;
+		out_file2 << ", \"" << keys[1] << "\", " << "data.get_" << keys[1] << "()";
 	}
 	if (ks > 2) {
-		const char* ft = get_field_format_for_func(fields, keys[2]);
-		out_file2 << ", " << ft;
+		out_file2 << ", \"" << keys[2] << "\", " << "data.get_" << keys[2] << "()";
 	}
-	out_file2 << format_params_string << ")) {" << std::endl;
+	out_file2 << ", " << format_params_string << ")) {" << std::endl;
 	out_file2 << "    std::cout << \"update record failed\" << std::endl;" << std::endl;
 	out_file2 << "    return false;" << std::endl;
 	out_file2 << "  }" << std::endl;
+	for (int i=0; i<(int)fields.size(); ++i) {
+		// primary key can not update
+		if (i == table_info.primary_key_index) continue;
+		const char* field_type_str = get_field_type_str(fields[i]);
+		if (!field_type_str) continue;
+		out_file2 << "  if (data.get_" << fields[i].name << "_state() == MYSQL_TABLE_FIELD_STATE_CHANGED) {" << std::endl;
+		out_file2 << "    data.set_" << fields[i].name << "_state(MYSQL_TABLE_FIELD_STATE_COMMITTING);" << std::endl;
+		out_file2 << "  }" << std::endl;
+	}
 	out_file2 << "  return true;" << std::endl;
 	out_file2 << "}" << std::endl << std::endl;
 	//////// .cpp
@@ -1123,5 +1125,22 @@ bool DBConfigParser::gen_update_record_func(std::fstream& out_file, std::fstream
 
 bool DBConfigParser::gen_delete_record_func(std::fstream& out_file, std::fstream& out_file2, const TableInfo& table_info, std::vector<FieldInfo>& fields, const std::string& delete_key)
 {
+	return true;
+}
+
+bool DBConfigParser::gen_db_tables_manager(std::fstream& out_file, std::fstream& out_file2)
+{
+	out_file << "// Generated by the db_generator.  DO NOT EDIT!" << std::endl;
+	out_file << "// source: ./db_tables.json" << std::endl;
+	out_file << "#pragma once" << std::endl;
+	out_file << "#include <string>" << std::endl;
+	out_file << "#include <list>" << std::endl;
+	out_file << "#include <vector>" << std::endl;
+	out_file << "#include <unordered_map>" << std::endl << std::endl;
+
+	out_file << "class db_tables_manager {" << std::endl;
+	for (int i=0; i<(int)config_.tables.size(); ++i) {
+	}
+	out_file << "};" << std::endl;
 	return true;
 }

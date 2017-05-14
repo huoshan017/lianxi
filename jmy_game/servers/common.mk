@@ -38,8 +38,8 @@ init:
 $(EXE): $(OBJS) 
 	$(CC) $^ -o $@ $(INCLUDES) $(LIBS) $(CCFLAGS) \
 		-ljmy -lcommon -lproto \
-		$(BOOST_LIBS) \
 		$(OTHER_LIBS) \
+		$(BOOST_LIBS) \
 		$(ZLOG_LIB)/libzlog.a \
 		$(JEMALLOC_LIB)/libjemalloc.a \
 		$(PROTOBUF_LIB)/libprotobuf.a \

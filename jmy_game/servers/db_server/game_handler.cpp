@@ -6,7 +6,7 @@
 #include "dbres_callback_funcs.h"
 #include "global_data.h"
 #include "db_server.h"
-#include "mysql_defines.h"
+#include "../mysql/mysql_defines.h"
 #include "db_tables_func.h"
 
 char GameHandler::tmp_[JMY_MAX_MSG_SIZE];

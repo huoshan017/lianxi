@@ -9,5 +9,8 @@ cd ../../../proto
 ./gen_proto.sh
 make
 
-cd ../servers/db_server
+cd ../servers/mysql
+make
+
+cd ../db_server
 make

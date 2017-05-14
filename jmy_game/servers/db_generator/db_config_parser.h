@@ -58,6 +58,8 @@ private:
 	bool gen_get_result_of_select_record_func(std::fstream& out_file, std::fstream& out_file2, int table_index);
 	bool gen_delete_record_func(std::fstream& out_file, std::fstream& out_file2, const TableInfo& table_info, std::vector<FieldInfo>& fields, const std::string& delete_key);
 
+	bool gen_db_tables_manager(std::fstream& out_file, std::fstream& out_file2);
+
 private:
 	rapidjson::Document doc_;
 	Config config_;

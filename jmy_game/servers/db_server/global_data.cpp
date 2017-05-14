@@ -1,6 +1,6 @@
 #include "global_data.h"
 #include "db_server.h"
-#include "mysql_db_manager.h"
+#include "../mysql/mysql_db_manager.h"
 #include "dbres_callback_funcs.h"
 
 bool GlobalData::init()
