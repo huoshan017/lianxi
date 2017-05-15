@@ -50,7 +50,7 @@ private:
 	bool generate_define_file(std::fstream& out_file, const std::string& file_name);
 	bool generate_struct_file(std::fstream& out_file, std::fstream& out_file2, const std::string& file_name);
 	bool generate_func_file(std::fstream& out_file, std::fstream& out_file2, const std::string& file_name);
-	const char* get_field_format_for_func(const std::vector<FieldInfo>& field_vec, const std::string& field_name);
+	//const char* get_field_format_for_func(const std::vector<FieldInfo>& field_vec, const std::string& field_name);
 
 	bool gen_insert_record_func(std::fstream& out_file, std::fstream& out_file2, const TableInfo& table_info, std::vector<FieldInfo>& fields);
 	bool gen_update_record_func(std::fstream& out_file, std::fstream& out_file2, const TableInfo& table_info, std::vector<FieldInfo>& fields, const std::string& update_key);
