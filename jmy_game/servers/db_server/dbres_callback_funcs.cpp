@@ -66,14 +66,9 @@ int DBResCBFuncs::getAllAccounts(MysqlConnector::Result& res, void* param, long 
 int DBResCBFuncs::insertPlayerInfo(MysqlConnector::Result& res, void* param, long param_l)
 {
 	const std::string& account = *(std::string*)param;
-	int game_id = (int)param_l;
-	if (!GLOBAL_DATA->findAccount(account)) {
-		LogError("cant found account %s", account.c_str());
-		return -1;
-	}
 
-	UserData* user = USER_MGR->get(account);
-	if (user) {
+	t_player* user = TABLES_MGR.get_t_player_by_account(account);
+	if (!user) {
 		LogWarn("account(%s) already exists", account.c_str());
 		return 0;
 	}
@@ -83,6 +78,8 @@ int DBResCBFuncs::insertPlayerInfo(MysqlConnector::Result& res, void* param, lon
 		LogError("account(%s) get last insert id invalid", account.c_str());
 		return -1;
 	}
+
+	int game_id = (int)param_l;
 	uint64_t uid = id + (((uint64_t)game_id<<32)&0xffffffff00000000);
 
 	MysqlFieldNameValue<uint64_t> nv("uid", uid);
@@ -90,14 +87,6 @@ int DBResCBFuncs::insertPlayerInfo(MysqlConnector::Result& res, void* param, lon
 		LogError("update player account(%s) uid(%llu) failed", account.c_str(), uid);
 		return -1;
 	}
-
-	user = USER_MGR->getFree(account);
-	if (!user) {
-		LogError("account(%s) get free user failed", account.c_str());
-		return -1;
-	}
-
-	user->game_server_id = (int)param_l;
 
 	GLOBAL_DATA->insertDBAccount(account);
 	
@@ -110,8 +99,8 @@ int DBResCBFuncs::insertPlayerInfo(MysqlConnector::Result& res, void* param, lon
 		return -1;
 	}
 
-	if (send_game_msg_by_game_id_and_account(user->game_server_id, account, MSGID_DS2GS_REQUIRE_USER_DATA_RESPONSE, tmp_, response.ByteSize()) < 0) {
-		LogError("send msg MsgDS2GS_RequireUserDataResponse by game_id(%d) and account(%s) failed", user->game_server_id, account.c_str());
+	if (send_game_msg_by_game_id_and_account(game_id, account, MSGID_DS2GS_REQUIRE_USER_DATA_RESPONSE, tmp_, response.ByteSize()) < 0) {
+		LogError("send msg MsgDS2GS_RequireUserDataResponse by game_id(%d) and account(%s) failed", game_id, account.c_str());
 		return -1;
 	}
 	
@@ -122,36 +111,31 @@ int DBResCBFuncs::insertPlayerInfo(MysqlConnector::Result& res, void* param, lon
 int DBResCBFuncs::getPlayerInfo(MysqlConnector::Result& res, void* param, long param_l)
 {
 	const std::string& account = *(std::string*)param;
-	if (!GLOBAL_DATA->findAccount(account)) {
-		LogError("cant found account %s", account.c_str());
-		return -1;
-	}
-
-	UserData* user = USER_MGR->getFree(account);
+	t_player* user = TABLES_MGR.get_t_player_by_account(account);
 	if (!user) {
 		LogError("cant get free UserData by account(%s)", account.c_str());
 		return -1;
 	}
 
-	if (!db_get_result_of_select_t_player(res, user->player_data)) {
+	if (!db_get_result_of_select_t_player(res, *user)) {
 		LogError("get result of select player info failed");
 		return -1;
 	}
 
 	MsgDS2GS_RequireUserDataResponse response;
 	response.set_account(account);
-	response.mutable_user_data()->set_id(user->player_data.get_id());
-	response.mutable_user_data()->set_uid(user->player_data.get_uid());
-	response.mutable_user_data()->set_nick_name(user->player_data.get_nick_name());
-	response.mutable_user_data()->set_sex(user->player_data.get_sex());
-	response.mutable_user_data()->set_exp(user->player_data.get_exp());
-	response.mutable_user_data()->set_level(user->player_data.get_level());
-	response.mutable_user_data()->set_vip_level(user->player_data.get_vip_level());
-	response.mutable_user_data()->set_allocated_items(&user->player_data.get_mutable_items());
-	response.mutable_user_data()->set_allocated_skills(&user->player_data.get_mutable_skills());
-	response.mutable_user_data()->set_allocated_tasks(&user->player_data.get_mutable_tasks());
-	response.mutable_user_data()->set_allocated_daily_tasks(&user->player_data.get_mutable_daily_tasks());
-	response.mutable_user_data()->set_allocated_activities(&user->player_data.get_mutable_activities());
+	response.mutable_user_data()->set_id(user->get_id());
+	response.mutable_user_data()->set_uid(user->get_uid());
+	response.mutable_user_data()->set_nick_name(user->get_nick_name());
+	response.mutable_user_data()->set_sex(user->get_sex());
+	response.mutable_user_data()->set_exp(user->get_exp());
+	response.mutable_user_data()->set_level(user->get_level());
+	response.mutable_user_data()->set_vip_level(user->get_vip_level());
+	response.mutable_user_data()->set_allocated_items(&user->get_mutable_items());
+	response.mutable_user_data()->set_allocated_skills(&user->get_mutable_skills());
+	response.mutable_user_data()->set_allocated_tasks(&user->get_mutable_tasks());
+	response.mutable_user_data()->set_allocated_daily_tasks(&user->get_mutable_daily_tasks());
+	response.mutable_user_data()->set_allocated_activities(&user->get_mutable_activities());
 	if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
 		LogError("serialize MsgDS2GS_RequireUserDataResponse failed");
 		return -1;

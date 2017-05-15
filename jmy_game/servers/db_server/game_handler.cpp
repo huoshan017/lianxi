@@ -8,6 +8,7 @@
 #include "db_server.h"
 #include "../mysql/mysql_defines.h"
 #include "db_tables_func.h"
+#include "db_tables_struct.h"
 
 char GameHandler::tmp_[JMY_MAX_MSG_SIZE];
 t_player GameHandler::tmp_player_;
@@ -94,23 +95,23 @@ int GameHandler::processRequireUserDataRequest(JmyMsgInfo* info)
 		return -1;
 	}
 
-	UserData* user = USER_MGR->get(request.account());
+	//UserData* user = USER_MGR->get(request.account());
+	t_player* user = TABLES_MGR.get_t_player_by_account(request.account());
 	if (!user) {
-		const std::string& a = const_cast<std::string&>(GLOBAL_DATA->getAccount(request.account()));
-		GLOBAL_DATA->setAccount2UserId(a, user_id);
+		user = TABLES_MGR.get_new_t_player_by_account(request.account());
+		GLOBAL_DATA->setAccount2UserId(user->get_account(), user_id);
 		// not found in db, insert new record
-		if (!GLOBAL_DATA->findDBAccount(a)) {
-			tmp_player_.set_account(a);
-			if (!db_insert_t_player_record(tmp_player_, DBResCBFuncs::insertPlayerInfo, (void*)&a, (long)game_id)) {
+		if (!GLOBAL_DATA->findDBAccount(user->get_account())) {
+			if (!db_insert_t_player_record(tmp_player_, DBResCBFuncs::insertPlayerInfo, (void*)&user->get_account(), (long)game_id)) {
 				return -1;
 			}
-			LogInfo("to inserting new record(account:%s)", a.c_str());
+			LogInfo("to inserting new record(account:%s)", user->get_account().c_str());
 		} else {
-			if (!db_select_t_player_fields_by_account(a, DBResCBFuncs::getPlayerInfo, (void*)&a, (long)game_id)) {
-				LogError("select account(%s) record failed", a.c_str());
+			if (!db_select_t_player_fields_by_account(user->get_account(), DBResCBFuncs::getPlayerInfo, (void*)&user->get_account(), (long)game_id)) {
+				LogError("select account(%s) record failed", user->get_account().c_str());
 				return -1;
 			}
-			LogInfo("to selecting record by account(%s)", a.c_str());
+			LogInfo("to selecting record by account(%s)", user->get_account().c_str());
 		}
 	} else {
 		MsgDS2GS_RequireUserDataResponse response;
@@ -125,7 +126,7 @@ int GameHandler::processRequireUserDataRequest(JmyMsgInfo* info)
 		}
 	}
 
-	LogInfo("processRequireUserDataRequest: account(%s)", request.account().c_str());
+	LogInfo("processRequireUserDataRequest: account(%s)", user->get_account().c_str());
 
 	return info->len;
 }

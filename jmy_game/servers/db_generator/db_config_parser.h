@@ -3,7 +3,7 @@
 #include "../thirdparty/include/rapidjson/document.h"
 #include "../thirdparty/include/rapidjson/stringbuffer.h"
 #include "../thirdparty/include/rapidjson/writer.h"
-#include "../db_server/mysql_defines.h"
+#include "../mysql/mysql_defines.h"
 #include <string>
 #include <vector>
 
