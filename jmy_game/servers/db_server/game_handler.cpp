@@ -95,14 +95,13 @@ int GameHandler::processRequireUserDataRequest(JmyMsgInfo* info)
 		return -1;
 	}
 
-	//UserData* user = USER_MGR->get(request.account());
 	t_player* user = TABLES_MGR.get_t_player_by_account(request.account());
 	if (!user) {
 		user = TABLES_MGR.get_new_t_player_by_account(request.account());
 		GLOBAL_DATA->setAccount2UserId(user->get_account(), user_id);
 		// not found in db, insert new record
 		if (!GLOBAL_DATA->findDBAccount(user->get_account())) {
-			if (!db_insert_t_player_record(tmp_player_, DBResCBFuncs::insertPlayerInfo, (void*)&user->get_account(), (long)game_id)) {
+			if (!db_insert_t_player_record(*user, DBResCBFuncs::insertPlayerInfo, (void*)&user->get_account(), (long)game_id)) {
 				return -1;
 			}
 			LogInfo("to inserting new record(account:%s)", user->get_account().c_str());

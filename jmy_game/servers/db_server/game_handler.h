@@ -16,5 +16,4 @@ public:
 
 private:
 	static char tmp_[JMY_MAX_MSG_SIZE];
-	static t_player tmp_player_;
 };

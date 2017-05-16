@@ -79,6 +79,7 @@ int DBResCBFuncs::insertPlayerInfo(MysqlConnector::Result& res, void* param, lon
 		return -1;
 	}
 
+	user->set_id(id);
 	int game_id = (int)param_l;
 	uint64_t uid = id + (((uint64_t)game_id<<32)&0xffffffff00000000);
 
