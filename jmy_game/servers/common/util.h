@@ -3,6 +3,7 @@
 #include "../libjmy/jmy_util.h"
 #include "../../proto/src/error.pb.h"
 #include "defines.h"
+#include <ctime>
 
 #define s_libjmy_log_cate "libjmy_log"
 #define s_app_log_cate "app_log"
@@ -44,3 +45,12 @@ inline int get_server_type(int server_id) {
 }
 
 int send_error(JmyTcpConnection* conn, ProtoErrorType);
+
+inline uint64_t gen_unique_role_id(int server_id) {
+	uint64_t id = (std::time(nullptr)<<32) & 0xffffffff00000000;
+	id += (server_id<<16)&0xffff0000;
+	static uint16_t counter = 0;
+	id += counter;
+	counter += 1;
+	return id;
+}

@@ -47,9 +47,9 @@ bool ClientManager::newClientSession(const std::string& account, const std::stri
 	return true;
 }
 
-ClientInfo* ClientManager::getClientInfo(int user_id)
+ClientInfo* ClientManager::getClientInfo(int id)
 {
-	return client_array_.get(user_id);
+	return client_array_.get(id);
 }
 
 ClientInfo* ClientManager::getClientInfoByAccount(const std::string& account)

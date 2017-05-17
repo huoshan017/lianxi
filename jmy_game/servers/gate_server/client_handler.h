@@ -17,6 +17,10 @@ public:
 	static int onConnect(JmyEventInfo*);
 	static int onDisconnect(JmyEventInfo*);
 	static int onTick(JmyEventInfo*);
+	static int processVerifyRequest(JmyMsgInfo*);
+	static int processRoleListRequest(JmyMsgInfo*);
+	static int processCreateRoleRequest(JmyMsgInfo*);
+	static int processDeleteRoleRequest(JmyMsgInfo*);
 	static int processEnterGameRequest(JmyMsgInfo*);
 	static int processLeaveGameRequest(JmyMsgInfo*);
 	static int processReconnectRequest(JmyMsgInfo*);

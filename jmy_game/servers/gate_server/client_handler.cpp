@@ -35,21 +35,15 @@ int ClientHandler::onTick(JmyEventInfo* info)
 	return 0;
 }
 
-int ClientHandler::processEnterGameRequest(JmyMsgInfo* info)
+int ClientHandler::processVerifyRequest(JmyMsgInfo* info)
 {
 	JmyTcpConnection* conn = get_connection(info);
 	if (!conn) {
-		LogError("get connection by info(conn_id:%d) failed", info->conn_id);
+		LogInfo("get connection failed");
 		return -1;
 	}
 
-	MsgC2S_EnterGameRequest request;
-	if (!request.ParseFromArray(info->data, info->len)) {
-		send_error(conn, PROTO_ERROR_LOGIN_DATA_INVALID);
-		LogError("parse MsgC2S_EnterGameRequest failed");
-		return -1;
-	}
-
+	MsgC2S_VerifyRequest request;
 	ClientInfo* ci = CLIENT_MANAGER->getClientInfoByAccount(request.account());
 	if (!ci) {
 		send_error(conn, PROTO_ERROR_ENTER_GAME_INVALID_ACCOUNT);
@@ -58,10 +52,10 @@ int ClientHandler::processEnterGameRequest(JmyMsgInfo* info)
 	}
 
 	// check enter session
-	if (ci->enter_session != request.session_code()) {
+	if (ci->enter_session != request.enter_session()) {
 		send_error(conn, PROTO_ERROR_LOGIN_ACCOUNT_OR_PASSWORD_INVALID);
 		LogError("account %s enter session %s invalid, valid session: %s",
-				request.account().c_str(), request.session_code().c_str(), ci->enter_session.c_str());
+				request.account().c_str(), request.enter_session().c_str(), ci->enter_session.c_str());
 		return -1;
 	}
 
@@ -81,8 +75,90 @@ int ClientHandler::processEnterGameRequest(JmyMsgInfo* info)
 	// insert mapping: conn_id -> id
 	CLIENT_MANAGER->insertConnIdId(info->conn_id, ci->id);
 
-	SEND_GAME_MSG(ci->id, MSGID_GT2GS_ENTER_GAME_REQUEST, info->data, info->len);
-	LogInfo("send message to game server, user_id(%d)", ci->id);
+	MsgS2C_VerifyResponse response;
+	response.set_is_verified(true);
+	response.set_reconnect_session(reconn_session);
+	if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
+		LogError("serialize MsgS2C_VerifyResponse failed");
+		return -1;
+	}
+
+	if (!conn->send(MSGID_S2C_VERIFY_RESPONSE, tmp_, response.ByteSize())) {
+		LogError("send MsgS2C_VerifyResponse failed");
+		return -1;
+	}
+
+	return info->len;
+}
+
+int ClientHandler::processRoleListRequest(JmyMsgInfo* info)
+{
+	JmyTcpConnection* conn = get_connection(info);
+	if (!conn) return -1;
+	ClientInfo* ci = CLIENT_MANAGER->getClientInfoByConnId(info->conn_id);
+	if (!ci) {
+		LogError("cant get ClientInfo by conn_id(%d)", info->conn_id);
+		return -1;
+	}
+
+	MsgC2S_RoleListRequest request;
+	if (!request.ParseFromArray(info->data, info->len)) {
+		LogError("parse MsgC2S_RoleListRequest failed");
+		return -1;
+	}
+
+	MsgGT2GS_RoleListRequest rolelist_req;
+	rolelist_req.set_account(ci->account);
+	if (!rolelist_req.SerializeToArray(tmp_, sizeof(tmp_))) {
+		LogError("serialize MsgGT2GS_RoleListRequest failed");
+		return -1;
+	}
+
+	SEND_GAME_MSG(info->conn_id, MSGID_GT2GS_ROLELIST_REQUEST, info->data, info->len);
+	
+	return info->len;
+}
+
+int ClientHandler::processCreateRoleRequest(JmyMsgInfo* info)
+{
+	JmyTcpConnection* conn = get_connection(info);
+	if (!conn) return -1;
+	ClientInfo* ci = CLIENT_MANAGER->getClientInfoByConnId(info->conn_id);
+	if (!ci) {
+		LogError("cant get ClientInfo by conn_id(%d)", info->conn_id);
+		return -1;
+	}
+
+
+	return info->len;
+}
+
+int ClientHandler::processDeleteRoleRequest(JmyMsgInfo* info)
+{
+	return info->len;
+}
+
+int ClientHandler::processEnterGameRequest(JmyMsgInfo* info)
+{
+	JmyTcpConnection* conn = get_connection(info);
+	if (!conn) {
+		LogError("get connection by info(conn_id:%d) failed", info->conn_id);
+		return -1;
+	}
+
+	MsgC2S_EnterGameRequest request;
+	if (!request.ParseFromArray(info->data, info->len)) {
+		send_error(conn, PROTO_ERROR_LOGIN_DATA_INVALID);
+		LogError("parse MsgC2S_EnterGameRequest failed");
+		return -1;
+	}
+
+	ClientInfo* ci = CLIENT_MANAGER->getClientInfoByConnId(info->conn_id);
+	if (!ci) {
+		return -1;
+	}
+	SEND_GAME_MSG(info->conn_id, MSGID_GT2GS_ENTER_GAME_REQUEST, info->data, info->len);
+	LogInfo("send message to game server, user_id(conn_id:%d)", info->conn_id);
 
 	return info->len;
 }
