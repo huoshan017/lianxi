@@ -64,14 +64,38 @@ int ConnDBHandler::processConnectDBResponse(JmyMsgInfo* info)
 	return info->len;
 }
 
-int ConnDBHandler::processRequireUserDataResponse(JmyMsgInfo* info)
+int ConnDBHandler::processGetRoleResponse(JmyMsgInfo* info)
 {
-	MsgDS2GS_RequireUserDataResponse response;
+	MsgDS2GS_GetRoleResponse response;
 	if (!response.ParseFromArray(info->data, info->len)) {
-		LogError("parse MsgGS2GT_EnterGameResponse failed");
+		LogError("parse MsgGS2GT_GetRoleResponse failed");
+		return -1;
+	}
+	
+	MsgGS2GT_GetRoleResponse get_resp;
+	*get_resp.mutable_account() = std::move(*response.mutable_account());
+	*get_resp.mutable_role_list() = std::move(*response.mutable_role_list());
+	if (!get_resp.SerializeToArray(tmp_, sizeof(tmp_))) {
+		LogError("serialize MsgGS2GT_GetRoleResponse failed");
 		return -1;
 	}
 
+	if (SEND_GATE_MSG(MSGID_GS2GT_GET_ROLE_RESPONSE, tmp_, get_resp.ByteSize()) < 0) {
+		LogError("send MsgGS2GT_GetRoleResponse failed");
+		return -1;
+	}
+
+	return info->len;
+}
+
+int ConnDBHandler::processCreateRoleResponse(JmyMsgInfo* info)
+{
+	return info->len;
+}
+
+int ConnDBHandler::processEnterGameResponse(JmyMsgInfo* info)
+{
+#if 0
 	int user_id = PLAYER_MGR->getUserIdByAccount(response.account());
 	if (user_id <= 0) {
 		LogError("get user id by account(%s) failed", response.account().c_str());
@@ -93,7 +117,8 @@ int ConnDBHandler::processRequireUserDataResponse(JmyMsgInfo* info)
 		LogError("send MsgGS2GT_EnterGameResponse failed");
 		return -1;
 	}
-	LogInfo("processRequireUserDataResponse");
+#endif
+	LogInfo("processEnterGameResponse");
 	return info->len;
 }
 

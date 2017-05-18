@@ -12,7 +12,8 @@ static JmyResendConfig s_retran_config = {
 };
 static JmyId2MsgHandler s_game_handlers[] = {
 	{ MSGID_GS2DS_CONNECT_DB_REQUEST, GameHandler::processConnectDBRequest },
-	{ MSGID_GS2DS_REQUIRE_USER_DATA_REQUEST, GameHandler::processRequireUserDataRequest }
+	{ MSGID_GS2DS_GET_ROLE_REQUEST, GameHandler::processGetRole },
+	{ MSGID_GS2DS_CREATE_ROLE_REQUEST, GameHandler::processCreateRole },
 };
 static JmyBaseEventHandlers s_game_base_event_handlers = {
 	GameHandler::onConnect,

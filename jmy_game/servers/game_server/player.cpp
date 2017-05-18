@@ -45,7 +45,7 @@ void PlayerManager::clear()
 	start_player_id_ = 0;
 	max_player_size_ = 0;
 	uid2id_map_.clear();
-	account2id_map_.clear();
+	//account2id_map_.clear();
 }
 
 Player* PlayerManager::malloc(int id, uint64_t uid)
@@ -119,6 +119,7 @@ bool PlayerManager::free(Player* p)
 	return free(p->id);
 }
 
+#if 0
 bool PlayerManager::addAccountId(const std::string& account, int user_id)
 {
 	int id = 0;
@@ -153,6 +154,7 @@ Player* PlayerManager::getByAccount(const std::string& account)
 		return nullptr;
 	return get(user_id);
 }
+#endif
 
 int PlayerManager::getUserIdbyUid(uint64_t unique_id)
 {

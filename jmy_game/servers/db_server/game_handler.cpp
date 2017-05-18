@@ -11,7 +11,6 @@
 #include "db_tables_struct.h"
 
 char GameHandler::tmp_[JMY_MAX_MSG_SIZE];
-t_player GameHandler::tmp_player_;
 
 int GameHandler::onConnect(JmyEventInfo* info)
 {
@@ -69,63 +68,90 @@ int GameHandler::processConnectDBRequest(JmyMsgInfo* info)
 	return info->len;
 }
 
-int GameHandler::processRequireUserDataRequest(JmyMsgInfo* info)
+int GameHandler::processGetRole(JmyMsgInfo* info)
 {
-	GameAgent* agent = GAME_MGR->getByConnId(info->conn_id);
-	if (!agent) {
-		LogError("not found game agent with conn_id(%d)", info->conn_id);
-		return -1;
-	}
-
-	int game_id = GAME_MGR->getIdByConnId(info->conn_id);
-	if (!game_id) {
-		LogError("cant get game_id by conn_id(%d)");
-		return -1;
-	}
-
-	int user_id = info->user_id;
-	if (user_id <= 0) {
-		LogError("user_id %d is invalid", user_id);
-		return -1;
-	}
-
-	MsgGS2DS_RequireUserDataRequest request;
+	MsgGS2DS_GetRoleRequest request;
 	if (!request.ParseFromArray(info->data, info->len)) {
-		LogError("parse MsgGS2DS_RequireUserDataRequest failed");
+		LogError("parse MsgGS2DS_GetRoleRequest failed");
 		return -1;
 	}
 
 	t_player* user = TABLES_MGR.get_t_player_by_account(request.account());
 	if (!user) {
-		user = TABLES_MGR.get_new_t_player_by_account(request.account());
-		GLOBAL_DATA->setAccount2UserId(user->get_account(), user_id);
-		// not found in db, insert new record
-		if (!GLOBAL_DATA->findDBAccount(user->get_account())) {
-			if (!db_insert_t_player_record(*user, DBResCBFuncs::insertPlayerInfo, (void*)&user->get_account(), (long)game_id)) {
-				return -1;
-			}
-			LogInfo("to inserting new record(account:%s)", user->get_account().c_str());
-		} else {
-			if (!db_select_t_player_fields_by_account(user->get_account(), DBResCBFuncs::getPlayerInfo, (void*)&user->get_account(), (long)game_id)) {
-				LogError("select account(%s) record failed", user->get_account().c_str());
-				return -1;
-			}
-			LogInfo("to selecting record by account(%s)", user->get_account().c_str());
+		if (!db_select_t_player_fields_by_account(user->get_account(), DBResCBFuncs::getPlayerInfo, (void*)&user->get_account(), (long)info->conn_id)) {
+			LogError("select account(%s) record failed", user->get_account().c_str());
+			return -1;
 		}
+		LogInfo("to selecting record by account(%s)", user->get_account().c_str());
 	} else {
-		MsgDS2GS_RequireUserDataResponse response;
-		response.set_account(request.account());
-		if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
-			LogError("serialize MsgDS2GS_RequireUserDataResponse failed");
+		if (DBResCBFuncs::sendGetRoleResponse(user, info->conn_id) < 0) {
+			LogError("send get account(%s) role response failed", request.account().c_str());
 			return -1;
 		}
-		if (agent->sendMsg(MSGID_DS2GS_REQUIRE_USER_DATA_RESPONSE, tmp_, response.ByteSize()) < 0) {
-			LogError("send MsgDS2GS_RequireUserDataResponse failed");
-			return -1;
-		}
+		LogInfo("send get account(%s) role response", request.account().c_str());
 	}
 
-	LogInfo("processRequireUserDataRequest: account(%s)", user->get_account().c_str());
+	return info->len;
+}
+
+static inline uint64_t gen_unique_role_id(int server_id) {
+	uint64_t id = (std::time(nullptr)<<32) & 0xffffffff00000000;
+	id += (server_id<<16)&0xffff0000;
+	static uint16_t counter = 0;
+	id += counter;
+	counter += 1;
+	return id;
+}
+
+int GameHandler::processCreateRole(JmyMsgInfo* info)
+{
+	JmyTcpConnection* conn = get_connection(info);
+	if (!conn) return -1;
+
+	MsgGS2DS_CreateRoleRequest request;
+	if (!request.ParseFromArray(info->data, info->len)) {
+		LogError("parse MsgGS2DS_CreateRoleRequest failed");
+		return -1;
+	}
+
+	t_player* user = TABLES_MGR.get_t_player_by_account(request.account());
+	if (user) {
+		LogError("already exist role(%llu) for account(%s)", user->get_uid(), request.account().c_str());
+		return -1;
+	}
+
+	user = TABLES_MGR.get_new_t_player_by_account(request.account());
+	user->set_account(request.account());
+	int game_id = GAME_MGR->getIdByConnId(info->conn_id);
+	uint64_t role_id = gen_unique_role_id(game_id);
+	user->set_uid(role_id);
+	user->set_sex(request.sex());
+	user->set_nick_name(request.nick_name());
+
+	GLOBAL_DATA->setAccount2UserId(user->get_account(), role_id);
+	// not found in db, insert new record
+	if (!db_insert_t_player_record(*user, nullptr, nullptr, 0)) {
+		LogError("insert t_player record for account(%s) failed", user->get_account().c_str());
+		return -1;
+	}
+
+	MsgDS2GS_CreateRoleResponse response;
+	response.set_account(request.account());
+	response.mutable_role_data()->set_nick_name(request.nick_name());
+	response.mutable_role_data()->set_sex(request.sex());
+	response.mutable_role_data()->set_race(request.race());
+	response.mutable_role_data()->set_role_id(role_id);
+	if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
+		LogError("serialize MsgDS2GS_CreateRoleResponse failed");
+		return -1;
+	}
+
+	if (conn->send(MSGID_DS2GS_CREATE_ROLE_RESPONSE, tmp_, response.ByteSize()) < 0) {
+		LogError("send MsgDS2GS_CreateRoleResponse failed");
+		return -1;
+	}
+
+	LogInfo("to inserting new record(account:%s)", user->get_account().c_str());
 
 	return info->len;
 }

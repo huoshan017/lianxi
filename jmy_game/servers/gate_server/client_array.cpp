@@ -60,6 +60,7 @@ ClientInfo* ClientArray::getFree()
 	int id = free_ids_.front();
 	free_ids_.pop_front();
 	ClientInfo* info = info_array_[id-start_id_];
+	info->id = id;
 	info->used = true;
 	used_ids_.insert(id);
 	return info;

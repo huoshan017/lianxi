@@ -8,7 +8,7 @@
 struct Player
 {
 	int id;
-	std::string acount;
+	//std::string acount;
 	uint64_t uid;
 	Player() {}
 };
@@ -30,11 +30,11 @@ public:
 	bool isUsing(uint64_t unique_id);
 	bool free(int unique_id);
 	bool free(Player* player);
-	bool addAccountId(const std::string& account, int user_id);
-	int getUserIdByAccount(const std::string& account);
-	bool removeAccountId(const std::string& account);
-	bool removeAccountId(int user_id);
-	Player* getByAccount(const std::string& account);
+	//bool addAccountId(const std::string& account, int user_id);
+	//int getUserIdByAccount(const std::string& account);
+	//bool removeAccountId(const std::string& account);
+	//bool removeAccountId(int user_id);
+	//Player* getByAccount(const std::string& account);
 	int getUserIdbyUid(uint64_t unique_id);
 	uint64_t getUidByUserId(int user_id);
 
@@ -44,7 +44,7 @@ private:
 	int start_player_id_;
 	int max_player_size_;
 	BiMap<uint64_t, int> uid2id_map_;
-	BiMap<std::string, int> account2id_map_;
+	//BiMap<std::string, int> account2id_map_;
 };
 
 #define PLAYER_MGR (PlayerManager::getInstance())

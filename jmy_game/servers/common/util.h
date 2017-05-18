@@ -45,12 +45,3 @@ inline int get_server_type(int server_id) {
 }
 
 int send_error(JmyTcpConnection* conn, ProtoErrorType);
-
-inline uint64_t gen_unique_role_id(int server_id) {
-	uint64_t id = (std::time(nullptr)<<32) & 0xffffffff00000000;
-	id += (server_id<<16)&0xffff0000;
-	static uint16_t counter = 0;
-	id += counter;
-	counter += 1;
-	return id;
-}

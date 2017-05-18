@@ -35,7 +35,7 @@ int ClientHandler::onTick(JmyEventInfo* info)
 	return 0;
 }
 
-int ClientHandler::processVerifyRequest(JmyMsgInfo* info)
+int ClientHandler::processGetRoleRequest(JmyMsgInfo* info)
 {
 	JmyTcpConnection* conn = get_connection(info);
 	if (!conn) {
@@ -43,7 +43,7 @@ int ClientHandler::processVerifyRequest(JmyMsgInfo* info)
 		return -1;
 	}
 
-	MsgC2S_VerifyRequest request;
+	MsgC2S_GetRoleRequest request;
 	ClientInfo* ci = CLIENT_MANAGER->getClientInfoByAccount(request.account());
 	if (!ci) {
 		send_error(conn, PROTO_ERROR_ENTER_GAME_INVALID_ACCOUNT);
@@ -69,53 +69,21 @@ int ClientHandler::processVerifyRequest(JmyMsgInfo* info)
 		return -1;
 	}
 
-	char* reconn_session = get_session_code(session_buf_, RECONN_SESSION_CODE_BUF_LENGTH);
-	ci->reconn_session = reconn_session;
-	ci->conn = get_connection(info);
-	// insert mapping: conn_id -> id
+	// insert mapping: conn_id <-> id
 	CLIENT_MANAGER->insertConnIdId(info->conn_id, ci->id);
+	ci->conn = get_connection(info);
 
-	MsgS2C_VerifyResponse response;
-	response.set_is_verified(true);
-	response.set_reconnect_session(reconn_session);
-	if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
-		LogError("serialize MsgS2C_VerifyResponse failed");
+	MsgGT2GS_GetRoleRequest get_req;
+	get_req.set_account(ci->account);
+	if (!get_req.SerializeToArray(tmp_, sizeof(tmp_))) {
+		LogError("serialize MsgGT2GS_GetRoleRequest failed");
+		return -1;
+	}
+	if (SEND_GAME_MSG(MSGID_GT2GS_GET_ROLE_REQUEST, info->data, info->len) < 0) {
+		LogError("send MsgGT2GS_GetRoleRequest failed");
 		return -1;
 	}
 
-	if (!conn->send(MSGID_S2C_VERIFY_RESPONSE, tmp_, response.ByteSize())) {
-		LogError("send MsgS2C_VerifyResponse failed");
-		return -1;
-	}
-
-	return info->len;
-}
-
-int ClientHandler::processRoleListRequest(JmyMsgInfo* info)
-{
-	JmyTcpConnection* conn = get_connection(info);
-	if (!conn) return -1;
-	ClientInfo* ci = CLIENT_MANAGER->getClientInfoByConnId(info->conn_id);
-	if (!ci) {
-		LogError("cant get ClientInfo by conn_id(%d)", info->conn_id);
-		return -1;
-	}
-
-	MsgC2S_RoleListRequest request;
-	if (!request.ParseFromArray(info->data, info->len)) {
-		LogError("parse MsgC2S_RoleListRequest failed");
-		return -1;
-	}
-
-	MsgGT2GS_RoleListRequest rolelist_req;
-	rolelist_req.set_account(ci->account);
-	if (!rolelist_req.SerializeToArray(tmp_, sizeof(tmp_))) {
-		LogError("serialize MsgGT2GS_RoleListRequest failed");
-		return -1;
-	}
-
-	SEND_GAME_MSG(info->conn_id, MSGID_GT2GS_ROLELIST_REQUEST, info->data, info->len);
-	
 	return info->len;
 }
 
@@ -129,12 +97,15 @@ int ClientHandler::processCreateRoleRequest(JmyMsgInfo* info)
 		return -1;
 	}
 
+	MsgGT2GS_CreateRoleRequest create_req;
+	create_req.set_account(ci->account);
+	if (!create_req.SerializeToArray(tmp_, sizeof(tmp_))) {
+		LogError("serialize MsgGT2GS_CreateRoleRequest failed");
+		return -1;
+	}
 
-	return info->len;
-}
+	SEND_GAME_MSG(MSGID_GT2GS_CREATE_ROLE_REQUEST, info->data, info->len);
 
-int ClientHandler::processDeleteRoleRequest(JmyMsgInfo* info)
-{
 	return info->len;
 }
 
@@ -157,7 +128,7 @@ int ClientHandler::processEnterGameRequest(JmyMsgInfo* info)
 	if (!ci) {
 		return -1;
 	}
-	SEND_GAME_MSG(info->conn_id, MSGID_GT2GS_ENTER_GAME_REQUEST, info->data, info->len);
+	SEND_GAME_USER_MSG(ci->id, MSGID_GT2GS_ENTER_GAME_REQUEST, info->data, info->len);
 	LogInfo("send message to game server, user_id(conn_id:%d)", info->conn_id);
 
 	return info->len;
@@ -225,7 +196,7 @@ int ClientHandler::processDefault(JmyMsgInfo* info)
 		LogError("not found id by conn_id(%d)", info->conn_id);
 		return -1;
 	}
-	if (SEND_GAME_MSG(id, info->msg_id, info->data, info->len) < 0) {
+	if (SEND_GAME_USER_MSG(id, info->msg_id, info->data, info->len) < 0) {
 		send_error(conn, PROTO_ERROR_SERVER_INTERNAL_ERROR);
 		LogError("send user(%d) message(%d) to game_server(%d) failed", id, info->msg_id, GAME_SERVER_ID);
 	}

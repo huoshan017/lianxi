@@ -13,6 +13,10 @@ public:
 	void setGateConn(JmyTcpConnection* conn) { gate_conn_ = conn; }
 	void setDBConn(JmyTcpConnection* conn) { db_conn_ = conn; }
 
+	int sendGate(int msg_id, const char* data, unsigned short len) {
+		if (!gate_conn_) return -1;
+		return gate_conn_->send(msg_id, data, len);
+	}
 	int sendGate(int user_id, int msg_id, const char* data, unsigned short len) {
 		if (!gate_conn_) return -1;
 		return gate_conn_->send(user_id, msg_id, data, len);
@@ -32,3 +36,8 @@ private:
 };
 
 #define GLOBAL_DATA (GlobalData::getInstance())
+
+#define SEND_GATE_MSG(msg_id, data, len)				(GlobalData::getInstance()->sendGate(msg_id, data, len))
+#define SEND_GATE_USER_MSG(user_id, msg_id, data, len)	(GlobalData::getInstance()->sendGate(user_id, msg_id, data, len))
+#define SEND_DB_MSG(msg_id, data, len)					(GlobalData::getInstance()->sendDB(msg_id, data, len))
+#define SEND_DB_USER_MSG(user_id, msg_id, data, len)	(GlobalData::getInstance()->sendDB(user_id, msg_id, data, len))

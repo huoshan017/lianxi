@@ -74,6 +74,52 @@ int ConnGateHandler::processConnectGateResponse(JmyMsgInfo* info)
 	return info->len;
 }
 
+int ConnGateHandler::processGetRole(JmyMsgInfo* info)
+{
+	MsgGT2GS_GetRoleRequest request;
+	if (!request.ParseFromArray(info->data, info->len)) {
+		LogError("parse MsgGT2GS_GetRoleRequest failed");
+		return -1;
+	}
+
+	MsgGS2DS_GetRoleRequest get_req;
+	get_req.set_account(request.account());
+	if (!get_req.SerializeToArray(tmp_, sizeof(tmp_))) {
+		LogError("serialize MsgGS2DS_GetRoleRequest failed");
+		return -1;
+	}
+	if (SEND_DB_MSG(MSGID_GS2DS_GET_ROLE_REQUEST, tmp_, get_req.ByteSize()) < 0) {
+		LogError("send MsgGS2DS_GetRoleRequest failed");
+		return -1;
+	}
+	return info->len;
+}
+
+int ConnGateHandler::processCreateRole(JmyMsgInfo* info)
+{
+	MsgGT2GS_CreateRoleRequest request;
+	if (!request.ParseFromArray(info->data, info->len)) {
+		LogError("parse MsgGT2GS_CreateRoleRequest failed");
+		return -1;
+	}
+
+	MsgGS2DS_CreateRoleRequest create_req;
+	create_req.set_account(request.account());
+	create_req.set_nick_name(request.nick_name());
+	create_req.set_sex(request.sex());
+	create_req.set_race(request.race());
+	if (!create_req.SerializeToArray(tmp_, sizeof(tmp_))) {
+		LogError("serialize MsgGS2DS_CreateRoleRequest failed");
+		return -1;
+	}
+	if (SEND_DB_MSG(MSGID_GS2DS_CREATE_ROLE_REQUEST, tmp_, create_req.ByteSize()) < 0) {
+		LogError("send MsgGS2DS_CreateRoleRequest failed");
+		return -1;
+	}
+	LogInfo("processCreateRole: create role for account(%s)", request.account().c_str());
+	return info->len;
+}
+
 int ConnGateHandler::processEnterGame(JmyMsgInfo* info)
 {
 	MsgGT2GS_EnterGameRequest request;
@@ -91,6 +137,7 @@ int ConnGateHandler::processEnterGame(JmyMsgInfo* info)
 	Player* p = PLAYER_MGR->get(user_id);
 	// player not found, send message to db_server
 	if (!p) {
+		/*
 		PLAYER_MGR->addAccountId(request.account(), user_id);
 		MsgGS2DS_RequireUserDataRequest user_data_req;
 		user_data_req.set_account(request.account());
@@ -103,6 +150,7 @@ int ConnGateHandler::processEnterGame(JmyMsgInfo* info)
 			return -1;
 		}
 		LogInfo("send MsgGS2DS_RequireUserDataRequest to db_server");
+		*/
 	} else {
 		MsgGS2GT_EnterGameResponse response;
 		if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {

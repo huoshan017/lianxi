@@ -12,7 +12,8 @@ public:
 	static int onDisconnect(JmyEventInfo*);
 	static int onTick(JmyEventInfo*);
 	static int processConnectDBRequest(JmyMsgInfo*);
-	static int processRequireUserDataRequest(JmyMsgInfo*);
+	static int processGetRole(JmyMsgInfo*);
+	static int processCreateRole(JmyMsgInfo*);
 
 private:
 	static char tmp_[JMY_MAX_MSG_SIZE];

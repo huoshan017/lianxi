@@ -11,7 +11,9 @@ public:
 	static int onDisconnect(JmyEventInfo*);
 	static int onTick(JmyEventInfo*);
 	static int processConnectDBResponse(JmyMsgInfo*);
-	static int processRequireUserDataResponse(JmyMsgInfo*);
+	static int processGetRoleResponse(JmyMsgInfo*);
+	static int processCreateRoleResponse(JmyMsgInfo*);
+	static int processEnterGameResponse(JmyMsgInfo*);
 	static int processDefault(JmyMsgInfo*);
 
 private:

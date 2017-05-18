@@ -38,6 +38,7 @@ public:
 
 	GameAgent* newGameAgent(int game_id, JmyTcpConnectionMgr* conn_mgr, int conn_id);
 	bool removeGameAgentByConnId(int conn_id);
+	int sendGameMsg(int msg_id, const char* data, unsigned short len);
 	int sendGameMsg(int user_id, int msg_id, const char* data, unsigned short len);
 	int getGameServerId() { return the_game_id_; }
 
@@ -48,6 +49,7 @@ private:
 	int the_game_id_;
 };
 
-#define GLOBAL_DATA									(GlobalData::getInstance())
-#define SEND_GAME_MSG(user_id, msg_id, data, len)	(GLOBAL_DATA->sendGameMsg(user_id, msg_id, data, len))
-#define GAME_SERVER_ID								(GLOBAL_DATA->getGameServerId())
+#define GLOBAL_DATA										(GlobalData::getInstance())
+#define SEND_GAME_MSG(msg_id, data, len)				(GLOBAL_DATA->sendGameMsg(msg_id, data, len))
+#define SEND_GAME_USER_MSG(user_id, msg_id, data, len)	(GLOBAL_DATA->sendGameMsg(user_id, msg_id, data, len))
+#define GAME_SERVER_ID									(GLOBAL_DATA->getGameServerId())

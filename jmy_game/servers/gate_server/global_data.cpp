@@ -119,6 +119,21 @@ bool GlobalData::removeGameAgentByConnId(int conn_id)
 	return true;
 }
 
+int GlobalData::sendGameMsg(int msg_id, const char* data, unsigned short len)
+{
+	GameAgent* agent = game_mgr_.getAgent(the_game_id_);
+	if (!agent) {
+		LogError("cant found game agent(%d) connection", the_game_id_);
+		return -1;
+	}
+
+	if (agent->sendMsg(msg_id, data, len) < 0) {
+		LogError("send message(%d) failed", msg_id);
+		return -1;
+	}
+	return len;
+}
+
 int GlobalData::sendGameMsg(int user_id, int msg_id, const char* data, unsigned short len)
 {
 	GameAgent* agent = game_mgr_.getAgent(the_game_id_);

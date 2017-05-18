@@ -10,10 +10,10 @@ enum MsgIdType {
 	MSGID_C2S_SELECT_SERVER_REQUEST			= 10002; // select server
 	MSGID_S2C_SELECT_SERVER_RESPONSE		= 10003; // select server response
 	/* Client <-> GateServer */
-	MSGID_C2S_VERIFY_REQUEST				= 10010; // verify enter session
-	MSGID_S2C_VERIFY_RESPONSE				= 10011; // verify enter session response
-	MSGID_C2S_ROLELIST_REQUEST				= 10012; // role list request
-	MSGID_C2S_ROLELIST_RESPONSE				= 10013; // role list response
+	MSGID_C2S_GET_ROLE_REQUEST				= 10010; // get role request
+	MSGID_S2C_GET_ROLE_RESPONSE				= 10011; // get role response
+	//MSGID_C2S_ROLELIST_REQUEST				= 10012; // role list request
+	//MSGID_C2S_ROLELIST_RESPONSE				= 10013; // role list response
 	MSGID_C2S_CREATE_ROLE_REQUEST			= 10014; // create role request
 	MSGID_S2C_CREATE_ROLE_RESPONSE			= 10015; // create role response
 	MSGID_C2S_DELETE_ROLE_REQUEST			= 10016; // delete role request
@@ -61,44 +61,48 @@ message MsgS2C_SelectServerResponse {
 	int32 port = 3;
 }
 
-// client -> gate  [MSGID_C2S_VERIFY_REQUEST]
-message MsgC2S_VerifyRequest {
+// client -> gate  [MSGID_C2S_GET_ROLE_REQUEST]
+message MsgC2S_GetRoleRequest {
 	bytes account = 1;
 	bytes enter_session = 2;
 }
 
-// gate -> client  [MSGID_S2C_VERIFY_RESPONSE]
-message MsgS2C_VerifyResponse {
-	bool is_verified = 1;
-	bytes reconnect_session = 2;
+// role list data
+message MsgBaseRoleData {
+	uint64 role_id = 1;
+	bytes nick_name = 2;
+	int32 race = 3;
+	int32 sex = 4;
+	int32 hp = 5;
+	int32 level = 6;
+}
+
+// gate -> client  [MSGID_S2C_GET_ROLE_RESPONSE]
+message MsgS2C_GetRoleResponse {
+	bytes reconnect_session = 1;
+	repeated MsgBaseRoleData role_list = 2;
+	int32 max_role_count = 3;
 }
 
 // client -> gate  [MSGID_C2S_ROLELIST_REQUEST]
-message MsgC2S_RoleListRequest {
-}
-
-// role list data
-message MsgRoleData {
-	uint64 role_id = 1;
-	int32 race = 2;
-	int32 sex = 3;
-	int32 hp = 4;
-	int32 level = 5;
-}
+//message MsgC2S_RoleListRequest {
+//}
 
 // gate -> client  [MSGID_S2C_ROLELIST_RESPONSE]
-message MsgS2C_RoleListResponse {
-	repeated MsgRoleData role_list = 1;
-}
+//message MsgS2C_RoleListResponse {
+//	repeated MsgRoleData role_list = 1;
+//}
 
 // client -> gate  [MSGID_C2S_CREATE_ROLE_REQUEST]
 message MsgC2S_CreateRoleRequest {
-	MsgRoleData role_data = 1;
+	bytes nick_name = 1;
+	int32 race = 2;
+	int32 sex = 3;
 }
 
 // gate -> client  [MSGID_S2C_CREATE_ROLE_RESPONSE]
 message MsgS2C_CreateRoleResponse {
-	MsgRoleData role_data = 1;
+	MsgBaseRoleData role_data = 1;
 }
 
 // client -> gate  [MSGID_C2S_DELETE_ROLE_REQUEST]

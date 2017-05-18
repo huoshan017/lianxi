@@ -13,6 +13,10 @@ public:
 	static int onDisconnect(JmyEventInfo*);
 	static int onTick(JmyEventInfo*);
 	static int processConnectGateResponse(JmyMsgInfo*);
+
+	static int processGetRole(JmyMsgInfo*);
+	static int processCreateRole(JmyMsgInfo*);
+
 	static int processEnterGame(JmyMsgInfo*);
 	static int processLeaveGame(JmyMsgInfo*);
 	static int processDefault(JmyMsgInfo*);

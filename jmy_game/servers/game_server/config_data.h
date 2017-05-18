@@ -13,6 +13,8 @@ static JmyResendConfig s_retran_config = {
 };
 static JmyId2MsgHandler s_conn_gate_handlers[] = {
 	{ MSGID_GT2GS_CONNECT_GATE_RESPONSE, ConnGateHandler::processConnectGateResponse },
+	{ MSGID_GT2GS_GET_ROLE_REQUEST,	  ConnGateHandler::processGetRole },
+	{ MSGID_GT2GS_CREATE_ROLE_REQUEST,	ConnGateHandler::processCreateRole },
 	{ MSGID_GT2GS_ENTER_GAME_REQUEST, ConnGateHandler::processEnterGame },
 	{ MSGID_GT2GS_LEAVE_GAME_REQUEST, ConnGateHandler::processLeaveGame }
 };
@@ -42,8 +44,9 @@ static JmyClientConfig s_gate_config = {
 
 /* conn db_server configures */
 static JmyId2MsgHandler s_conn_db_handlers[] = {
-	{ MSGID_DS2GS_CONNECT_DB_RESPONSE, ConnDBHandler::processConnectDBResponse },
-	{ MSGID_DS2GS_REQUIRE_USER_DATA_RESPONSE, ConnDBHandler::processRequireUserDataResponse }
+	{ MSGID_DS2GS_CONNECT_DB_RESPONSE,	ConnDBHandler::processConnectDBResponse	},
+	{ MSGID_DS2GS_GET_ROLE_RESPONSE,	ConnDBHandler::processGetRoleResponse	},
+	{ MSGID_DS2GS_CREATE_ROLE_RESPONSE, ConnDBHandler::processCreateRoleResponse }
 };
 static JmyBaseEventHandlers s_conn_db_base_event_handlers = {
 	ConnDBHandler::onConnect,

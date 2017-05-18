@@ -8,6 +8,7 @@
 #include "client_manager.h"
 
 char GameHandler::tmp_[JMY_MAX_MSG_SIZE];
+char GameHandler::session_buf_[RECONN_SESSION_CODE_BUF_LENGTH+1];
 
 int GameHandler::onConnect(JmyEventInfo* info)
 {
@@ -66,6 +67,52 @@ int GameHandler::processConnectGateRequest(JmyMsgInfo* info)
 	return info->len;
 }
 
+int GameHandler::processGetRoleResponse(JmyMsgInfo* info)
+{
+
+	MsgGS2GT_GetRoleResponse response;
+	if (!response.ParseFromArray(info->data, info->len)) {
+		LogError("parse MsgGS2GT_GetRoleResponse failed");
+		return -1;
+	}
+
+	ClientInfo* ci = CLIENT_MANAGER->getClientInfoByAccount(response.account());
+	if (!ci) {
+		LogError("get ClientInfo by account %s failed", response.account().c_str());
+		return -1;
+	}
+
+	MsgS2C_GetRoleResponse get_resp;
+	char* reconn_session = get_session_code(session_buf_, RECONN_SESSION_CODE_BUF_LENGTH);
+	ci->reconn_session = reconn_session;
+	get_resp.set_reconnect_session(reconn_session);
+	get_resp.set_max_role_count(1);
+	*get_resp.mutable_role_list() = *response.mutable_role_list();
+	if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
+		LogError("serialize MsgS2C_VerifyResponse failed");
+		return -1;
+	}
+
+	if (ci->send(MSGID_S2C_GET_ROLE_RESPONSE, tmp_, response.ByteSize()) < 0) {
+		LogError("send MsgS2C_VerifyResponse failed");
+		return -1;
+	}
+
+	return info->len;
+}
+
+int GameHandler::processCreateRoleResponse(JmyMsgInfo* info)
+{
+	return info->len;
+}
+
+#if 0
+int GameHandler::processDeleteRoleResponse(JmyMsgInfo* info)
+{
+	return info->len;
+}
+#endif
+
 int GameHandler::processEnterGameResponse(JmyMsgInfo* info)
 {
 	MsgGS2GT_EnterGameResponse response;
@@ -82,7 +129,8 @@ int GameHandler::processEnterGameResponse(JmyMsgInfo* info)
 	}
 
 	MsgS2C_EnterGameResponse rsp_to_clt;
-	rsp_to_clt.set_reconnect_session(client_info->reconn_session.c_str());
+	rsp_to_clt.set_role_id(client_info->curr_uid);
+	//rsp_to_clt.set_reconnect_session(client_info->reconn_session.c_str());
 	if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
 		LogError("serialize MsgS2C_EnterGameResponse failed");
 		return -1;
@@ -93,8 +141,7 @@ int GameHandler::processEnterGameResponse(JmyMsgInfo* info)
 		return -1;
 	}
 
-	const std::string& account = response.account();
-	LogInfo("player %s enter game success", account.c_str());
+	LogInfo("user_id(%llu) enter game success", client_info->curr_uid);
 	return info->len;
 }
 
