@@ -5,37 +5,49 @@
 #include <set>
 #include <vector>
 #include "../libjmy/jmy_tcp_connection.h"
+#include "../common/util.h"
 #include "../../proto/src/common.pb.h"
 
 enum { DEFAULT_CLIENT_START_ID = 100000 };
 
+class JmyTcpConnectionMgr;
 struct ClientInfo {
 	bool used;
 	int id;
 	uint64_t curr_uid;
 	std::string account;
-	JmyTcpConnection* conn;
+	//JmyTcpConnection* conn;
+	int conn_id;
+	JmyTcpConnectionMgr* conn_mgr;
 	std::string enter_session;
 	std::string reconn_session;
 	bool get_role_list;
 	std::vector<MsgBaseRoleData*> role_list;
 
-	ClientInfo() : used(false), id(0), curr_uid(0), conn(nullptr), get_role_list(false) {}
+	ClientInfo() : used(false), id(0), curr_uid(0), conn_id(0), conn_mgr(nullptr), get_role_list(false) {}
 	int send(int msg_id, const char* data, unsigned short len) {
 		if (!used) return -1;
+		JmyTcpConnection* conn = get_connection(conn_id, conn_mgr);
 		if (!conn) return -1;
 		return conn->send(msg_id, data, len);
 	}
 	void close() {
-		if (!used || !conn) return;
+		if (!used) return;
+		JmyTcpConnection* conn = get_connection(conn_id, conn_mgr);
+		if (!conn) return;
 		conn->close();
 		used = false;
 	}
 	void force_close() {
-		if (!used || !conn) return;
+		if (!used) return;
+		JmyTcpConnection* conn = get_connection(conn_id, conn_mgr);
+		if (!conn) return;
 		conn->force_close();
 	}
 	bool check_conn(JmyTcpConnection* conn2) {
+		JmyTcpConnection* conn = get_connection(conn_id, conn_mgr);
+		if (!conn)
+			return false;
 		return conn == conn2;
 	}
 

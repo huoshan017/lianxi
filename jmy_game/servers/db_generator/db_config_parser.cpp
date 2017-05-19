@@ -183,12 +183,28 @@ bool DBConfigParser::load(const char* jsonpath)
 			std::cout << table_member << " member of table not exist" << std::endl;
 			return false;
 		}
-		if (!v[table_member].IsString()) {
-			std::cout << table_member << " member type is not string" << std::endl;
+		// select member is array
+		if (!v[table_member].IsArray()) {
+			std::cout << table_member << " member type is not array" << std::endl;
 			return false;
 		}
-		std::string s = v[table_member].GetString();
-		boost::split(config_.tables[i].select_keys, s, boost::is_any_of(","));
+		int ss = v[table_member].GetArray().Size();
+		for (int j=0; j<ss; ++j) {
+			rapidjson::Value& vv = v[table_member].GetArray()[j];
+			char* mm = (char*)"key";
+			if (!vv.HasMember(mm)) {
+				std::cout << mm << " member of table not exist" << std::endl;
+				return false;
+			}
+			std::string key = vv[mm].GetString();
+			mm = (char*)"result_type";
+			if (!vv.HasMember(mm)) {
+				std::cout << mm << " member of table not exist" << std::endl;
+				return false;
+			}
+			std::string result_type = vv[mm].GetString();
+			config_.tables[i].select_keys_info.push_back(SelKeyInfo(key, result_type));
+		}
 
 		table_member = (char*)"update";
 		if (!v.HasMember(table_member)) {
@@ -199,8 +215,9 @@ bool DBConfigParser::load(const char* jsonpath)
 			std::cout << table_member << " member type is not string" << std::endl;
 			return false;
 		}
-		s = v[table_member].GetString();
-		boost::split(config_.tables[i].update_keys, s, boost::is_any_of(","));
+		std::string s = v[table_member].GetString();
+		config_.tables[i].update_key = s;
+		//boost::split(config_.tables[i].update_keys, s, boost::is_any_of(","));
 
 		table_member = (char*)"delete";
 		if (!v.HasMember(table_member)) {
@@ -212,7 +229,8 @@ bool DBConfigParser::load(const char* jsonpath)
 			return false;
 		}
 		s = v[table_member].GetString();
-		boost::split(config_.tables[i].delete_keys, s, boost::is_any_of(","));
+		config_.tables[i].delete_key = s;
+		//boost::split(config_.tables[i].delete_keys, s, boost::is_any_of(","));
 	}
 
 	// field struct
@@ -318,6 +336,8 @@ static bool is_value_type_simple(const std::string& value_type) {
 }
 
 static const char* get_field_type_str_by_name(const std::vector<DBConfigParser::FieldInfo>& fields_info, const std::string& field_name) {
+	if (field_name == "")
+		return nullptr;
 	std::vector<DBConfigParser::FieldInfo>::const_iterator it = fields_info.begin();
 	for (; it!=fields_info.end(); ++it) {
 		if (it->name == field_name)
@@ -616,6 +636,8 @@ bool DBConfigParser::generate_struct_file(std::fstream& out_file, std::fstream& 
 	out_file << "#include <string>" << std::endl;
 	out_file << "#include <set>" << std::endl;
 	out_file << "#include <unordered_map>" << std::endl;
+	out_file << "#include <list>" << std::endl;
+	out_file << "#include \"../mysql/mysql_connector.h\"" << std::endl;
 	for (int i=0; i<(int)config_.struct_include_strings.size(); ++i) {
 		out_file << "#include \"" << config_.struct_include_strings[i] << "\"" << std::endl;
 	}
@@ -862,9 +884,9 @@ static const char* get_field_format_for_func(const std::vector<DBConfigParser::F
 
 bool DBConfigParser::gen_select_record_func(std::fstream& out_file, std::fstream& out_file2, int table_index, int select_key_index) {
 	std::vector<FieldInfo>& fields = config_.tables_fields[table_index];
-	std::string select_key = config_.tables[table_index].select_keys[select_key_index];
+	SelKeyInfo& key_info = config_.tables[table_index].select_keys_info[select_key_index];
 	std::vector<std::string> keys;
-	boost::split(keys, select_key, boost::is_any_of("&"));
+	boost::split(keys, key_info.key, boost::is_any_of("&"));
 
 	int ks = keys.size();
 	if (ks == 0) {
@@ -878,6 +900,10 @@ bool DBConfigParser::gen_select_record_func(std::fstream& out_file, std::fstream
 	// support count of select keys to 3
 	char* ff[MYSQL_MAX_KEYS_COUNT];
 	for (int i=0; i<ks&&i<MYSQL_MAX_KEYS_COUNT; ++i) {
+		if (keys[i] == "") {
+			ks = 0;
+			break;
+		}
 		ff[i] = (char*)get_field_format_for_func(fields, keys[i]);
 		if (!ff[i]) {
 			std::cout << "get field " << keys[i] << " failed" << std::endl;
@@ -886,7 +912,10 @@ bool DBConfigParser::gen_select_record_func(std::fstream& out_file, std::fstream
 	}
 
 	std::string func_title;
-	if (ks == 1) {
+	if (ks == 0) {
+		func_title = "bool db_select_" + config_.tables[table_index].name + "_fields" +
+			", mysql_cmd_callback_func get_result_func, void* param, long param_l)";
+	} else if (ks == 1) {
 		func_title = "bool db_select_" + config_.tables[table_index].name + "_fields_by_" + keys[0] +
 			"(" + ff[0] + ", mysql_cmd_callback_func get_result_func, void* param, long param_l)";
 	} else if (ks == 2) {
@@ -907,7 +936,8 @@ bool DBConfigParser::gen_select_record_func(std::fstream& out_file, std::fstream
 	}
 	out_file2 << "	};" << std::endl;
 	out_file2 << "	if (!DB_MGR.selectRecord(\"" << config_.tables[table_index].name << "\", \"";
-	if (ks == 1) {
+	if (ks == 0) {
+	} else if (ks == 1) {
 		out_file2 << keys[0] << "\", " << keys[0];
 	} else if (ks == 2) {
 		out_file2 << keys[0] << "\", " << keys[0] << ", \"" << keys[1] << "\", " << keys[1];
@@ -922,20 +952,38 @@ bool DBConfigParser::gen_select_record_func(std::fstream& out_file, std::fstream
 	return true;
 }
 
-bool DBConfigParser::gen_get_result_of_select_record_func(std::fstream& out_file, std::fstream& out_file2, int table_index) {
-	std::string func_title = "bool db_get_result_of_select_" + config_.tables[table_index].name + "(MysqlConnector::Result& res, " + config_.tables[table_index].name + "& data)";
+bool DBConfigParser::gen_get_result_of_select_record_func(std::fstream& out_file, std::fstream& out_file2, int table_index, int select_key_index) {
+	std::string func_title;
+	std::string& table_name = config_.tables[table_index].name;
+	SelKeyInfo& key_info = config_.tables[table_index].select_keys_info[select_key_index];
+	std::string& key = key_info.key;
+	std::string& result_type = key_info.result_type;
+	if (result_type == "" || result_type == "single") {
+		func_title = "int db_get_result_of_select_" + table_name + "(MysqlConnector::Result& res, " + table_name + "& data)";
+	} else if (result_type == "multi") {
+		func_title = "int db_get_result_of_select_" + table_name + "(MysqlConnector::Result& res, std::list<" + table_name + ">& data)"; 
+	} else {
+		std::cout << "table " << table_name << " select key(" << key << ") result_type: " << result_type << " invalid" << std::endl;
+		return false;
+	}
+	
 	out_file << func_title << ";" << std::endl;
 
 	out_file2 << func_title << " {" << std::endl;
 	out_file2 << "	if (res.res_err != 0) {" << std::endl;
 	out_file2 << "		LogError(\"result(%d) is not no error\", res.res_err);" << std::endl;
-	out_file2 << "		return false;" << std::endl;
+	out_file2 << "		return -1;" << std::endl;
 	out_file2 << "	}" << std::endl;
 	out_file2 << "	if (res.num_rows()==0 || res.is_empty()) {" << std::endl;
 	out_file2 << "		LogError(\"result is empty\");" << std::endl;
-	out_file2 << "		return false;" << std::endl;
+	out_file2 << "		return 0;" << std::endl;
 	out_file2 << "	}" << std::endl;
-	out_file2 << "	char** datas = res.fetch();" << std::endl;
+	out_file2 << "  MYSQL_ROW row;";
+	if (result_type == "" || result_type == "single") {
+		out_file2 << "	row = res.fetch();" << std::endl;
+	} else if (result_type == "multi") {
+		out_file2 << "  while (row = res.fetch()) {" << std::endl;
+	}
 	int m = 0;
 	for (int n=0; n<(int)config_.tables_fields[table_index].size(); ++n) {
 		const std::string& field_type = config_.tables_fields[table_index][n].field_type;
@@ -945,14 +993,18 @@ bool DBConfigParser::gen_get_result_of_select_record_func(std::fstream& out_file
 			if (field_type == std::string("tinyint") || field_type == std::string("smallint") ||
 					field_type == std::string("mediumint") || field_type == std::string("int")) {
 				if (create_flags.find("unsigned") != std::string::npos) {
+					if (result_type == "multi") out_file2 << "  ";
 					out_file2 << "	data.init_" << field_name << "((unsigned int)std::strtoul(datas[" << m << "], nullptr, 10));" << std::endl;
 				} else {
+					if (result_type == "multi") out_file2 << "  ";
 					out_file2 << "	data.init_" << field_name << "(std::atoi(datas[" << m << "]));" << std::endl;
 				}
 			} else if (field_type == std::string("bigint")) {
 				if (create_flags.find("unsigned") != std::string::npos) {
+					if (result_type == "multi") out_file2 << "  ";
 					out_file2 << "	data.init_" << field_name << "((uint64_t)std::strtoull(datas[" << m << "], nullptr, 10));" << std::endl;
 				} else {
+					if (result_type == "multi") out_file2 << "  ";
 					out_file2 << "	data.init_" << field_name << "((int64_t)std::strtoull(datas[" << m << "], nullptr, 10));" << std::endl;
 				}
 			} else if (field_type.find("blob")!=std::string::npos || field_type.find("binary")!=std::string::npos) {
@@ -961,14 +1013,17 @@ bool DBConfigParser::gen_get_result_of_select_record_func(std::fstream& out_file
 					std::cout << "user define data from " << field_type << " not found" << std::endl;
 					return false;
 				}
-				//out_file << "	" << user_define << " ud" << user_define << ";" << std::endl;
+				if (result_type == "multi") out_file2 << "  ";
 				out_file2 << "	if (!data.get_mutable_" << field_name
 					<< "().ParseFromArray(datas[" << m << "], std::strlen(datas[" << m << "]))) {" << std::endl;
+				if (result_type == "multi") out_file2 << "  ";
 				out_file2 << "		LogError(\"user define " << user_define << " parse failed\");" << std::endl;
-				out_file2 << "		return false;" << std::endl;
+				if (result_type == "multi") out_file2 << "  ";
+				out_file2 << "		return -1;" << std::endl;
+				if (result_type == "multi") out_file2 << "  ";
 				out_file2 << "	}" << std::endl;
-				//out_file << "	data." << field_name << " = ud" << user_define << ";" << std::endl;
 			} else if (field_type.find("text") != std::string::npos || field_type == std::string("char") || field_type == std::string("varchar")) {
+				if (result_type == "multi") out_file2 << "  ";
 				out_file2 << "	data.init_" << field_name << "(datas[" << m << "]);" << std::endl;
 			} else {
 				std::cout << "unsupported field type " << field_type << std::endl;
@@ -977,7 +1032,7 @@ bool DBConfigParser::gen_get_result_of_select_record_func(std::fstream& out_file
 			m += 1;
 		}
 	}
-	out_file2 << "	return true;" << std::endl;
+	out_file2 << "	return res.num_rows();" << std::endl;
 	out_file2 << "}" << std::endl << std::endl;
 	return true;
 }
@@ -1007,17 +1062,16 @@ bool DBConfigParser::generate_func_file(std::fstream& out_file, std::fstream& ou
 	std::string func_title;
 	s = config_.tables.size();
 	for (int i=0; i<s; ++i) {
-		int ss = config_.tables[i].select_keys.size();
+		int ss = config_.tables[i].select_keys_info.size();
 		for (int j=0; j<ss; ++j) {
 			if (!gen_select_record_func(out_file, out_file2, i, j)) {
 				std::cout << "generate select record function failed, table_index(" << i << ")" << std::endl;
 				return false;
 			}
-		}
-
-		// get result of select funcs
-		if (!gen_get_result_of_select_record_func(out_file, out_file2, i)) {
-			return false;
+			// get result of select funcs
+			if (!gen_get_result_of_select_record_func(out_file, out_file2, i, j)) {
+				return false;
+			}
 		}
 
 		if (!gen_insert_record_func(out_file, out_file2, config_.tables[i], config_.tables_fields[i])) {
@@ -1025,13 +1079,13 @@ bool DBConfigParser::generate_func_file(std::fstream& out_file, std::fstream& ou
 			return false;
 		}
 
-		ss = config_.tables[i].update_keys.size();
-		for (int j=0; j<ss; ++j) {
-			if (!gen_update_record_func(out_file, out_file2, config_.tables[i], config_.tables_fields[i], config_.tables[i].update_keys[j])) {
+		//ss = config_.tables[i].update_keys.size();
+		//for (int j=0; j<ss; ++j) {
+			if (!gen_update_record_func(out_file, out_file2, config_.tables[i], config_.tables_fields[i], config_.tables[i].update_key)) {
 				std::cout << "generate update record function failed, table_index(" << i << ")" << std::endl;
 				return false;
 			}
-		}
+		//}
 		out_file << std::endl;
 	}
 
@@ -1191,22 +1245,38 @@ static void gen_db_tables_manager_get_function(
 		std::fstream& out_file, std::fstream& out_file2, const std::string& class_name,
 		DBConfigParser::Config& config, int table_index, const std::string& select_key, const std::string& table_member) {
 	// get function
-	std::string func_name = "get_" + config.tables[table_index].name + "_by_" + select_key + "(" + get_field_format_for_func(config.tables_fields[table_index], select_key) + ")";
-	out_file << std::endl;
-	out_file << "  " << config.tables[table_index].name << "* " << func_name << ";" << std::endl;
-	out_file2 << std::endl;
-	out_file2 << config.tables[table_index].name << "* " << class_name << "::" << func_name << " {" << std::endl;
-	std::string field_type_str = get_field_type_str_by_name(config.tables_fields[table_index], select_key);
-	if (is_value_type_simple(field_type_str)) {
-		out_file2 << "  auto it = " << table_member << ".find(" << select_key << ");" << std::endl;
+	std::string func_name;
+	if (select_key == "") {
+		func_name = "get_" + config.tables[table_index].name + "_list()";
 	} else {
-		out_file2 << "  auto it = " << table_member << ".find(const_cast<" << get_field_type_str(config.tables_fields[table_index], select_key) << "&>(" << select_key << "));" << std::endl;
+		func_name = "get_" + config.tables[table_index].name + "_by_" + select_key + "(" + get_field_format_for_func(config.tables_fields[table_index], select_key) + ")";
 	}
-	out_file2 << "  if (it == " << table_member << ".end()) {" << std::endl;
-	out_file2 << "    return nullptr;" << std::endl;
-	out_file2 << "  }" << std::endl;
-	out_file2 << "  return it->second;" << std::endl;
-	out_file2 << "}" << std::endl;
+	out_file << std::endl;
+	if (select_key != "") {
+		out_file << "  " << config.tables[table_index].name << "* " << func_name << ";" << std::endl;
+	} else {
+		out_file << "  std::list<" << config.tables[table_index].name << ">&" << func_name << ";" << std::endl;
+	}
+
+	out_file2 << std::endl;
+	if (select_key != "") {
+		out_file2 << config.tables[table_index].name << "* " << class_name << "::" << func_name << " {" << std::endl;
+		std::string field_type_str = get_field_type_str_by_name(config.tables_fields[table_index], select_key);
+		if (is_value_type_simple(field_type_str)) {
+			out_file2 << "  auto it = " << table_member << ".find(" << select_key << ");" << std::endl;
+		} else {
+			out_file2 << "  auto it = " << table_member << ".find(const_cast<" << get_field_type_str(config.tables_fields[table_index], select_key) << "&>(" << select_key << "));" << std::endl;
+		}
+		out_file2 << "  if (it == " << table_member << ".end()) {" << std::endl;
+		out_file2 << "    return nullptr;" << std::endl;
+		out_file2 << "  }" << std::endl;
+		out_file2 << "  return it->second;" << std::endl;
+		out_file2 << "}" << std::endl;
+	} else {
+		out_file2 << "std::list<" << config.tables[table_index].name << ">&" << class_name << "::" << func_name << " {" << std::endl;
+		out_file2 << "  return " << config.tables[table_index].name << "_list;" << std::endl;
+		out_file2 << "}" << std::endl;
+	}
 }
 
 static void gen_db_tables_manager_get_new_function(
@@ -1218,6 +1288,8 @@ static void gen_db_tables_manager_get_new_function(
 		const std::string& select_key,
 		const std::string& table_member)
 {
+	if (select_key == "")
+		return;
 	std::string func_name = "get_new_" + config.tables[table_index].name + "_by_" + select_key + "(" + get_field_format_for_func(config.tables_fields[table_index], select_key) + ")";
 	out_file << "  " << config.tables[table_index].name << "* " << func_name << ";" << std::endl;
 	out_file2 << std::endl;
@@ -1237,6 +1309,8 @@ static void gen_db_tables_manager_delete_function(
 		const std::string& select_key,
 		const std::string& table_member)
 {
+	if (select_key == "")
+		return;
 	std::string func_name = "delete_" + config.tables[table_index].name + "_by_" + select_key +
 		"(" + get_field_format_for_func(config.tables_fields[table_index], select_key) + ")";
 	out_file << "  bool " << func_name << ";" << std::endl;
@@ -1263,6 +1337,8 @@ static void gen_db_tables_manager_commit_changed_function(
 		const std::string& select_key,
 		const std::string& table_changed_member)
 {
+	if (select_key == "")
+		return;
 	std::string func_name = "commit_" + config.tables[table_index].name + "_value_changed_by_" + select_key +
 		"(" + get_field_format_for_func(config.tables_fields[table_index], select_key) + ")";
 	out_file << "  void " << func_name << ";" << std::endl;
@@ -1285,8 +1361,8 @@ static void gen_db_tables_manager_update_function(
 		const std::string& update_key,
 		const std::string& table_changed_member)
 {
-	std::string table_member = select_key + "_2_" + config.tables[table_index].name;
-	std::string func_name = "update_" + config.tables[table_index].name + "_by_" + select_key + "()";
+	std::string table_member = update_key + "_2_" + config.tables[table_index].name;
+	std::string func_name = "update_" + config.tables[table_index].name + "_by_" + update_key + "()";
 	out_file << "  int " << func_name << ";" << std::endl;
 	out_file2 << std::endl;
 	out_file2 << "int " << class_name << "::" << func_name << " {" << std::endl;
@@ -1297,11 +1373,11 @@ static void gen_db_tables_manager_update_function(
 	out_file2 << "      continue;" << std::endl;
 	out_file2 << "    }" << std::endl;
 	out_file2 << "    if (it->second == MYSQL_TABLE_RECORD_STATE_DELETE) {" << std::endl;
-	out_file2 << "      it->first->delete_" << config.tables[table_index].name << "_by_" << delete_key << "(it->first->get_" << delete_key << "())";
+	out_file2 << "      it->first->delete_" << config.tables[table_index].name << "_by_" << delete_key << "(it->first->get_" << delete_key << "());" << std::endl;
 	out_file2 << "    } else if (it->second == MYSQL_TABLE_RECORD_STATE_INSERT) {" << std::endl;
-	out_file2 << "      "
+	out_file2 << "      " << std::endl;
 	out_file2 << "    } else if (it->second == MYSQL_TABLE_RECORD_STATE_UPDATE) {" << std::endl;
-	std::string update_function_name = "db_update_" + config.tables[table_index].name + "_record_by_" + select_key + "(*it->first)";
+	std::string update_function_name = "db_update_" + config.tables[table_index].name + "_record_by_" + update_key + "(*it->first)";
 	out_file2 << "      " << update_function_name << std::endl;
 	out_file2 << "    }" << std::endl;
 	out_file2 << "  }" << std::endl;
@@ -1320,11 +1396,6 @@ static void gen_db_tables_manager_run_function(std::fstream& out_file,
 	out_file << "  int " << func_name << ";" << std::endl;
 	out_file2 << std::endl;
 	out_file2 << "int " << class_name << "::" << func_name << " {" << std::endl;
-	for (int i=0; i<(int)config.tables.size(); ++i) {
-		for (int j=0; j<(int)config.tables[i].select_keys.size(); ++j) {
-			out_file2 << "  update_" << config.tables[i].name << "_by_" << config.tables[i].select_keys[j] << "();" << std::endl;
-		}
-	}
 	out_file2 << "  return 0;" << std::endl;
 	out_file2 << "}" << std::endl;
 }
@@ -1341,39 +1412,58 @@ bool DBConfigParser::gen_db_tables_manager(std::fstream& out_file, std::fstream&
 	gen_db_tables_manager_destructor(out_file, out_file2, class_name);
 
 	for (int i=0; i<(int)config_.tables.size(); ++i) {
-		std::vector<std::string>& select_keys = config_.tables[i].select_keys;
-		for (int j=0; j<(int)select_keys.size(); ++j) {
-			std::string table_member = select_keys[j] + "_2_" + config_.tables[i].name;
-			std::string state_member = config_.tables[i].name + "_state_by_" + select_keys[j];
+		std::vector<SelKeyInfo>& select_keys_info = config_.tables[i].select_keys_info;
+		std::string& delete_key = config_.tables[i].delete_key;
+		std::string& update_key = config_.tables[i].update_key;
+		for (int j=0; j<(int)select_keys_info.size(); ++j) {
+			std::string table_member = select_keys_info[j].key + "_2_" + config_.tables[i].name;
+			std::string state_member = config_.tables[i].name + "_state_by_" + select_keys_info[j].key;
 
 			// get function
-			gen_db_tables_manager_get_function(out_file, out_file2, class_name, config_, i, select_keys[j], table_member);
+			gen_db_tables_manager_get_function(out_file, out_file2, class_name, config_, i, select_keys_info[j].key, table_member);
 
 			// get new function
-			gen_db_tables_manager_get_new_function(out_file, out_file2, class_name, config_, i, select_keys[j], table_member);
+			gen_db_tables_manager_get_new_function(out_file, out_file2, class_name, config_, i, select_keys_info[j].key, table_member);
 
 			// delete function
-			gen_db_tables_manager_delete_function(out_file, out_file2, class_name, config_, i, select_keys[j], table_member);	
+			gen_db_tables_manager_delete_function(out_file, out_file2, class_name, config_, i, delete_key, table_member);	
 
 			// commit function
-			gen_db_tables_manager_commit_changed_function(out_file, out_file2, class_name, config_, i, select_keys[j], state_member);
-			
-			// update function
-			gen_db_tables_manager_update_function(out_file, out_file2, class_name, config_, i, select_keys[j], state_member);
+			gen_db_tables_manager_commit_changed_function(out_file, out_file2, class_name, config_, i, select_keys_info[j].key, state_member);
 		}
+		// update function
+		std::string state_member = config_.tables[i].name + "_state";	
+		gen_db_tables_manager_update_function(out_file, out_file2, class_name, config_, i, delete_key, update_key, state_member);
 	}
 	gen_db_tables_manager_run_function(out_file, out_file2, class_name, config_);
 	out_file << std::endl;
 	out_file << "private:" << std::endl;
+	out_file << "  struct record_state_info {" << std::endl;
+    out_file << "    MysqlTableRecordState state;" << std::endl;
+	out_file << "    union {" << std::endl;
+	out_file << "      struct insert_info {" << std::endl;
+	out_file << "        mysql_cmd_callback_func cb;" << std::endl;
+	out_file << "        void* param;" << std::endl;
+	out_file << "        long l_param;" << std::endl;
+	out_file << "      } insert_data;" << std::endl;
+	out_file << "      struct delete_info {" << std::endl;
+	out_file << "        const char* key;" << std::endl;
+	out_file << "      } delete_data;" << std::endl;
+	out_file << "      struct update_info {" << std::endl;
+	out_file << "        const char* key;" << std::endl;
+	out_file << "      } update_data;" << std::endl;
+	out_file << "    } data;" << std::endl;
+	out_file << "  };" << std::endl;
 	for (int i=0; i<(int)config_.tables.size(); ++i) {
-		std::vector<std::string>& select_keys = config_.tables[i].select_keys;
-		for (int j=0; j<(int)select_keys.size(); ++j) {
-			std::string table_member = select_keys[j] + "_2_" + config_.tables[i].name;
-			std::string state_member = config_.tables[i].name + "_state_by_" + select_keys[j];
-			std::string field_type_str = get_field_type_str_by_name(config_.tables_fields[i], select_keys[j]);
-			out_file << "  std::unordered_map<" << field_type_str << ", " << config_.tables[i].name << "*> " << table_member << ";" << std::endl;
-			out_file << "  std::unordered_map<" << config_.tables[i].name << "*, MysqlTableRecordState> " << state_member << ";" << std::endl;
+		std::vector<SelKeyInfo>& select_keys_info = config_.tables[i].select_keys_info;
+		for (int j=0; j<(int)select_keys_info.size(); ++j) {
+			std::string table_member = select_keys_info[j].key + "_2_" + config_.tables[i].name;
+			const char* field_type_str = get_field_type_str_by_name(config_.tables_fields[i], select_keys_info[j].key);
+			if (field_type_str)
+				out_file << "  std::unordered_map<" << field_type_str << ", " << config_.tables[i].name << "*> " << table_member << ";" << std::endl;
 		}
+		std::string state_member = config_.tables[i].name + "_state";
+		out_file << "  std::unordered_map<" << config_.tables[i].name << "*, record_state_info> " << state_member << ";" << std::endl;
 	}
 	out_file << "};" << std::endl;
 	return true;

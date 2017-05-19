@@ -80,8 +80,7 @@ message MsgBaseRoleData {
 // gate -> client  [MSGID_S2C_GET_ROLE_RESPONSE]
 message MsgS2C_GetRoleResponse {
 	bytes reconnect_session = 1;
-	repeated MsgBaseRoleData role_list = 2;
-	int32 max_role_count = 3;
+	MsgBaseRoleData role_data = 2;
 }
 
 // client -> gate  [MSGID_C2S_ROLELIST_REQUEST]

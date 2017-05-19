@@ -71,7 +71,8 @@ int ClientHandler::processGetRoleRequest(JmyMsgInfo* info)
 
 	// insert mapping: conn_id <-> id
 	CLIENT_MANAGER->insertConnIdId(info->conn_id, ci->id);
-	ci->conn = get_connection(info);
+	ci->conn_id = info->conn_id;
+	ci->conn_mgr = (JmyTcpConnectionMgr*)info->param;
 
 	MsgGT2GS_GetRoleRequest get_req;
 	get_req.set_account(ci->account);
@@ -91,6 +92,7 @@ int ClientHandler::processCreateRoleRequest(JmyMsgInfo* info)
 {
 	JmyTcpConnection* conn = get_connection(info);
 	if (!conn) return -1;
+
 	ClientInfo* ci = CLIENT_MANAGER->getClientInfoByConnId(info->conn_id);
 	if (!ci) {
 		LogError("cant get ClientInfo by conn_id(%d)", info->conn_id);
@@ -119,16 +121,27 @@ int ClientHandler::processEnterGameRequest(JmyMsgInfo* info)
 
 	MsgC2S_EnterGameRequest request;
 	if (!request.ParseFromArray(info->data, info->len)) {
-		send_error(conn, PROTO_ERROR_LOGIN_DATA_INVALID);
 		LogError("parse MsgC2S_EnterGameRequest failed");
 		return -1;
 	}
 
+	// check role id is valid
 	ClientInfo* ci = CLIENT_MANAGER->getClientInfoByConnId(info->conn_id);
 	if (!ci) {
+		LogError("not found ClientInfo by conn_id(%d)", info->conn_id);
 		return -1;
 	}
-	SEND_GAME_USER_MSG(ci->id, MSGID_GT2GS_ENTER_GAME_REQUEST, info->data, info->len);
+
+	uint64_t role_id = request.role_id();
+	if (!ci->has_role(role_id)) {
+		LogWarn("role_id(%llu) not exists", role_id);
+		send_error(conn, PROTO_ERROR_ENTER_GAME_ROLE_INVALID);
+		return info->len;
+	}
+
+	ci->curr_uid = role_id;
+
+	SEND_GAME_USER_MSG(ci->id, info->msg_id, info->data, info->len);
 	LogInfo("send message to game server, user_id(conn_id:%d)", info->conn_id);
 
 	return info->len;
@@ -165,7 +178,6 @@ int ClientHandler::processReconnectRequest(JmyMsgInfo* info)
 	// check connection is the same
 	if (!client_info->check_conn(conn)) {
 		client_info->force_close();
-		client_info->conn = conn;
 		LogInfo("exist account %s, kick it", request.account().c_str());
 	}
 

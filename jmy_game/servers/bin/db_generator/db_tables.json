@@ -3,56 +3,49 @@
 	"tables" : [
 		{ "name":"t_account",	"primary_key":"id",  "primary_key_index":0,  "engine":"innodb" },
 		{ "name":"t_player",	"primary_key":"id",  "primary_key_index":0,  "engine":"innodb" },
-		{ "name":"t_friend",	"primary_key":"id",  "primary_key_index":0,  "engine":"innodb" },
 		{ "name":"t_guild",		"primary_key":"id",  "primary_key_index":0,  "engine":"innodb" },
-		{ "name":"t_mail",		"primary_key":"id",  "primary_key_index":0,  "engine":"innodb" }
+		{ "name":"t_mail",		"primary_key":"id",  "primary_key_index":0,  "engine":"innodb" },
+		{ "name":"t_arena_rank","primary_key":"id",  "primary_key_index":0,  "engine":"innodb" }
 	],
 
 	"tables_operate_keys" : [
 		{ 
 			"name":"t_account",
-			"select": [
-				{ "key":"account", "result":"single" }
-			],
+			"select": [ { "key":"account", "result_type":"single" } ],
 			"update":"account",
 			"delete":"account"
 		},
 		{
 			"name":"t_player",
 			"select": [
-				{ "key":"account",	"result":"single" },
-				{ "key":"uid",		"result":"single" }
+				{ "key":"account",	"result_type":"single" },
+				{ "key":"role_id",	"result_type":"single" }
 			],
-			"update":"account,uid",
-			"delete":"account,uid"
-		},
-		{
-			"name":"t_friend",
-			"select": [
-				{ "key":"player1",	"result":"multi:map" },
-				{ "key":"player2",	"result":"multi:map" }
-			],
-			"update":"player1&player2",
-			"delete":"id,player1,player2,player1&player2"
+			"update":"role_id",
+			"delete":"role_id"
 		},
 		{
 			"name":"t_guild",
 			"select": [
-				{ "key":"id",		"result":"single" },
-				{ "key":"name",		"result":"single" }
+				{ "key":"id",		"result_type":"single" }
 			],
-			"update":"id,name",
-			"delete":"id,name"
+			"update":"id",
+			"delete":"id"
 		},
 		{
 			"name":"t_mail",
 			"select": [
-				{ "key":"id",		"result":"single" },
-				{ "key":"sender",	"result":"multi:map" },
-				{ "key":"receiver",	"result":"multi:map" }
+				{ "key":"id",		"result_type":"single" },
+				{ "key":"receiver",	"result_type":"multi" }
 			],
 			"update":"id",
 			"delete":"id"
+		},
+		{
+			"name":"t_arena_rank",
+			"select":[ { "key":"",  "result_type":"multi" } ],
+			"update":"role_id",
+			"delete":"role_id"
 		}
 	],
 
@@ -85,7 +78,7 @@
 	"t_player" : [
 		{ "name":"id",			"field_type":"int",						"field_length":0,	"index_type":"none",	"create_flags":"auto_increment,unsigned,not null" },
 		{ "name":"account",		"field_type":"varchar",					"field_length":32,	"index_type":"unique",	"create_flags":"not null,default" },
-		{ "name":"uid",			"field_type":"bigint",					"field_length":0,	"index_type":"index",	"create_flags":"not null,default,unsigned" },
+		{ "name":"role_id",		"field_type":"bigint",					"field_length":0,	"index_type":"index",	"create_flags":"not null,default,unsigned" },
 		{ "name":"nick_name",	"field_type":"varchar",					"field_length":32,	"index_type":"none",	"create_flags":"not null,default" },
 		{ "name":"sex",			"field_type":"tinyint",					"field_length":0,	"index_type":"none",	"create_flags":"not null,default" },
 		{ "name":"level",		"field_type":"int",						"field_length":0,	"index_type":"none",	"create_flags":"not null,default" },
@@ -118,5 +111,11 @@
 		{ "name":"sender",		"field_type":"bigint",		"field_length":0,	"index_type":"index",		"create_flags":"not null,default" },
 		{ "name":"receiver",	"field_type":"bigint",		"field_length":0,	"index_type":"index",		"create_flags":"not null,default" },
 		{ "name":"send_time",	"field_type":"int",			"field_length":0,	"index_type":"none",		"create_flags":"not null,default" }
+	],
+	
+	"t_arena_rank": [
+		{ "name":"id",			"field_type":"int",			"field_length":0,	"index_type":"none",		"create_flags":"auto_increment,unsigned,not null" },
+		{ "name":"role_id",		"field_type":"bigint",		"field_length":0,	"index_type":"index",		"create_flags":"not null,default" },
+		{ "name":"rank",		"field_type":"int",			"field_length":0,	"index_type":"none",		"create_flags":"not null,default" }
 	]
 }

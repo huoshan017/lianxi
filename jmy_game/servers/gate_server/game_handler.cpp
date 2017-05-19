@@ -86,8 +86,7 @@ int GameHandler::processGetRoleResponse(JmyMsgInfo* info)
 	char* reconn_session = get_session_code(session_buf_, RECONN_SESSION_CODE_BUF_LENGTH);
 	ci->reconn_session = reconn_session;
 	get_resp.set_reconnect_session(reconn_session);
-	get_resp.set_max_role_count(1);
-	*get_resp.mutable_role_list() = *response.mutable_role_list();
+	*get_resp.mutable_role_data() = *response.mutable_role_data();
 	if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
 		LogError("serialize MsgS2C_VerifyResponse failed");
 		return -1;
@@ -106,13 +105,6 @@ int GameHandler::processCreateRoleResponse(JmyMsgInfo* info)
 	return info->len;
 }
 
-#if 0
-int GameHandler::processDeleteRoleResponse(JmyMsgInfo* info)
-{
-	return info->len;
-}
-#endif
-
 int GameHandler::processEnterGameResponse(JmyMsgInfo* info)
 {
 	MsgGS2GT_EnterGameResponse response;
@@ -130,7 +122,6 @@ int GameHandler::processEnterGameResponse(JmyMsgInfo* info)
 
 	MsgS2C_EnterGameResponse rsp_to_clt;
 	rsp_to_clt.set_role_id(client_info->curr_uid);
-	//rsp_to_clt.set_reconnect_session(client_info->reconn_session.c_str());
 	if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
 		LogError("serialize MsgS2C_EnterGameResponse failed");
 		return -1;

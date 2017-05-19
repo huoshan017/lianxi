@@ -2,6 +2,7 @@
 #include "../libjmy/jmy_datatype.h"
 #include "../libjmy/jmy_tcp_connection.h"
 #include "../common/util.h"
+#include "../../proto/src/common.pb.h"
 #include "../../proto/src/server.pb.h"
 #include "config_loader.h"
 #include "player.h"
@@ -43,11 +44,6 @@ int ConnGateHandler::onTick(JmyEventInfo* info)
 
 int ConnGateHandler::processConnectGateResponse(JmyMsgInfo* info)
 {
-	if (PLAYER_MGR->isInited()) {
-		LogWarn("already connected gate server");
-		return info->len;
-	}
-
 	JmyTcpConnection* conn = get_connection(info);
 	if (!conn) {
 		LogError("cant get connection");
@@ -135,33 +131,19 @@ int ConnGateHandler::processEnterGame(JmyMsgInfo* info)
 	}
 
 	Player* p = PLAYER_MGR->get(user_id);
-	// player not found, send message to db_server
 	if (!p) {
-		/*
-		PLAYER_MGR->addAccountId(request.account(), user_id);
-		MsgGS2DS_RequireUserDataRequest user_data_req;
-		user_data_req.set_account(request.account());
-		if (!user_data_req.SerializeToArray(tmp_, sizeof(tmp_))) {
-			LogError("serialize msg MsgGS2DS_RequireUserDataRequest failed");
-			return -1;
-		}
-		if (GLOBAL_DATA->sendDB(user_id, MSGID_GS2DS_REQUIRE_USER_DATA_REQUEST, tmp_, user_data_req.ByteSize()) < 0) {
-			LogError("send msg MsgGS2DS_RequireUserDataRequest failed");
-			return -1;
-		}
-		LogInfo("send MsgGS2DS_RequireUserDataRequest to db_server");
-		*/
-	} else {
-		MsgGS2GT_EnterGameResponse response;
-		if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
-			LogError("serialize MsgGS2GT_EnterGameResponse failed");
-			return -1;
-		}
-		if (GLOBAL_DATA->sendGate(user_id, MSGID_GS2GT_ENTER_GAME_RESPONSE, tmp_, response.ByteSize()) < 0) {
-			LogError("send MsgGS2GT_EnterGameResponse failed");
-			return -1;
-		}
-		LogInfo("send MsgGS2GT_EnterGameResponse to gate_server");
+		p = PLAYER_MGR->malloc(user_id, request.role_id());
+	}
+
+	MsgS2C_EnterGameResponse response;
+	if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
+		LogError("serialize MsgGS2GT_EnterGameResponse failed");
+		return -1;
+	}
+
+	if (SEND_GATE_USER_MSG(user_id, MSGID_S2C_ENTER_GAME_RESPONSE, tmp_, response.ByteSize()) < 0) {
+		LogError("send MsgGS2GT_EnterGameResponse failed");
+		return -1;
 	}
 	
 	LogInfo("processEnterGame: user_id(%d)", user_id);
@@ -189,6 +171,13 @@ int ConnGateHandler::processLeaveGame(JmyMsgInfo* info)
 int ConnGateHandler::processDefault(JmyMsgInfo* info)
 {
 	switch (info->msg_id) {
+	case MSGID_C2S_ENTER_GAME_REQUEST:
+		return processEnterGame(info);
+	case MSGID_C2S_LEAVE_GAME_REQUEST:
+		return processLeaveGame(info);	
+	default:
+		LogWarn("not handled msg_id(%d)", info->msg_id);
+		break;
 	}
 	return info->len;
 }

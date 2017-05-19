@@ -17,14 +17,20 @@ public:
 	void clear();
 	bool generate();
 
+	struct SelKeyInfo {
+		std::string key;
+		std::string result_type;
+		SelKeyInfo(const std::string& k, const std::string& r) : key(k), result_type(r) {}
+	};
+
 	struct TableInfo {
 		std::string name;
 		std::string primary_key;
 		int primary_key_index;
 		std::string db_engine;
-		std::vector<std::string> select_keys;
-		std::vector<std::string> update_keys;
-		std::vector<std::string> delete_keys;
+		std::vector<SelKeyInfo> select_keys_info;
+		std::string update_key;
+		std::string delete_key;
 	};
 
 	struct FieldInfo {
@@ -55,7 +61,7 @@ private:
 	bool gen_insert_record_func(std::fstream& out_file, std::fstream& out_file2, const TableInfo& table_info, std::vector<FieldInfo>& fields);
 	bool gen_update_record_func(std::fstream& out_file, std::fstream& out_file2, const TableInfo& table_info, std::vector<FieldInfo>& fields, const std::string& update_key);
 	bool gen_select_record_func(std::fstream& out_file, std::fstream& out_file2, int table_index, int select_key_index);
-	bool gen_get_result_of_select_record_func(std::fstream& out_file, std::fstream& out_file2, int table_index);
+	bool gen_get_result_of_select_record_func(std::fstream& out_file, std::fstream& out_file2, int table_index, int select_key_index);
 	bool gen_delete_record_func(std::fstream& out_file, std::fstream& out_file2, const TableInfo& table_info, std::vector<FieldInfo>& fields, const std::string& delete_key);
 
 	bool gen_db_tables_manager(std::fstream& out_file, std::fstream& out_file2);

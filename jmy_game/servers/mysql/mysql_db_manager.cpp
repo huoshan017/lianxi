@@ -106,6 +106,47 @@ bool MysqlDBManager::selectRecord(int table_index, std::list<const char*>& field
 	return push_read_cmd(big_buf_[big_index_], std::strlen(big_buf_[big_index_]), get_result_func, param, param_l);
 }
 
+bool MysqlDBManager::selectRecord(const char* table_name, const char** field_name_array, int field_name_array_length, mysql_cmd_callback_func get_result_func, void* param, long param_l)
+{
+	int idx = config_mgr_.get_table_index(table_name);
+	if (idx < 0) {
+		LogError("get table(%s) index failed", table_name);
+		return false;
+	}
+	return selectRecord(idx, field_name_array, field_name_array_length, get_result_func, param, param_l);
+}
+
+bool MysqlDBManager::selectRecord(int table_index, const char** field_name_array, int field_name_array_length, mysql_cmd_callback_func get_result_func, void*param, long param_l)
+{
+	const MysqlTableInfo* ti = config_mgr_.get_table_info(table_index);
+	if (!ti) {
+		LogError("get table(%d) info failed", table_index);
+		return false;
+	}
+
+	char* buf = nullptr; int buf_len = 0;
+	if (!get_buf_info(0, buf, buf_len)) {
+		return false;
+	}
+
+	bool first = true; char* prev_buf = nullptr;
+	for (int i=0; i<field_name_array_length; ++i) {
+		if (first) {
+			std::snprintf(buf, buf_len, "%s", field_name_array[i]);
+			prev_buf = buf;
+		} else {
+			if (to_next_index(0) < 0)
+				return false;
+			if (!get_buf_info(0, buf, buf_len))
+				return false;
+			std::snprintf(buf, buf_len, "%s, %s", prev_buf, field_name_array[i]);
+		}
+	}
+
+	std::snprintf(big_buf_[big_index_], sizeof(big_buf_[big_index_]), "SELECT %s FROM %s", buf, ti->name);
+	return push_read_cmd(big_buf_[big_index_], std::strlen(big_buf_[big_index_]), get_result_func, param, param_l);
+}
+
 bool MysqlDBManager::push_read_cmd(const char* sql, unsigned int sql_len, mysql_cmd_callback_func get_result_func, void* user_param, long user_param_l)
 {
 	MysqlConnectorPool::CmdInfo cmd;

@@ -53,6 +53,8 @@ public:
 
 	bool selectRecord(const char* table_name, std::list<const char*>& field_list, mysql_cmd_callback_func get_result_func, void* param, long param_l);
 	bool selectRecord(int table_index, std::list<const char*>& field_list, mysql_cmd_callback_func get_result_func, void* param, long param_l);
+	bool selectRecord(const char* table_name, const char** field_name_array, int field_name_array_length, mysql_cmd_callback_func get_result_func, void*param, long param_l);
+	bool selectRecord(int table_index, const char** field_name_array, int field_name_array_length, mysql_cmd_callback_func get_result_func, void*param, long param_l);
 
 	template <typename KeyType>
 	bool selectRecord(const char* table_name,

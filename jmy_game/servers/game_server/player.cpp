@@ -2,7 +2,73 @@
 #include "../libjmy/jmy_mem.h"
 #include <cstring>
 
-PlayerManager::PlayerManager() : player_array_(nullptr), start_player_id_(0), max_player_size_(0)
+enum { ONCE_MALLOC_PLAYER_OBJ_COUNT = 1000 };
+
+PlayerPool::PlayerPool()
+{
+}
+
+PlayerPool::~PlayerPool()
+{
+}
+
+void PlayerPool::grow()
+{
+	int i = 0;
+	for (; i<ONCE_MALLOC_PLAYER_OBJ_COUNT; ++i) {
+		Player* p = jmy_mem_malloc<Player>();
+		if (p) free_list_.push_back(p);
+	}
+}
+
+bool PlayerPool::init()
+{
+	if (free_list_.size() == 0)
+		grow();
+	return true;
+}
+
+void PlayerPool::clear()
+{
+	std::list<Player*>::iterator it = free_list_.begin();
+	for (; it!=free_list_.end(); ++it) {
+		if (*it) {
+			jmy_mem_free(*it);
+		}
+	}
+	free_list_.clear();
+
+	std::set<Player*>::iterator sit = used_set_.begin();
+	for (; sit!=used_set_.end(); ++sit) {
+		if (*sit) {
+			jmy_mem_free(*sit);
+		}
+	}
+	used_set_.clear();
+}
+
+Player* PlayerPool::malloc()
+{
+	if (free_list_.size() < 100) {
+		grow();
+	}
+	Player* p = free_list_.front();
+	used_set_.insert(p);
+	free_list_.pop_front();
+	return p;
+}
+
+bool PlayerPool::free(Player* p)
+{
+	if (used_set_.find(p) == used_set_.end())
+		return false;
+
+	used_set_.erase(p);
+	free_list_.push_front(p);
+	return true;
+}
+
+PlayerManager::PlayerManager() : start_player_id_(0), max_player_size_(0), online_role_ids_(nullptr)
 {
 }
 
@@ -16,160 +82,126 @@ bool PlayerManager::init(int start_id, int max_size)
 	if (start_id <= 0 || max_size <= 0)
 		return false;
 
-	if (!player_array_) {
-		player_array_ = (Player**)jmy_mem_malloc(sizeof(Player*)*max_size);
-		std::memset(player_array_, 0, sizeof(Player*)*max_size);
-		using_array_ = (bool*)jmy_mem_malloc(sizeof(bool)*max_size);
-		std::memset(using_array_, 0, sizeof(bool)*max_size);
+	if (!online_role_ids_) {
+		online_role_ids_ = (uint64_t*)jmy_mem_malloc(sizeof(uint64_t)*max_size);
+		std::memset(online_role_ids_, 0, sizeof(uint64_t)*max_size);
+		start_player_id_ = start_id;
+		max_player_size_ = max_size;
 	}
-
-	start_player_id_ = start_id;
-	max_player_size_ = max_size;
 
 	return true;
 }
 
 void PlayerManager::clear()
 {
-	if (!player_array_)
+	if (!online_role_ids_)
 		return;
 
-	int i = 0;
-	for (; i<max_player_size_; ++i) {
-		if (player_array_[i]) {
-			jmy_mem_free(player_array_[i]);
+	jmy_mem_free(online_role_ids_);
+	std::unordered_map<uint64_t, Player*>::iterator it = all_players_.begin();
+	for (; it!=all_players_.end(); ++it) {
+		if (it->second) {
+			jmy_mem_free(it->second);
 		}
 	}
-	jmy_mem_free(player_array_);
-	jmy_mem_free(using_array_);
+	all_players_.clear();
 	start_player_id_ = 0;
 	max_player_size_ = 0;
-	uid2id_map_.clear();
-	//account2id_map_.clear();
 }
 
-Player* PlayerManager::malloc(int id, uint64_t uid)
+Player* PlayerManager::malloc(int user_id, uint64_t role_id)
 {
-	int index = id - start_player_id_;
-	if (!player_array_ || (index>=max_player_size_))
+	int index = user_id - start_player_id_;
+	if (!online_role_ids_ || (index<0) || (index>=max_player_size_))
 		return nullptr;
-	Player* p = player_array_[index];
-	if (p) return p;
-	player_array_[index] = jmy_mem_malloc<Player>();
-	p = player_array_[index];
-	p->id = id;
-	p->uid = uid;
-	using_array_[index] = true;
-	uid2id_map_.insert(uid, id);
+	online_role_ids_[index] = user_id;
+	Player* p = pool_.malloc();
+	p->user_id = user_id;
+	p->role_id = role_id;
+	all_players_.insert(std::make_pair(role_id, p));
+	return p;
+}
+
+Player* PlayerManager::malloc(uint64_t role_id)
+{
+	Player* p = pool_.malloc();
+	p->role_id = role_id;
+	all_players_.insert(std::make_pair(role_id, p));
 	return p;
 }
 
 Player* PlayerManager::get(int id)
 {
 	int index = id - start_player_id_;
-	if (index >= max_player_size_)
+	if (index < 0 || index >= max_player_size_)
 		return nullptr;
-	if (!player_array_)
+	if (!online_role_ids_)
 		return nullptr;
-	Player* p = player_array_[index];
-	return p;
+	uint64_t role_id = online_role_ids_[index];
+	return getByRoleId(role_id);
 }
 
-Player* PlayerManager::getByUid(uint64_t uid)
+Player* PlayerManager::getByRoleId(uint64_t role_id)
 {
-	int user_id = 0;
-	bool b = uid2id_map_.find_1(uid, user_id);
-	if (!b)
+	std::unordered_map<uint64_t, Player*>::iterator it = all_players_.find(role_id);
+	if (it == all_players_.end())
 		return nullptr;
-	return get(user_id);
+	return it->second;
 }
 
-bool PlayerManager::isUsing(int id)
+bool PlayerManager::free(int user_id)
 {
-	int index = id - start_player_id_;
-	if (!player_array_ || index>=max_player_size_)
-		return false;
-	return using_array_[index];
-}
-
-bool PlayerManager::isUsing(uint64_t uid)
-{
-	int user_id = 0;
-	if (!uid2id_map_.find_1(uid, user_id))
+	int index = user_id - start_player_id_;
+	if (index<0 || index>=max_player_size_)
 		return false;
 
-	return isUsing(user_id);
-}
-
-bool PlayerManager::free(int id)
-{
-	int index = id - start_player_id_;
-	if (index >= max_player_size_)
+	uint64_t role_id = online_role_ids_[index];
+	std::unordered_map<uint64_t, Player*>::iterator it = all_players_.find(role_id);
+	if (it == all_players_.end())
 		return false;
-	bool u = using_array_[index];
-	if (u) {
-		using_array_[index] = false;
-	}
-	uid2id_map_.remove_2(id);
+
+	if (!pool_.free(it->second))
+		return false;
+
+	online_role_ids_[index] = 0;
+	all_players_.erase(it);
+
 	return true;
 }
 
 bool PlayerManager::free(Player* p)
 {
-	return free(p->id);
-}
-
-#if 0
-bool PlayerManager::addAccountId(const std::string& account, int user_id)
-{
-	int id = 0;
-	if (account2id_map_.find_1(account, id))
+	int user_id = p->user_id;
+	int index = user_id - start_player_id_;
+	if (index < 0 || index >= max_player_size_)
 		return false;
-	account2id_map_.insert(account, user_id);
+
+	uint64_t role_id = p->role_id;
+
+	if (!pool_.free(p))
+		return false;
+	
+	all_players_.erase(role_id);
+	online_role_ids_[index] = 0;
 	return true;
 }
 
-int PlayerManager::getUserIdByAccount(const std::string& account)
+int PlayerManager::getUserIdByRoleId(uint64_t role_id)
 {
-	int user_id = 0;
-	if (!account2id_map_.find_1(account, user_id))
+	std::unordered_map<uint64_t, Player*>::iterator it = all_players_.find(role_id);
+	if (it == all_players_.end())
 		return 0;
-	return user_id;
-}
-
-bool PlayerManager::removeAccountId(const std::string& account)
-{
-	return account2id_map_.remove_1(account);
-}
-
-bool PlayerManager::removeAccountId(int user_id)
-{
-	return account2id_map_.remove_2(user_id);
-}
-
-Player* PlayerManager::getByAccount(const std::string& account)
-{
-	int user_id = 0;
-	if (!account2id_map_.find_1(account, user_id))
-		return nullptr;
-	return get(user_id);
-}
-#endif
-
-int PlayerManager::getUserIdbyUid(uint64_t unique_id)
-{
-	int user_id = 0;
-	if (!uid2id_map_.find_1(unique_id, user_id)) {
+	if (!it->second)
 		return 0;
-	}
-	return user_id;
+	return it->second->user_id;
 }
 
-uint64_t PlayerManager::getUidByUserId(int user_id)
+uint64_t PlayerManager::getRoleIdByUserId(int user_id)
 {
-	uint64_t unique_id = 0;
-	if (!uid2id_map_.find_2(user_id, unique_id)) {
+	int index = user_id - start_player_id_;
+	if (index<0 || index>=max_player_size_)
 		return 0;
-	}
-	return unique_id;
+
+	uint64_t role_id = online_role_ids_[index];
+	return role_id;
 }

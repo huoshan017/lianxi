@@ -154,7 +154,7 @@ message MsgGT2GS_GetRoleRequest {
 // game -> gate  [MSGID_GS2GT_GET_ROLE_RESPONSE]
 message MsgGS2GT_GetRoleResponse {
 	string account = 1;
-	repeated MsgBaseRoleData role_list = 2;
+	MsgBaseRoleData role_data = 2;
 }
 
 // gate -> game  [MSGID_GT2GS_CREATE_ROLE_REQUEST]
@@ -211,7 +211,7 @@ message MsgGS2DS_GetRoleRequest {
 // db -> game  [MSGID_DS2GS_GET_ROLE_RESPONSE]
 message MsgDS2GS_GetRoleResponse {
 	string account = 1;
-	repeated MsgBaseRoleData role_list = 2;
+	MsgBaseRoleData role_data = 2;
 }
 
 // game -> db  [MSGID_GS2DS_CREATE_ROLE_REQUEST]

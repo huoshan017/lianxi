@@ -74,7 +74,7 @@ int ConnDBHandler::processGetRoleResponse(JmyMsgInfo* info)
 	
 	MsgGS2GT_GetRoleResponse get_resp;
 	*get_resp.mutable_account() = std::move(*response.mutable_account());
-	*get_resp.mutable_role_list() = std::move(*response.mutable_role_list());
+	*get_resp.mutable_role_data() = std::move(*response.mutable_role_data());
 	if (!get_resp.SerializeToArray(tmp_, sizeof(tmp_))) {
 		LogError("serialize MsgGS2GT_GetRoleResponse failed");
 		return -1;

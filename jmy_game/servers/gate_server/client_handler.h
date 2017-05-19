@@ -20,6 +20,7 @@ public:
 
 	static int processGetRoleRequest(JmyMsgInfo*);
 	static int processCreateRoleRequest(JmyMsgInfo*);
+
 	static int processEnterGameRequest(JmyMsgInfo*);
 	static int processLeaveGameRequest(JmyMsgInfo*);
 	static int processReconnectRequest(JmyMsgInfo*);

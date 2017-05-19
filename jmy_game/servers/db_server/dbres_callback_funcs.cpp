@@ -74,7 +74,7 @@ int DBResCBFuncs::sendGetRoleResponse(t_player* user, int conn_id)
 	}
 
 	MsgDS2GS_GetRoleResponse response;
-	MsgBaseRoleData* d = response.add_role_list();
+	MsgBaseRoleData* d = response.mutable_role_data();
 	d->set_nick_name(user->get_nick_name());
 	d->set_sex(user->get_sex());
 	d->set_level(user->get_level());
