@@ -18,7 +18,6 @@
 		{
 			"name":"t_player",
 			"select": [
-				{ "key":"account",	"result_type":"single" },
 				{ "key":"role_id",	"result_type":"single" }
 			],
 			"update":"role_id",
@@ -49,7 +48,7 @@
 		}
 	],
 
-	"field_structs" : "db_field_struct.json",
+	"field_structs_file" : "db_field_struct.json",
 
 	"struct_include" : [
 		"../../proto/src/db_field_struct.pb.h",
