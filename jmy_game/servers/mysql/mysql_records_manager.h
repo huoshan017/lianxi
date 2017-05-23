@@ -183,7 +183,7 @@ public:
 	}
 
 protected:
-	const char* key_name_;
+	std::string key_name_;
 	std::unordered_map<Key, TableRecord*> records_;
 	std::unordered_map<TableRecord*, record_state_info> states_;
 };
@@ -194,6 +194,11 @@ class mysql_records_manager2 : public mysql_records_manager<Table, Key>
 public:
 	mysql_records_manager2();
 	~mysql_records_manager2();
+
+	void init(const char* key_name, const char* key2_name) {
+		mysql_records_manager<Table, Key>::init(key_name);
+		key2_name_ = key2_name;
+	}
 
 	bool insert_pair(const Key& key, const Key2& key2) {
 		if (!key_map_.find_1(key, tmp_key2_))
@@ -219,4 +224,5 @@ protected:
 	BiMap<Key, Key2> key_map_;
 	Key tmp_key_;
 	Key2 tmp_key2_;
+	std::string key2_name_;
 };
