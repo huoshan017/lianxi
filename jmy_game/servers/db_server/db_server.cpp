@@ -2,7 +2,6 @@
 #include "../common/util.h"
 #include "config_loader.h"
 #include "config_data.h"
-#include "user_data_manager.h"
 #include "db_tables_define.h"
 #include "global_data.h"
 
@@ -28,11 +27,6 @@ bool DBServer::init(const char* confpath)
 
 	if (!db_mgr_.init(SERVER_CONFIG.mysql_host, SERVER_CONFIG.mysql_user, SERVER_CONFIG.mysql_password, s_jmy_game_db_config)) {
 		LogError("failed to init mysql_db_manager");
-		return false;
-	}
-
-	if (!USER_MGR->init()) {
-		LogError("failed to init user_data_manager");
 		return false;
 	}
 
@@ -62,8 +56,6 @@ bool DBServer::init(const char* confpath)
 
 void DBServer::close()
 {
-	USER_MGR->clear();
-	//DB_MGR->clear();
 	server_.close();
 	db_mgr_.clear();
 	GLOBAL_DATA->clear();

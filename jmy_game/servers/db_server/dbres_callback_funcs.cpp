@@ -1,7 +1,6 @@
 #include "dbres_callback_funcs.h"
 #include "../common/util.h"
 #include "../../proto/src/server.pb.h"
-#include "user_data_manager.h"
 #include "global_data.h"
 #include "db_server.h"
 #include "game_server_manager.h"
@@ -78,7 +77,7 @@ int DBResCBFuncs::sendGetRoleResponse(t_player* user, int conn_id)
 	d->set_nick_name(user->get_nick_name());
 	d->set_sex(user->get_sex());
 	d->set_level(user->get_level());
-	d->set_role_id(user->get_uid());
+	d->set_role_id(user->get_role_id());
 
 	if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
 		LogError("serialize MsgDS2GS_RequireUserDataResponse failed");

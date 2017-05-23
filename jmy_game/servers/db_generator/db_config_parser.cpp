@@ -564,6 +564,32 @@ static const char* get_field_type_default_value(const std::string& field_type) {
 		return nullptr;
 }
 
+static void gen_struct_constructor_func(std::fstream& out_file, std::fstream& out_file2, DBConfigParser::Config& config, int table_index) {
+	// constructor declaration
+	out_file << "  " << config.tables[table_index].name << "();" << std::endl;
+	// constructor: init member
+	out_file2 << config.tables[table_index].name << "::" << config.tables[table_index].name << "() : " << std::endl;
+
+	std::vector<DBConfigParser::FieldInfo>& fi_vec = config.tables_fields[table_index];
+	std::vector<DBConfigParser::FieldInfo>::iterator it;
+	for (it=fi_vec.begin(); it!=fi_vec.end(); ++it) {
+		const char* ds = get_field_type_default_value((*it).field_type);
+		if (!ds) continue;
+		out_file2 << "  " << (*it).name << "(" << ds << ")," << std::endl;
+	}
+	bool b = false;
+	for (it=fi_vec.begin(); it!=fi_vec.end(); ++it) {
+		DBConfigParser::FieldInfo& fi = *it;
+		if (!is_field_time_type(fi.field_type.c_str())) {
+			if (b) out_file2 << "," << std::endl;
+			out_file2 << "  " << fi.name << "_state(MYSQL_TABLE_FIELD_STATE_IDLE)";
+			b = true;
+		}
+	}
+	out_file2 << std::endl;
+	out_file2 << "{}" << std::endl << std::endl;
+}
+
 static void gen_get_field_func(std::fstream& out_file, const DBConfigParser::FieldInfo& field_info, const char* field_type_str) {
 	out_file << "  " << field_type_str << " get_" << field_info.name << "() const {" << std::endl;
 	out_file << "    return " << field_info.name << ";" << std::endl;
@@ -622,6 +648,108 @@ static void gen_set_field_state_func(std::fstream& out_file, const DBConfigParse
 	out_file << "  }" << std::endl;
 }
 
+static void gen_struct_insert_func(std::fstream& out_file, std::fstream& out_file2, 
+		const DBConfigParser::TableInfo& table_info,
+		std::vector<DBConfigParser::FieldInfo>& fields) {
+	std::string func_name = "insert_request(mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l)";
+	out_file << "  bool " << func_name << ";" << std::endl;
+	out_file2 << "bool " << table_info.name << "::" << func_name << " {" << std::endl;
+
+	std::string format_params_string;
+	for (int i=0; i<(int)fields.size(); ++i) {
+		if (i == table_info.primary_key_index)
+			continue;
+
+		const char* field_type_str = get_field_type_str(fields[i]);
+		if (!field_type_str)
+			continue;
+
+		std::string nv = "nv_" + fields[i].name;
+		out_file2 << "  MysqlFieldNameValue<" << field_type_str << "> " << nv
+			<< "(\"" << fields[i].name << "\", this->get_" << fields[i].name << "()" << ");" << std::endl; 
+		if (format_params_string == "") {
+			format_params_string = nv;
+		} else {
+			format_params_string += (", " + nv);
+		}
+	}
+	out_file2 << "  if (!DB_MGR.insertRecord(\"" << table_info.name << "\", get_last_insert_id_func, param, param_l, " << format_params_string << ")) {" << std::endl;
+	out_file2 << "    std::cout << \"insert record failed\" << std::endl;" << std::endl;
+	out_file2 << "    return false;" << std::endl;
+	out_file2 << "  }" << std::endl;
+	out_file2 << "  return true;" << std::endl;
+	out_file2 << "}" << std::endl << std::endl;
+}
+
+static void gen_struct_delete_func(std::fstream& out_file, std::fstream& out_file2, 
+		const DBConfigParser::TableInfo& table_info) {
+	std::string func_name = "delete_request()";
+	out_file << "  bool " << func_name << ";" << std::endl;
+	out_file2 << "bool " << table_info.name << "::" << func_name << " {" << std::endl;
+	out_file2 << "  if (!DB_MGR.deleteRecord(\"" << table_info.name << "\", ";
+	out_file2 << "\"" << table_info.delete_key << "\", " << "this->get_" << table_info.delete_key << "())) {" << std::endl;
+	out_file2 << "    std::cout << \"delete record failed\" << std::endl;" << std::endl;
+	out_file2 << "    return false;" << std::endl;
+	out_file2 << "  }" << std::endl;
+	out_file2 << "  return true;" << std::endl;
+	out_file2 << "}" << std::endl << std::endl;
+}
+
+static void gen_struct_update_func(std::fstream& out_file, std::fstream& out_file2,
+		const DBConfigParser::TableInfo& table_info,
+		std::vector<DBConfigParser::FieldInfo>& fields) {
+	const std::string& key_name = table_info.update_key;
+	if (key_name == "")
+		return;
+
+	std::string func_name = "update_request()";
+	out_file << "  bool " << func_name << ";" << std::endl;
+	out_file2 << "bool " << table_info.name << "::" << func_name << " {" << std::endl;
+
+	std::string format_params_string;
+	for (int i=0; i<(int)fields.size(); ++i) {
+		// primary key can not update
+		if (i == table_info.primary_key_index)
+			continue;
+
+		const char* field_type_str = get_field_type_str(fields[i]);
+		if (!field_type_str)
+			continue;
+
+		std::string field_name = "field_" + fields[i].name;
+		out_file2 << "  char* " << field_name << " = nullptr;" << std::endl;
+		out_file2 << "  if (this->get_" << fields[i].name << "_state() == MYSQL_TABLE_FIELD_STATE_CHANGED) {" << std::endl;
+		out_file2 << "    " << field_name << " = (char*)\"" << fields[i].name << "\";" << std::endl;
+		out_file2 << "  }" << std::endl;
+
+		std::string nv = "nv_" + fields[i].name;
+		out_file2 << "  MysqlFieldNameValue<" << field_type_str << "> " << nv
+			<< "(\"" << fields[i].name << "\", this->get_" << fields[i].name << "()" << ");" << std::endl; 
+		if (format_params_string == "") {
+			format_params_string = nv;
+		} else {
+			format_params_string += (", " + nv);
+		}
+	}
+	out_file2 << "  if (!DB_MGR.updateRecord(\"" << table_info.name << "\", ";
+	out_file2 << "\"" << key_name << "\", " << "this->get_" << key_name << "()";
+	out_file2 << ", " << format_params_string << ")) {" << std::endl;
+	out_file2 << "    std::cout << \"update record failed\" << std::endl;" << std::endl;
+	out_file2 << "    return false;" << std::endl;
+	out_file2 << "  }" << std::endl;
+	for (int i=0; i<(int)fields.size(); ++i) {
+		// primary key can not update
+		if (i == table_info.primary_key_index) continue;
+		const char* field_type_str = get_field_type_str(fields[i]);
+		if (!field_type_str) continue;
+		out_file2 << "  if (this->get_" << fields[i].name << "_state() == MYSQL_TABLE_FIELD_STATE_CHANGED) {" << std::endl;
+		out_file2 << "    this->set_" << fields[i].name << "_state(MYSQL_TABLE_FIELD_STATE_COMMITTING);" << std::endl;
+		out_file2 << "  }" << std::endl;
+	}
+	out_file2 << "  return true;" << std::endl;
+	out_file2 << "}" << std::endl << std::endl;
+}
+
 bool DBConfigParser::generate_struct_file(std::fstream& out_file, std::fstream& out_file2, const std::string& file_name)
 {
 	std::string db_struct_file_name = file_name + "_struct.h";
@@ -649,18 +777,22 @@ bool DBConfigParser::generate_struct_file(std::fstream& out_file, std::fstream& 
 	out_file2 << "// Generated by the db_generator.  DO NOT EDIT!" << std::endl;
 	out_file2 << "// source: " << jsonpath_ << std::endl << std::endl;
 	out_file2 << "#include \"" << db_struct_file_name << "\"" << std::endl;
-	out_file2 << "#include <iostream>" << std::endl << std::endl;
+	out_file2 << "#include <iostream>" << std::endl;
+	out_file2 << "#include \"../../proto/src/db_field_struct.pb.h\"" << std::endl;
+	out_file2 << "#include \"../mysql/mysql_db_manager.h\"" << std::endl;
+	out_file2 << "#include \"db_server.h\"" << std::endl << std::endl;
 	//////// .cpp
 
 	for (int i=0; i<(int)config_.tables.size(); ++i) {
 		std::vector<FieldInfo>& fi_vec = config_.tables_fields[i];
 		std::vector<FieldInfo>::iterator it;
-		//////// .h
 		{
 			out_file << std::endl << "class " << config_.tables[i].name << " {" << std::endl;
 			out_file << "public:" << std::endl;
-			// constructor declaration
-			out_file << "  " << config_.tables[i].name << "();" << std::endl;
+
+			// constructor
+			gen_struct_constructor_func(out_file, out_file2, config_, i);
+			
 			// function declaration
 			for (it=fi_vec.begin(); it!=fi_vec.end(); ++it) {
 				FieldInfo& fi = *it;
@@ -686,8 +818,16 @@ bool DBConfigParser::generate_struct_file(std::fstream& out_file, std::fstream& 
 				gen_get_field_state_func(out_file, fi);
 				gen_set_field_state_func(out_file, fi);
 			}
+
+			// insert function
+			gen_struct_insert_func(out_file, out_file2, config_.tables[i], config_.tables_fields[i]);
+
+			// update function
+			gen_struct_update_func(out_file, out_file2, config_.tables[i], config_.tables_fields[i]);
+
+			// delete function
+			gen_struct_delete_func(out_file, out_file2, config_.tables[i]);
 			
-			// update functions declaration
 			out_file << std::endl;
 
 			// members
@@ -714,35 +854,7 @@ bool DBConfigParser::generate_struct_file(std::fstream& out_file, std::fstream& 
 			}
 			out_file << "};" << std::endl << std::endl;
 		}
-		//////// .h
-
-		//////// .cpp
-		{
-			// constructor: init member
-			out_file2 << config_.tables[i].name << "::" << config_.tables[i].name << "() : " << std::endl;
-			for (it=fi_vec.begin(); it!=fi_vec.end(); ++it) {
-				const char* ds = get_field_type_default_value((*it).field_type);
-				if (!ds) continue;
-				out_file2 << "  " << (*it).name << "(" << ds << ")," << std::endl;
-			}
-			bool b = false;
-			for (it=fi_vec.begin(); it!=fi_vec.end(); ++it) {
-				FieldInfo& fi = *it;
-				if (!is_field_time_type(fi.field_type.c_str())) {
-					if (b) out_file2 << "," << std::endl;
-					out_file2 << "  " << fi.name << "_state(MYSQL_TABLE_FIELD_STATE_IDLE)";
-					b = true;
-				}
-			}
-			out_file2 << "{" << std::endl << "}" << std::endl << std::endl;
-			out_file2 << std::endl;
-		}
-		//////// .cpp
 	}
-
-	//if (!gen_db_tables_manager(out_file, out_file2)) {
-	//	return false;
-	//}
 
 	out_file.flush();
 	std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -1077,19 +1189,17 @@ bool DBConfigParser::generate_func_file(std::fstream& out_file, std::fstream& ou
 				return false;
 			}
 		}
-
+#if 0
 		if (!gen_insert_record_func(out_file, out_file2, config_.tables[i], config_.tables_fields[i])) {
 			std::cout << "generate insert record function failed, table_index(" << i << ")" << std::endl;
 			return false;
 		}
 
-		//ss = config_.tables[i].update_keys.size();
-		//for (int j=0; j<ss; ++j) {
-			if (!gen_update_record_func(out_file, out_file2, config_.tables[i], config_.tables_fields[i], config_.tables[i].update_key)) {
-				std::cout << "generate update record function failed, table_index(" << i << ")" << std::endl;
-				return false;
-			}
-		//}
+		if (!gen_update_record_func(out_file, out_file2, config_.tables[i], config_.tables_fields[i], config_.tables[i].update_key)) {
+			std::cout << "generate update record function failed, table_index(" << i << ")" << std::endl;
+			return false;
+		}
+#endif
 		out_file << std::endl;
 	}
 

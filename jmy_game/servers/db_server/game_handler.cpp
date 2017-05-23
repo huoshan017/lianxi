@@ -2,7 +2,6 @@
 #include "../common/util.h"
 #include "../../proto/src/server.pb.h"
 #include "game_server_manager.h"
-#include "user_data_manager.h"
 #include "dbres_callback_funcs.h"
 #include "global_data.h"
 #include "db_server.h"

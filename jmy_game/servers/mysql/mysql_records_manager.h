@@ -1,5 +1,6 @@
 #pragma once
 
+#include <list>
 #include <unordered_map>
 #include "mysql_defines.h"
 #include "mysql_connector.h"
@@ -39,16 +40,16 @@ public:
 	}
 
 	TableRecord* get(const Key& key) {
-		typename std::unordered_map<Key, TableRecord*>::iterator it = records_.find(key);
-		if (it == records_.end()) {
+		TableRecord* r = nullptr;
+		if (!records_.find_1(key, r)) {
 			return nullptr;
 		}
-		return it->second;
+		return r;
 	} 
 
 	TableRecord* get_new(const Key& key) {
 		TableRecord* t = jmy_mem_malloc<TableRecord>();
-		records_.insert(std::make_pair(key, t));
+		records_.insert(key, t);
 		return t;
 	}
 
@@ -61,14 +62,23 @@ public:
 	}
 
 	bool remove(const Key& key) {
-		typename std::unordered_map<Key, TableRecord*>::iterator it = records_.find(key);
-		if (it == records_.end()) {
+		TableRecord* r = nullptr;
+		if (!records_.find_1(key, r)) {
 			return false;
 		}
-		if (it->second) {
-			jmy_mem_free(it->second);
+		if (r) {
+			jmy_mem_free(r);
 		}
-		records_.erase(it);
+		records_.remove_1(key);
+		return true;
+	}
+
+	bool remove(TableRecord* r) {
+		if (!records_.find_2(r, tmp_key_)) {
+			return false;
+		}
+		jmy_mem_free(r);
+		records_.remove_2(r);
 		return true;
 	}
 
@@ -99,6 +109,10 @@ public:
 			states_.insert(std::make_pair(t, s));
 		}
 		return true;
+	}
+
+	bool commit_insert_request(const Key& key) {
+		return commit_insert_request(key, nullptr, nullptr, 0);
 	}
 
 	bool commit_delete_request(const Key& key_value) {
@@ -170,11 +184,23 @@ public:
 				continue;
 			}
 			if (it->second.state == MYSQL_TABLE_RECORD_STATE_INSERT) {
-				t->insert_request();
+				if (!t->insert_request(it->second.data.insert_data.cb, it->second.data.insert_data.param, it->second.data.insert_data.param_l)) {
+					LogError("insert request failed");
+				} else {
+				}
 			} else if (it->second.state == MYSQL_TABLE_RECORD_STATE_DELETE) {
-				t->delete_request(key_name_);
+				if (!t->delete_request()) {
+					LogError("delete request failed");
+				} else {
+					if (!remove(t)) {
+						LogError("remove record failed");
+					}
+				}
 			} else if (it->second.state == MYSQL_TABLE_RECORD_STATE_UPDATE) {
-				t->update_request(key_name_);
+				if (!t->update_request()) {
+					LogError("update request failed");
+				} else {
+				}
 			} else {
 				LogWarn("unsupported table record state ", it->second.state);
 			}
@@ -184,19 +210,20 @@ public:
 
 protected:
 	std::string key_name_;
-	std::unordered_map<Key, TableRecord*> records_;
+	BiMap<Key, TableRecord*> records_;
 	std::unordered_map<TableRecord*, record_state_info> states_;
+	Key tmp_key_;
 };
 
-template <typename Table, typename Key, typename Key2>
-class mysql_records_manager2 : public mysql_records_manager<Table, Key>
+template <typename TableRecord, typename Key, typename Key2>
+class mysql_records_manager2 : public mysql_records_manager<TableRecord, Key>
 {
 public:
 	mysql_records_manager2();
 	~mysql_records_manager2();
 
 	void init(const char* key_name, const char* key2_name) {
-		mysql_records_manager<Table, Key>::init(key_name);
+		mysql_records_manager<TableRecord, Key>::init(key_name);
 		key2_name_ = key2_name;
 	}
 
@@ -207,17 +234,40 @@ public:
 		return true;
 	}
 
+	TableRecord* get_by_key(const Key& key) {
+		return mysql_records_manager<TableRecord, Key>::get(key);
+	}
+
+	TableRecord* get_by_key2(const Key2& key2) {
+		if (!key_map_.find_2(key2, tmp_key_))
+			return nullptr;
+		TableRecord* r = nullptr;
+		if (!mysql_records_manager<TableRecord, Key>::records_.find_1(tmp_key_, r))
+			return nullptr;
+		return r;
+	}
+
+	TableRecord* get_new_by_key(const Key& key) {
+		return mysql_records_manager<TableRecord, Key>::get_new(key);
+	}
+
+	TableRecord* get_new_by_key2(const Key2& key2) {
+		if (!key_map_.find_2(key2, tmp_key_))
+			return nullptr;
+		return mysql_records_manager<TableRecord, Key>::get_new(tmp_key_);
+	}
+
 	bool remove_by_key(const Key& key) {
 		if (!key_map_.remove_1(key))
 			return false;
-		return mysql_records_manager<Table, Key>::remove(key);
+		return mysql_records_manager<TableRecord, Key>::remove(key);
 	}
 
 	bool remove_by_key2(const Key2& key2) {
 		if (!key_map_.find_2(key2, tmp_key_))
 			return false;
 		key_map_.remove_2(key2);
-		return mysql_records_manager<Table, Key>::remove(tmp_key_);
+		return mysql_records_manager<TableRecord, Key>::remove(tmp_key_);
 	}
 
 protected:
@@ -225,4 +275,125 @@ protected:
 	Key tmp_key_;
 	Key2 tmp_key2_;
 	std::string key2_name_;
+};
+
+template <typename TableRecord, typename Key>
+class mysql_record_list
+{
+public:
+	mysql_record_list() {}
+	~mysql_record_list() { clear(); }
+
+	void clear() {
+		typename std::unordered_map<Key, TableRecord*>::iterator it = records_.begin();	
+		for (; it!=records_.end(); ++it) {
+			if (it->second) {
+				jmy_mem_free(it->second);
+			}
+		}
+		records_.clear();
+	}
+
+	TableRecord* get_new(const Key& key) {
+		TableRecord* t = jmy_mem_malloc<TableRecord>();
+		records_.insert(std::make_pair(key, t));	
+		return t;
+	}
+
+	TableRecord* get(const Key& key) {
+		typename std::unordered_map<Key, TableRecord*>::iterator it = records_.find(key);
+		if (it == records_.end())
+			return nullptr;
+		return it->second;
+	}
+
+	bool remove(const Key& key) {
+		typename std::unordered_map<Key, TableRecord*>::iterator it = records_.find(key);
+		if (it == records_.end())
+			return false;
+		if (it->second) {
+			jmy_mem_free(it->second);
+		}
+		records_.erase(it);
+		return true;
+	}
+
+private:
+	std::unordered_map<Key, TableRecord*> records_;
+};
+
+template <typename TableRecord, typename Key, typename SubKey>
+class mysql_records_subkey_manager
+{
+public:
+	mysql_records_subkey_manager() {}
+	~mysql_records_subkey_manager() {}
+
+	typedef mysql_record_list<TableRecord, SubKey> ValueType;
+
+	ValueType* get(const Key& key) {
+		typename std::unordered_map<Key, ValueType*>::iterator it = key2recordlist_.find(key);
+		if (it == key2recordlist_.end())
+			return nullptr;
+		return it->second;
+	}
+
+	ValueType* get_new(const Key& key) {
+		ValueType* v = jmy_mem_malloc<ValueType>();
+		key2recordlist_.insert(std::make_pair(key, v));
+		return v;
+	}
+
+	bool remove(const Key& key) {
+		typename std::unordered_map<Key, ValueType*>::iterator it = key2recordlist_.find(key);
+		if (it == key2recordlist_.end())
+			return false;
+		if (it->second) {
+			it->second->clear();
+			jmy_mem_free(it->second);
+		}
+		key2recordlist_.erase(it);
+		return true;
+	}
+
+	TableRecord* get_record(const Key& key, const SubKey& sub_key) {
+		ValueType* v = get(key);
+		if (!v) return nullptr;
+		TableRecord* r = v->get(sub_key);	
+		return r;
+	}
+
+	TableRecord* get_new_record(const Key& key, const SubKey& sub_key) {
+		ValueType* v = get_new(key);
+		if (!v) return nullptr;
+		TableRecord* r = v->get_new(sub_key);
+		record2key_.insert(r, std::make_pair(key, sub_key));
+		return r;
+	}
+
+	bool remove_record(const Key& key, const SubKey& sub_key) {
+		ValueType* v = get(key);
+		if (!v) return false;
+		TableRecord* r = v->get(sub_key);
+		if (!r) return false;
+		v->remove(sub_key);
+		record2key_.erase(r);
+		return true;
+	}
+
+	bool remove_record(TableRecord* record) {
+		std::unordered_map<TableRecord*, std::pair<Key, SubKey> >::iterator it = record2key_.find(record);
+		if (it == record2key_.end())
+			return false;
+		std::unordered_map<Key, ValueType*>::iterator kit = key2recordlist_.find(it->second.first);
+		if (kit == key2recordlist_.end())
+			return false;
+		kit->remove(it->second.second);
+		return true;
+	}
+
+protected:
+	std::unordered_map<TableRecord*, std::pair<Key, SubKey> > record2key_;
+	std::unordered_map<Key, ValueType*> key2recordlist_;
+	std::unordered_map<TableRecord*, record_state_info> states_;
 };
