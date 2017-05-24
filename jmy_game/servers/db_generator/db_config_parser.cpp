@@ -775,6 +775,7 @@ bool DBConfigParser::generate_struct_file(std::fstream& out_file, std::fstream& 
 	out_file << "#include <list>" << std::endl;
 	out_file << "#include \"../common/bi_map.h\"" << std::endl;
 	out_file << "#include \"../mysql/mysql_connector.h\"" << std::endl;
+	out_file << "#include \"../mysql/mysql_records_manager.h\"" << std::endl;
 	for (int i=0; i<(int)config_.struct_include_strings.size(); ++i) {
 		out_file << "#include \"" << config_.struct_include_strings[i] << "\"" << std::endl;
 	}
@@ -1401,8 +1402,6 @@ bool DBConfigParser::gen_db_tables_manager(std::fstream& out_file, std::fstream&
 	(void)out_file2;
 	std::string class_name = config_.db_name + "_tables_manager";
 	out_file << "// " << class_name << std::endl;
-	out_file << "#pragma once" << std::endl;
-	out_file << std::endl;
 	out_file << "class " << class_name << " {" << std::endl;
 	out_file << "public:" << std::endl;
 	out_file << "  " << class_name << "();" << std::endl;
@@ -1417,9 +1416,14 @@ bool DBConfigParser::gen_db_tables_manager(std::fstream& out_file, std::fstream&
 			if (result_type == "single" || result_type == "") {
 				out_file << "  mysql_records_manager<" << table_name << ", " << get_field_type_str(config_.tables_fields[i], key_info_vec[0].key) << "> " << table_name << "_data;" << std::endl;
 			} else if (result_type == "multi") {
-				std::string key = get_field_type_str(config_.tables_fields[i], key_info_vec[0].key);
-				std::string sub_key = get_field_type_str(config_.tables_fields[i], key_info_vec[0].result_key);
-				out_file << "  mysql_records_subkey_manager<" << table_name << ", " << key << ", " << sub_key << "> " << table_name << "_data;" << std::endl;
+				const char* key = get_field_type_str(config_.tables_fields[i], key_info_vec[0].key);
+				const char* sub_key = get_field_type_str(config_.tables_fields[i], key_info_vec[0].result_key);
+				if (!key) {
+					out_file << "  mysql_record_list<" << table_name << ", " << sub_key << "> " << table_name << "_data;" << std::endl;
+				} else {
+					
+					out_file << "  mysql_records_subkey_manager<" << table_name << ", " << key << ", " << sub_key << "> " << table_name << "_data;" << std::endl;
+				}
 			} else {
 				std::cout << "table " << table_name << " result_type " << result_type << " invalid" << std::endl;
 				return false;

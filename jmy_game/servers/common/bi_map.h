@@ -60,6 +60,25 @@ public:
 		return true;
 	}
 
+	typedef std::unordered_map<T1, T2> one_map_type;
+	typedef std::unordered_map<T2, T1> two_map_type;
+
+	typename one_map_type::iterator one_map_begin() {
+		return one_map_.begin();
+	}
+
+	typename one_map_type::iterator one_map_end() {
+		return one_map_.end();
+	}
+
+	typename two_map_type::iterator two_map_begin() {
+		return two_map_.begin();
+	}
+
+	typename two_map_type::iterator two_map_end() {
+		return two_map_.end();
+	}
+
 private:
 	std::unordered_map<T1, T2> one_map_;
 	std::unordered_map<T2, T1> two_map_;

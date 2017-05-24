@@ -452,13 +452,13 @@ public:
 	~mysql_record_list() { clear(); }
 
 	void clear() {
-		typename std::unordered_map<Key, TableRecord*>::iterator it = records_.begin();	
-		for (; it!=records_.end(); ++it) {
+		typename BiMap<Key, TableRecord*>::one_map_type::iterator it = key_record_map_.one_map_begin();
+		for (; it!=key_record_map_.one_map_end(); ++it) {
 			if (it->second) {
 				jmy_mem_free(it->second);
 			}
 		}
-		records_.clear();
+		key_record_map_.clear();
 	}
 
 	TableRecord* get_new_no_insert() {
@@ -466,38 +466,63 @@ public:
 	}
 
 	bool insert_new(const Key& key, TableRecord* record) {
-		if (records_.find(key) == records_.end())
+		TableRecord* tmp_record = nullptr;
+		if (key_record_map_.find_1(key, tmp_record))
 			return false;
-		records_.insert(std::make_pair(key, record));
+		key_record_map_.insert(key, record);
 		return true;
 	}
 
 	TableRecord* get_new(const Key& key) {
 		TableRecord* record = jmy_mem_malloc<TableRecord>();
-		records_.insert(std::make_pair(key, record));	
+		key_record_map_.insert(key, record);	
 		return record;
 	}
 
 	TableRecord* get(const Key& key) {
-		typename std::unordered_map<Key, TableRecord*>::iterator it = records_.find(key);
-		if (it == records_.end())
+		TableRecord* record = nullptr;
+		if (!key_record_map_.find_1(key, record))
 			return nullptr;
-		return it->second;
+		return record;
 	}
 
 	bool remove(const Key& key) {
-		typename std::unordered_map<Key, TableRecord*>::iterator it = records_.find(key);
-		if (it == records_.end())
+		TableRecord* record = nullptr;
+		if (!key_record_map_.find_1(key, record))
 			return false;
-		if (it->second) {
-			jmy_mem_free(it->second);
-		}
-		records_.erase(it);
+		if (!record)
+			return false;
+		key_record_map_.remove_1(key);
+		jmy_mem_free(record);
 		return true;
 	}
 
+	bool remove(TableRecord* record) {
+		if (!key_record_map_.find_2(record, tmp_key_))
+			return false;
+		key_record_map_.remove_2(tmp_key_);
+		jmy_mem_free(record);
+		return true;
+	}
+
+	void update() {
+		state_mgr_.start_update();
+		TableRecord* record = nullptr;
+		while ((record = state_mgr_.get_update_record()) != nullptr) {
+			int res = state_mgr_.update_one_record(record);
+			if (res < 0) {
+				return;
+			} else if (res == 2) {
+				remove(record);
+			}
+		}
+		state_mgr_.clear();
+	}
+
 private:
-	std::unordered_map<Key, TableRecord*> records_;
+	BiMap<Key, TableRecord*> key_record_map_;
+	mysql_record_state_manager<TableRecord> state_mgr_;
+	Key tmp_key_;
 };
 
 template <typename TableRecord, typename Key, typename SubKey>
