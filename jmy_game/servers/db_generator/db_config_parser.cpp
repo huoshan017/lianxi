@@ -197,13 +197,21 @@ bool DBConfigParser::load(const char* jsonpath)
 				return false;
 			}
 			std::string key = vv[mm].GetString();
+
 			mm = (char*)"result_type";
 			if (!vv.HasMember(mm)) {
 				std::cout << mm << " member of table not exist" << std::endl;
 				return false;
 			}
 			std::string result_type = vv[mm].GetString();
-			config_.tables[i].select_keys_info.push_back(SelKeyInfo(key, result_type));
+
+			mm = (char*)"result_key";
+			if (!vv.HasMember(mm)) {
+				std::cout << mm << " member of table not exist" << std::endl;
+				return false;
+			}
+			std::string result_key = vv[mm].GetString();
+			config_.tables[i].select_keys_info.push_back(SelKeyInfo(key, result_type, result_key));
 		}
 
 		table_member = (char*)"update";
@@ -856,6 +864,10 @@ bool DBConfigParser::generate_struct_file(std::fstream& out_file, std::fstream& 
 		}
 	}
 
+	if (!gen_db_tables_manager(out_file, out_file2)) {
+		return false;
+	}
+
 	out_file.flush();
 	std::this_thread::sleep_for(std::chrono::seconds(1));
 	out_file.close();
@@ -1071,10 +1083,17 @@ bool DBConfigParser::gen_get_result_of_select_record_func(std::fstream& out_file
 	SelKeyInfo& key_info = config_.tables[table_index].select_keys_info[select_key_index];
 	std::string& key = key_info.key;
 	std::string& result_type = key_info.result_type;
+	std::string& result_key = key_info.result_key;
 	if (result_type == "" || result_type == "single") {
-		func_title = "int db_get_result_of_select_" + table_name + "(MysqlConnector::Result& res, " + table_name + "& data)";
+		func_title = "int db_get_result_of_select_" + table_name + "_by_" + key + "(MysqlConnector::Result& res, " + table_name + "* data)";
 	} else if (result_type == "multi") {
-		func_title = "int db_get_result_of_select_" + table_name + "(MysqlConnector::Result& res, std::list<" + table_name + ">& data)"; 
+		if (result_key == "") {
+			std::cout << "table " << table_name << " select_key(" << key << ") result_key empty is invalid" << std::endl;
+			return false;
+		}
+		std::string field_type_str = get_field_type_str(config_.tables_fields[table_index], result_key);
+		func_title = "int db_get_result_of_select_" + table_name + 
+			"(MysqlConnector::Result& res, mysql_record_list<" + table_name + ", " + field_type_str + ">& result_list)"; 
 	} else {
 		std::cout << "table " << table_name << " select key(" << key << ") result_type: " << result_type << " invalid" << std::endl;
 		return false;
@@ -1095,7 +1114,8 @@ bool DBConfigParser::gen_get_result_of_select_record_func(std::fstream& out_file
 	if (result_type == "" || result_type == "single") {
 		out_file2 << "  row = res.fetch();" << std::endl;
 	} else if (result_type == "multi") {
-		out_file2 << "  while (row = res.fetch()) {" << std::endl;
+		out_file2 << "  while ((row = res.fetch()) != nullptr) {" << std::endl;
+		out_file2 << "    " << table_name << "* data = result_list.get_new_no_insert();" << std::endl;
 	}
 	int m = 0;
 	for (int n=0; n<(int)config_.tables_fields[table_index].size(); ++n) {
@@ -1103,22 +1123,52 @@ bool DBConfigParser::gen_get_result_of_select_record_func(std::fstream& out_file
 		const std::string& create_flags = config_.tables_fields[table_index][n].create_flags;
 		const std::string& field_name = config_.tables_fields[table_index][n].name;
 		if (can_select_field_type(field_type)) {
-			if (field_type == std::string("tinyint") || field_type == std::string("smallint") ||
-					field_type == std::string("mediumint") || field_type == std::string("int")) {
+			if (field_type == std::string("tinyint") ||
+				field_type == std::string("smallint") ||
+				field_type == std::string("mediumint") ||
+				field_type == std::string("int")) {
 				if (create_flags.find("unsigned") != std::string::npos) {
-					if (result_type == "multi") out_file2 << "  ";
-					out_file2 << "  data.init_" << field_name << "((unsigned int)std::strtoul(row[" << m << "], nullptr, 10));" << std::endl;
+					if (result_key == field_name) {
+						if (result_type == "multi") { out_file2 << "  "; }
+						out_file2 << "  unsigned int d = (unsigned int)std::strtoul(row[" << m << "], nullptr, 10);" << std::endl;
+					}
+					if (result_type == "multi") { out_file2 << "  "; }
+					if (result_key == field_name)
+						out_file2 << "  data->init_" << field_name << "(d);" << std::endl;
+					else
+						out_file2 << "  data->init_" << field_name << "((unsigned int)std::strtoul(row[" << m << "], nullptr, 10));" << std::endl;
 				} else {
-					if (result_type == "multi") out_file2 << "  ";
-					out_file2 << "  data.init_" << field_name << "(std::atoi(row[" << m << "]));" << std::endl;
+					if (result_key == field_name) {
+						if (result_type == "multi") { out_file2 << "  "; }
+						out_file2 << "  int d = std::atoi(row[" << m << "]);" << std::endl;
+					}
+					if (result_type == "multi") { out_file2 << "  "; }
+					if (result_key == field_name)
+						out_file2 << "  data->init_" << field_name << "(d);" << std::endl;
+					else
+						out_file2 << "  data->init_" << field_name << "(std::atoi(row[" << m << "]));" << std::endl;
 				}
 			} else if (field_type == std::string("bigint")) {
 				if (create_flags.find("unsigned") != std::string::npos) {
+					if (result_key == field_name) {
+						if (result_type == "multi") { out_file2 << "  "; }
+						out_file2 << "  uint64_t d = (uint64_t)std::strtoull(row[" << m << "], nullptr, 10);" << std::endl;
+					}
 					if (result_type == "multi") out_file2 << "  ";
-					out_file2 << "  data.init_" << field_name << "((uint64_t)std::strtoull(row[" << m << "], nullptr, 10));" << std::endl;
+					if (result_key == field_name)
+						out_file2 << "  data->init_" << field_name << "(d);" << std::endl;
+					else
+						out_file2 << "  data->init_" << field_name << "((uint64_t)std::strtoull(row[" << m << "], nullptr, 10));" << std::endl;
 				} else {
+					if (result_key == field_name) {
+						if (result_type == "multi") { out_file2 << "  "; }
+						out_file2 << "  int64_t d = (int64_t)std::strtoull(row[" << m << "], nullptr, 10);" << std::endl;
+					}
 					if (result_type == "multi") out_file2 << "  ";
-					out_file2 << "  data.init_" << field_name << "((int64_t)std::strtoull(row[" << m << "], nullptr, 10));" << std::endl;
+					if (result_key == field_name)
+						out_file2 << "  data->init_" << field_name << "(d);" << std::endl;
+					else
+						out_file2 << "  data->init_" << field_name << "((int64_t)std::strtoull(row[" << m << "], nullptr, 10));" << std::endl;
 				}
 			} else if (field_type.find("blob")!=std::string::npos || field_type.find("binary")!=std::string::npos) {
 				const char* user_define = get_blob_user_define_data(field_type);
@@ -1127,7 +1177,7 @@ bool DBConfigParser::gen_get_result_of_select_record_func(std::fstream& out_file
 					return false;
 				}
 				if (result_type == "multi") out_file2 << "  ";
-				out_file2 << "  if (!data.get_mutable_" << field_name
+				out_file2 << "  if (!data->get_mutable_" << field_name
 					<< "().ParseFromArray(row[" << m << "], std::strlen(row[" << m << "]))) {" << std::endl;
 				if (result_type == "multi") out_file2 << "  ";
 				out_file2 << "    LogError(\"user define " << user_define << " parse failed\");" << std::endl;
@@ -1136,11 +1186,21 @@ bool DBConfigParser::gen_get_result_of_select_record_func(std::fstream& out_file
 				if (result_type == "multi") out_file2 << "  ";
 				out_file2 << "  }" << std::endl;
 			} else if (field_type.find("text") != std::string::npos || field_type == std::string("char") || field_type == std::string("varchar")) {
+				if (result_key == field_name) {
+					if (result_type == "multi") out_file2 << "  ";
+					out_file2 << "  string d = row[" << m << "];" << std::endl;
+				}
 				if (result_type == "multi") out_file2 << "  ";
-				out_file2 << "  data.init_" << field_name << "(row[" << m << "]);" << std::endl;
+				if (result_key == field_name)
+					out_file2 << "  data->init_" << field_name << "(d);" << std::endl;
+				else
+					out_file2 << "  data->init_" << field_name << "(row[" << m << "]);" << std::endl;
 			} else {
 				std::cout << "unsupported field type " << field_type << std::endl;
 				return false;
+			}
+			if (result_key == field_name && result_type == "multi") {
+				out_file2 << "    result_list.insert_new(d, data)" << std::endl;
 			}
 			m += 1;
 		}
@@ -1336,8 +1396,50 @@ bool DBConfigParser::gen_update_record_func(std::fstream& out_file, std::fstream
 	return true;
 }
 
-bool DBConfigParser::gen_delete_record_func(std::fstream& out_file, std::fstream& out_file2, const TableInfo& table_info, std::vector<FieldInfo>& fields, const std::string& delete_key)
+bool DBConfigParser::gen_db_tables_manager(std::fstream& out_file, std::fstream& out_file2)
 {
+	(void)out_file2;
+	std::string class_name = config_.db_name + "_tables_manager";
+	out_file << "// " << class_name << std::endl;
+	out_file << "#pragma once" << std::endl;
+	out_file << std::endl;
+	out_file << "class " << class_name << " {" << std::endl;
+	out_file << "public:" << std::endl;
+	out_file << "  " << class_name << "();" << std::endl;
+	out_file << "  ~" << class_name << "();" << std::endl;
+	out_file << "private:" << std::endl;
+	int s = config_.tables.size();
+	for (int i=0; i<s; ++i) {
+		std::string& table_name = config_.tables[i].name;
+		std::vector<SelKeyInfo>& key_info_vec = config_.tables[i].select_keys_info;
+		if (key_info_vec.size() == 1) {
+			std::string& result_type = key_info_vec[0].result_type;
+			if (result_type == "single" || result_type == "") {
+				out_file << "  mysql_records_manager<" << table_name << ", " << get_field_type_str(config_.tables_fields[i], key_info_vec[0].key) << "> " << table_name << "_data;" << std::endl;
+			} else if (result_type == "multi") {
+				std::string key = get_field_type_str(config_.tables_fields[i], key_info_vec[0].key);
+				std::string sub_key = get_field_type_str(config_.tables_fields[i], key_info_vec[0].result_key);
+				out_file << "  mysql_records_subkey_manager<" << table_name << ", " << key << ", " << sub_key << "> " << table_name << "_data;" << std::endl;
+			} else {
+				std::cout << "table " << table_name << " result_type " << result_type << " invalid" << std::endl;
+				return false;
+			}
+		} else if (key_info_vec.size() == 2) {
+			std::string& result_type = key_info_vec[0].result_type;
+			std::string& result_type2 = key_info_vec[1].result_type;
+			if (result_type != "single" || result_type2 != "single") {
+				std::cout << "table " << table_name << " one of two result_type is not single" << std::endl;
+				return false;
+			}
+			std::string key = get_field_type_str(config_.tables_fields[i], key_info_vec[0].key);
+			std::string key2 = get_field_type_str(config_.tables_fields[i], key_info_vec[1].key);
+			out_file << "  mysql_records_manager2<" << table_name << ", " << key << ", " << key2 << "> " << table_name << "_data;" << std::endl;
+		} else {
+			std::cout << "table " << table_name << " select key count " << key_info_vec.size() << " invalid" << std::endl;
+			return false;
+		}
+	}
+	out_file << "};" << std::endl;
 	return true;
 }
 

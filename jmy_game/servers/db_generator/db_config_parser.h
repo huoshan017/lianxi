@@ -20,7 +20,8 @@ public:
 	struct SelKeyInfo {
 		std::string key;
 		std::string result_type;
-		SelKeyInfo(const std::string& k, const std::string& r) : key(k), result_type(r) {}
+		std::string result_key;
+		SelKeyInfo(const std::string& k, const std::string& r, const std::string& rk) : key(k), result_type(r), result_key(rk) {}
 	};
 
 	struct TableInfo {
@@ -64,7 +65,7 @@ private:
 	bool gen_get_result_of_select_record_func(std::fstream& out_file, std::fstream& out_file2, int table_index, int select_key_index);
 	bool gen_delete_record_func(std::fstream& out_file, std::fstream& out_file2, const TableInfo& table_info, std::vector<FieldInfo>& fields, const std::string& delete_key);
 
-	//bool gen_db_tables_manager(std::fstream& out_file, std::fstream& out_file2);
+	bool gen_db_tables_manager(std::fstream& out_file, std::fstream& out_file2);
 
 private:
 	rapidjson::Document doc_;
