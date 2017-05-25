@@ -55,6 +55,9 @@ int GameHandler::processGetRole(JmyMsgInfo* info)
 		return -1;
 	}
 
+	const MsgBaseRoleData& rd = response.role_data();
+	LogInfo("get role: race(%d), sex(%d), role_id(%llu), nick_name(%s)", rd.race(), rd.sex(), rd.role_id(), rd.nick_name().c_str());
+
 	reconn_session_ = response.reconnect_session();
 	const MsgBaseRoleData& role_data = response.role_data();
 	if (send_enter_game_request(conn, role_data.role_id()) < 0)
@@ -72,6 +75,9 @@ int GameHandler::processCreateRole(JmyMsgInfo* info)
 		LogError("parse MsgS2C_CreateRoleResponse failed");
 		return -1;
 	}
+
+	const MsgBaseRoleData& rd = response.role_data();
+	LogInfo("create role: race(%d), sex(%d), role_id(%llu), nick_name(%s)", rd.race(), rd.sex(), rd.role_id(), rd.nick_name().c_str());
 
 	const MsgBaseRoleData& role_data = response.role_data();
 	if (send_enter_game_request(conn, role_data.role_id()) < 0)

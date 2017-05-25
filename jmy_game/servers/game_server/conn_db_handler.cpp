@@ -73,8 +73,11 @@ int ConnDBHandler::processGetRoleResponse(JmyMsgInfo* info)
 	}
 
 	MsgGS2GT_GetRoleResponse get_resp;
-	get_resp.set_allocated_account(response.mutable_account());
-	get_resp.set_allocated_role_data(response.mutable_role_data());
+	get_resp.set_account(response.account());
+	get_resp.mutable_role_data()->set_sex(response.role_data().sex());
+	get_resp.mutable_role_data()->set_race(response.role_data().race());
+	get_resp.mutable_role_data()->set_role_id(response.role_data().role_id());
+	get_resp.mutable_role_data()->set_nick_name(response.role_data().nick_name());
 	if (!get_resp.SerializeToArray(tmp_, sizeof(tmp_))) {
 		LogError("serialize MsgGS2GT_GetRoleResponse failed");
 		return -1;
@@ -99,8 +102,10 @@ int ConnDBHandler::processCreateRoleResponse(JmyMsgInfo* info)
 	}
 
 	MsgGS2GT_CreateRoleResponse create_resp;
-	create_resp.set_allocated_account(response.mutable_account());
-	create_resp.set_allocated_role_data(response.mutable_role_data());
+	create_resp.set_account(response.account());
+	create_resp.mutable_role_data()->set_sex(response.role_data().sex());
+	create_resp.mutable_role_data()->set_race(response.role_data().race());
+	create_resp.mutable_role_data()->set_nick_name(response.role_data().nick_name());
 	if (!create_resp.SerializeToArray(tmp_, sizeof(tmp_))) {
 		LogError("serialize MsgGS2GT_CreateRoleResponse failed");
 		return -1;
@@ -111,7 +116,7 @@ int ConnDBHandler::processCreateRoleResponse(JmyMsgInfo* info)
 		return -1;
 	}
 
-	LogInfo("send MsgGS2GT_CreateRoleResponse failed");
+	LogInfo("send MsgGS2GT_CreateRoleResponse");
 	return info->len;
 }
 

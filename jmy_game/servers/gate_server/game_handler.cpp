@@ -98,7 +98,10 @@ int GameHandler::processGetRoleResponse(JmyMsgInfo* info)
 		char* reconn_session = get_session_code(session_buf_, RECONN_SESSION_CODE_BUF_LENGTH);
 		ci->reconn_session = reconn_session;
 		get_resp.set_reconnect_session(reconn_session);
-		get_resp.set_allocated_role_data(response.mutable_role_data());
+		get_resp.mutable_role_data()->set_sex(response.role_data().sex());
+		get_resp.mutable_role_data()->set_race(response.role_data().race());
+		get_resp.mutable_role_data()->set_role_id(response.role_data().role_id());
+		get_resp.mutable_role_data()->set_nick_name(response.role_data().nick_name());
 		if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
 			LogError("serialize MsgS2C_GetRoleResponse failed");
 			return -1;
@@ -132,7 +135,10 @@ int GameHandler::processCreateRoleResponse(JmyMsgInfo* info)
 	ci->add_role_id(role_id);
 
 	MsgS2C_CreateRoleResponse create_resp;
-	create_resp.set_allocated_role_data(response.mutable_role_data());
+	create_resp.mutable_role_data()->set_sex(response.role_data().sex());
+	create_resp.mutable_role_data()->set_race(response.role_data().race());
+	create_resp.mutable_role_data()->set_role_id(response.role_data().role_id());
+	create_resp.mutable_role_data()->set_nick_name(response.role_data().nick_name());
 	if (!create_resp.SerializeToArray(tmp_, sizeof(tmp_))) {
 		LogError("serialize MsgS2C_CreateRoleResponse failed");
 		return -1;

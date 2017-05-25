@@ -118,8 +118,8 @@ int GameHandler::processCreateRole(JmyMsgInfo* info)
 
 	mysql_records_manager2<t_player, uint64_t, std::string>& player_mgr = TABLES_MGR.get_t_player_table();
 	t_player* user = player_mgr.get_by_key2(request.account());
-	if (user) {
-		LogError("already exist role(%llu) for account(%s)", user->get_role_id(), request.account().c_str());
+	if (!user) {
+		LogError("not exist role for account(%s)", request.account().c_str());
 		return -1;
 	}
 
@@ -156,5 +156,12 @@ int GameHandler::processCreateRole(JmyMsgInfo* info)
 
 	LogInfo("to inserting new record(account:%s)", user->get_account().c_str());
 
+	return info->len;
+}
+
+int GameHandler::processDefault(JmyMsgInfo* info)
+{
+	switch (info->msg_id) {
+	}
 	return info->len;
 }

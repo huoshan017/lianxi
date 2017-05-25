@@ -21,12 +21,14 @@ static JmyBaseEventHandlers s_game_base_event_handlers = {
 	GameHandler::onTick,
 	nullptr,
 };
+
+static jmy_msg_handler s_default_game_conn_handler = GameHandler::processDefault;
 static JmyConnectionConfig s_game_conn_config = {
 	{ 4096, 4096, 0, 0, false, true},	// JmyBufferConfig
 	&s_retran_config,					// JmyRetransmissionConfig
 	s_game_handlers,					// JmyId2MsgHandler []
 	sizeof(s_game_handlers)/sizeof(s_game_handlers[0]), // int
-	(jmy_msg_handler)nullptr,			// jmy_msg_handler
+	s_default_game_conn_handler,		// jmy_msg_handler
 	s_game_base_event_handlers,			// JmyId2EventHandler []
 	(JmyId2EventHandler*)nullptr, 0,	// JmyId2EventHandler*
 	true								// is_reconnect : bool

@@ -48,6 +48,7 @@ bool JmyTcpClient::start(const JmyClientConfig& conf, bool non_blocking)
 		if (!data_handler->loadMsgHandle(conf.conn_conf.handlers, conf.conn_conf.nhandlers)) {
 			return false;
 		}
+		data_handler->setDefaultMsgHandler(conf.conn_conf.default_msg_handler);
 		conn_->setDataHandler(data_handler);
 	}
 

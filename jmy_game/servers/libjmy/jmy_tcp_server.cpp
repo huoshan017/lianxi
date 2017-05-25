@@ -53,6 +53,7 @@ bool JmyTcpServer::loadConfig(const JmyServerConfig& conf)
 	conf_ = conf;
 	bool res = handler_->loadMsgHandle(conf.conn_conf.handlers, conf.conn_conf.nhandlers);
 	if (!res) return false;
+	handler_->setDefaultMsgHandler(conf.conn_conf.default_msg_handler);
 	event_handler_->setBaseHandlers(conf.conn_conf.base_event_handlers);
 	if (conf.conn_conf.other_event_handlers && conf.conn_conf.other_event_nhandlers) {
 		event_handler_->init(conf.conn_conf.other_event_handlers, conf.conn_conf.other_event_nhandlers);

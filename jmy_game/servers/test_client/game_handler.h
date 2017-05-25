@@ -20,8 +20,9 @@ public:
 	static int processDefault(JmyMsgInfo*);
 	static int processError(JmyMsgInfo*);
 
-private:
 	static void setEnterSession(const std::string& enter_session);
+
+private:
 	static int send_enter_game_request(JmyTcpConnection* conn, uint64_t role_id);
 
 private:
