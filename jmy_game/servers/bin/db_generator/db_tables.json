@@ -110,17 +110,17 @@
 
 	"t_mail": [
 		{ "name":"id",			"field_type":"int",			"field_length":0,	"index_type":"none",		"create_flags":"auto_increment,unsigned,not null" },
-		{ "name":"mail_id",		"field_type":"int",			"field_length":0,	"index_type":"unique",		"create_flags":"not null,default" },
+		{ "name":"mail_id",		"field_type":"int",			"field_length":0,	"index_type":"unique",		"create_flags":"not null,default,unsigned" },
 		{ "name":"title",		"field_type":"varchar",		"field_length":32,	"index_type":"none",		"create_flags":"not null,default" },
 		{ "name":"content",		"field_type":"varchar",		"field_length":512,	"index_type":"none",		"create_flags":"not null,default" },
-		{ "name":"sender",		"field_type":"bigint",		"field_length":0,	"index_type":"index",		"create_flags":"not null,default" },
-		{ "name":"receiver",	"field_type":"bigint",		"field_length":0,	"index_type":"index",		"create_flags":"not null,default" },
+		{ "name":"sender",		"field_type":"bigint",		"field_length":0,	"index_type":"index",		"create_flags":"not null,default,unsigned" },
+		{ "name":"receiver",	"field_type":"bigint",		"field_length":0,	"index_type":"index",		"create_flags":"not null,default,unsigned" },
 		{ "name":"send_time",	"field_type":"int",			"field_length":0,	"index_type":"none",		"create_flags":"not null,default" }
 	],
 	
 	"t_arena_rank": [
 		{ "name":"id",			"field_type":"int",			"field_length":0,	"index_type":"none",		"create_flags":"auto_increment,unsigned,not null" },
-		{ "name":"role_id",		"field_type":"bigint",		"field_length":0,	"index_type":"unique",		"create_flags":"not null,default" },
+		{ "name":"role_id",		"field_type":"bigint",		"field_length":0,	"index_type":"unique",		"create_flags":"not null,default,unsigned" },
 		{ "name":"rank",		"field_type":"int",			"field_length":0,	"index_type":"index",		"create_flags":"not null,default" }
 	]
 }

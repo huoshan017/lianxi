@@ -85,7 +85,7 @@ public:
 		int num_fields() const {
 			return nfields;
 		}
-		char** fetch() {
+		MYSQL_ROW fetch() {
 			if (!res) return nullptr;
 			row = mysql_fetch_row(res);
 			return row;

@@ -50,6 +50,10 @@ public:
 		return true;
 	}
 
+	void run() {
+		tables_mgr_.update();
+	}
+
 	jmy_game_tables_manager& getTablesMgr() { return tables_mgr_; }
 
 private:

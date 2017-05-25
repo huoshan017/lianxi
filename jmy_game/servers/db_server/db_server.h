@@ -14,12 +14,12 @@ public:
 	void close();
 	int run();
 
-	MysqlDBManager& getDBMgr() { return db_mgr_; }
+	MysqlDBManager& getDBMgr() { return *db_mgr_; }
 
 private:
 	boost::asio::io_service service_;
 	JmyTcpServer server_;
-	MysqlDBManager db_mgr_;
+	MysqlDBManager* db_mgr_;
 };
 
 #define DB_SERVER (DBServer::getInstance())

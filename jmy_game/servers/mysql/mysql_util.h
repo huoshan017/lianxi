@@ -100,6 +100,18 @@ inline bool mysql_get_field_value_format<int>(MysqlTableFieldType ft, int flags,
 }
 
 template <>
+inline bool mysql_get_field_value_format<unsigned int>(MysqlTableFieldType ft, int flags, const unsigned int& value, char* format_buf, int format_buf_len) {
+	if (ft == MYSQL_FIELD_TYPE_TINYINT || ft == MYSQL_FIELD_TYPE_SMALLINT ||
+		ft == MYSQL_FIELD_TYPE_MEDIUMINT || ft == MYSQL_FIELD_TYPE_INT) {
+		if (flags & MYSQL_TABLE_CREATE_UNSIGNED) {
+			std::snprintf(format_buf, format_buf_len, "%u", value);
+			return true;
+		}
+	}
+	return false;
+}
+
+template <>
 inline bool mysql_get_field_value_format<uint64_t>(MysqlTableFieldType ft, int flags, const uint64_t& value, char* format_buf, int format_buf_len)
 {
 	if (ft == MYSQL_FIELD_TYPE_BIGINT) {

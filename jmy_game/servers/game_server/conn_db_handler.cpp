@@ -71,10 +71,10 @@ int ConnDBHandler::processGetRoleResponse(JmyMsgInfo* info)
 		LogError("parse MsgGS2GT_GetRoleResponse failed");
 		return -1;
 	}
-	
+
 	MsgGS2GT_GetRoleResponse get_resp;
-	*get_resp.mutable_account() = std::move(*response.mutable_account());
-	*get_resp.mutable_role_data() = std::move(*response.mutable_role_data());
+	get_resp.set_allocated_account(response.mutable_account());
+	get_resp.set_allocated_role_data(response.mutable_role_data());
 	if (!get_resp.SerializeToArray(tmp_, sizeof(tmp_))) {
 		LogError("serialize MsgGS2GT_GetRoleResponse failed");
 		return -1;
@@ -85,11 +85,33 @@ int ConnDBHandler::processGetRoleResponse(JmyMsgInfo* info)
 		return -1;
 	}
 
+	LogInfo("send MsgGS2GT_GetRoleResponse");
+
 	return info->len;
 }
 
 int ConnDBHandler::processCreateRoleResponse(JmyMsgInfo* info)
 {
+	MsgDS2GS_CreateRoleResponse response;
+	if (!response.ParseFromArray(info->data, info->len)) {
+		LogError("parse MsgDS2GS_CreateRoleResponse failed");
+		return -1;
+	}
+
+	MsgGS2GT_CreateRoleResponse create_resp;
+	create_resp.set_allocated_account(response.mutable_account());
+	create_resp.set_allocated_role_data(response.mutable_role_data());
+	if (!create_resp.SerializeToArray(tmp_, sizeof(tmp_))) {
+		LogError("serialize MsgGS2GT_CreateRoleResponse failed");
+		return -1;
+	}
+
+	if (SEND_GATE_MSG(MSGID_GS2GT_CREATE_ROLE_RESPONSE, tmp_, create_resp.ByteSize()) < 0) {
+		LogError("send MsgGS2GT_CreateRoleResponse failed");
+		return -1;
+	}
+
+	LogInfo("send MsgGS2GT_CreateRoleResponse failed");
 	return info->len;
 }
 

@@ -44,6 +44,11 @@ int ClientHandler::processGetRoleRequest(JmyMsgInfo* info)
 	}
 
 	MsgC2S_GetRoleRequest request;
+	if (!request.ParseFromArray(info->data, info->len)) {
+		LogError("parse MsgC2S_GetRoleRequest failed");
+		return -1;
+	}
+
 	ClientInfo* ci = CLIENT_MANAGER->getClientInfoByAccount(request.account());
 	if (!ci) {
 		send_error(conn, PROTO_ERROR_ENTER_GAME_INVALID_ACCOUNT);
@@ -85,6 +90,8 @@ int ClientHandler::processGetRoleRequest(JmyMsgInfo* info)
 		return -1;
 	}
 
+	LogInfo("process get role request: account(%s)", ci->account.c_str());
+
 	return info->len;
 }
 
@@ -99,14 +106,25 @@ int ClientHandler::processCreateRoleRequest(JmyMsgInfo* info)
 		return -1;
 	}
 
+	MsgC2S_CreateRoleRequest request;
+	if (!request.ParseFromArray(info->data, info->len)) {
+		LogError("parse MsgC2S_CreateRoleRequest failed");
+		return -1;
+	}
+
 	MsgGT2GS_CreateRoleRequest create_req;
 	create_req.set_account(ci->account);
+	create_req.set_sex(request.sex());
+	create_req.set_race(request.race());
+	create_req.set_nick_name(request.nick_name());
 	if (!create_req.SerializeToArray(tmp_, sizeof(tmp_))) {
 		LogError("serialize MsgGT2GS_CreateRoleRequest failed");
 		return -1;
 	}
 
-	SEND_GAME_MSG(MSGID_GT2GS_CREATE_ROLE_REQUEST, info->data, info->len);
+	SEND_GAME_MSG(MSGID_GT2GS_CREATE_ROLE_REQUEST, tmp_, create_req.ByteSize());
+
+	LogInfo("process create role request: account(%s)", ci->account.c_str());
 
 	return info->len;
 }
@@ -133,13 +151,13 @@ int ClientHandler::processEnterGameRequest(JmyMsgInfo* info)
 	}
 
 	uint64_t role_id = request.role_id();
-	if (!ci->has_role(role_id)) {
+	if (!ci->has_role_id(role_id)) {
 		LogWarn("role_id(%llu) not exists", role_id);
 		send_error(conn, PROTO_ERROR_ENTER_GAME_ROLE_INVALID);
 		return info->len;
 	}
 
-	ci->curr_uid = role_id;
+	ci->curr_role_id = role_id;
 
 	SEND_GAME_USER_MSG(ci->id, info->msg_id, info->data, info->len);
 	LogInfo("send message to game server, user_id(conn_id:%d)", info->conn_id);
@@ -195,6 +213,8 @@ int ClientHandler::processReconnectRequest(JmyMsgInfo* info)
 		LogError("send MsgS2C_ReconnectResponse failed");
 		return -1;
 	}
+
+	LogInfo("process reconnect request: account(%s)", request.account().c_str());
 	return info->len;
 }
 

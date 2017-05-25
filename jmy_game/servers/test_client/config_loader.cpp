@@ -45,6 +45,7 @@ bool ConfigLoader::loadJson(const char* jsonpath)
 			return false;
 		}
 		config_.connect_ip = doc_[connect_ip].GetString();
+		std::cout << connect_ip << ": " << config_.connect_ip << std::endl;
 	}
 
 	// server_port
@@ -55,6 +56,7 @@ bool ConfigLoader::loadJson(const char* jsonpath)
 			return false;
 		}
 		config_.connect_port = (unsigned short)doc_[connect_port].GetInt();
+		std::cout << connect_port << ": " << config_.connect_port << std::endl;
 	}
 
 	// enable_reconnect
@@ -65,6 +67,7 @@ bool ConfigLoader::loadJson(const char* jsonpath)
 			return false;
 		}
 		config_.enable_reconnect = doc_[enable_reconnect].GetBool();
+		std::cout << enable_reconnect << ": " << config_.enable_reconnect << std::endl;
 	}
 
 	// log_conf
@@ -75,6 +78,7 @@ bool ConfigLoader::loadJson(const char* jsonpath)
 			return false;
 		}
 		config_.log_conf_path = doc_[log_conf].GetString();
+		std::cout << log_conf << ": " << config_.log_conf_path << std::endl;
 	}
 
 	// account
@@ -85,6 +89,7 @@ bool ConfigLoader::loadJson(const char* jsonpath)
 			return false;
 		}
 		config_.account = doc_[account].GetString();
+		std::cout << account << ": " << config_.account << std::endl;
 	}
 
 	// password
@@ -94,6 +99,8 @@ bool ConfigLoader::loadJson(const char* jsonpath)
 			std::cout << password << " type is not string" << std::endl;
 			return false;
 		}
+		config_.password = doc_[password].GetString();
+		std::cout << password << ": " << config_.password << std::endl;
 	}
 
 	jsonpath_ = jsonpath;

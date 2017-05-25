@@ -48,6 +48,8 @@ static JmyServerConfig s_client_config = {
 // handle game_server config
 static JmyId2MsgHandler s_game_handlers[] = {
 	{ MSGID_GS2GT_CONNECT_GATE_REQUEST, GameHandler::processConnectGateRequest },
+	{ MSGID_GS2GT_GET_ROLE_RESPONSE, GameHandler::processGetRoleResponse },
+	{ MSGID_GS2GT_CREATE_ROLE_RESPONSE, GameHandler::processCreateRoleResponse },
 	{ MSGID_GS2GT_ENTER_GAME_RESPONSE, GameHandler::processEnterGameResponse },
 	{ MSGID_GS2GT_LEAVE_GAME_RESPONSE, GameHandler::processLeaveGameResponse }
 };

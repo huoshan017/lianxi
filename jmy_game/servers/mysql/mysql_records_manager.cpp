@@ -18,22 +18,17 @@ struct player {
 };
 
 int test() {
-	mysql_records_subkey_manager<player, int, int> player_subkey_manager;
-	mysql_record_list<player, int>* player_list = player_subkey_manager.get_new(1);
+	mysql_records_manager_map<player, int, int> player_subkey_manager;
+	mysql_records_manager<player, int>* player_list = player_subkey_manager.get_new(1);
 	player* p = player_list->get_new(1);
 	p->name = "player1";
 	p->sex = 0;
 	p->race = 0;
-	player_subkey_manager.remove_record(p);
-	mysql_record_list<player, int>* player_list2 = player_subkey_manager.get_new(2);
+	mysql_records_manager<player, int>* player_list2 = player_subkey_manager.get_new(2);
 	player* p2 = player_list2->get_new(1);
 	p2->name = "player2";
 	p2->sex = 1;
 	p2->race = 1;
-	player* pp = player_subkey_manager.get_record(2, 1);
-	if (p2 != pp) {
-		std::cout << "p2 != pp" << std::endl;
-	}
 	player_subkey_manager.update();
 
 	// mysql_records_manager2

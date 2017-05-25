@@ -75,8 +75,11 @@ int GameHandler::processGetRole(JmyMsgInfo* info)
 		return -1;
 	}
 
-	t_player* user = TABLES_MGR.get_t_player_by_account(request.account());
+	mysql_records_manager2<t_player, uint64_t, std::string>& player_mgr = TABLES_MGR.get_t_player_table();
+	t_player* user = player_mgr.get_by_key2(request.account());
 	if (!user) {
+		user = player_mgr.get_new_by_key2(request.account());
+		user->set_account(request.account());
 		if (!db_select_t_player_fields_by_account(user->get_account(), DBResCBFuncs::getPlayerInfo, (void*)&user->get_account(), (long)info->conn_id)) {
 			LogError("select account(%s) record failed", user->get_account().c_str());
 			return -1;
@@ -113,23 +116,24 @@ int GameHandler::processCreateRole(JmyMsgInfo* info)
 		return -1;
 	}
 
-	t_player* user = TABLES_MGR.get_t_player_by_account(request.account());
+	mysql_records_manager2<t_player, uint64_t, std::string>& player_mgr = TABLES_MGR.get_t_player_table();
+	t_player* user = player_mgr.get_by_key2(request.account());
 	if (user) {
-		LogError("already exist role(%llu) for account(%s)", user->get_uid(), request.account().c_str());
+		LogError("already exist role(%llu) for account(%s)", user->get_role_id(), request.account().c_str());
 		return -1;
 	}
 
-	user = TABLES_MGR.get_new_t_player_by_account(request.account());
+	user = player_mgr.get_new_by_key2(request.account());
 	user->set_account(request.account());
 	int game_id = GAME_MGR->getIdByConnId(info->conn_id);
 	uint64_t role_id = gen_unique_role_id(game_id);
-	user->set_uid(role_id);
+	user->set_role_id(role_id);
 	user->set_sex(request.sex());
 	user->set_nick_name(request.nick_name());
 
 	GLOBAL_DATA->setAccount2UserId(user->get_account(), role_id);
 	// not found in db, insert new record
-	if (!db_insert_t_player_record(*user, nullptr, nullptr, 0)) {
+	if (!user->insert_request(nullptr, nullptr, 0)) {
 		LogError("insert t_player record for account(%s) failed", user->get_account().c_str());
 		return -1;
 	}

@@ -44,13 +44,15 @@ int DBResCBFuncs::getAllAccounts(MysqlConnector::Result& res, void* param, long 
 int DBResCBFuncs::getPlayerInfo(MysqlConnector::Result& res, void* param, long param_l)
 {
 	const std::string& account = *(std::string*)param;
-	t_player* user = TABLES_MGR.get_t_player_by_account(account);
+	mysql_records_manager2<t_player, uint64_t, std::string>& player_mgr = TABLES_MGR.get_t_player_table();
+	t_player* user = player_mgr.get_by_key2(account);
 	if (!user) {
-		LogError("cant get free UserData by account(%s)", account.c_str());
+		LogError("cant get free t_player by account(%s)", account.c_str());
 		return -1;
 	}
 
-	if (!db_get_result_of_select_t_player(res, *user)) {
+	int r = db_get_result_of_select_t_player_by_account(res, user);
+	if (r < 0) {
 		LogError("get result of select player info failed");
 		return -1;
 	}
@@ -78,6 +80,7 @@ int DBResCBFuncs::sendGetRoleResponse(t_player* user, int conn_id)
 	d->set_sex(user->get_sex());
 	d->set_level(user->get_level());
 	d->set_role_id(user->get_role_id());
+	response.set_account(user->get_account());
 
 	if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
 		LogError("serialize MsgDS2GS_RequireUserDataResponse failed");

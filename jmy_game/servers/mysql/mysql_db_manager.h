@@ -191,9 +191,9 @@ private:
 private:
 	MysqlDBConfigManager config_mgr_;
 	MysqlConnectorPool conn_pool_;
-	char buf_[3][1024*32];
-	char buf2_[3][1024*32];
-	char big_buf_[2][1024*128];
+	char buf_[3][1024*128];
+	char buf2_[3][1024*128];
+	char big_buf_[2][1024*1024];
 	int index_, index2_, big_index_;
 };
 

@@ -25,7 +25,6 @@ int GameHandler::onDisconnect(JmyEventInfo* info)
 		return -1;
 	}
 	LogInfo("game server onDisconnect, conn_id(%d)", info->conn_id);
-
 	return 0;
 }
 
@@ -69,7 +68,6 @@ int GameHandler::processConnectGateRequest(JmyMsgInfo* info)
 
 int GameHandler::processGetRoleResponse(JmyMsgInfo* info)
 {
-
 	MsgGS2GT_GetRoleResponse response;
 	if (!response.ParseFromArray(info->data, info->len)) {
 		LogError("parse MsgGS2GT_GetRoleResponse failed");
@@ -82,19 +80,35 @@ int GameHandler::processGetRoleResponse(JmyMsgInfo* info)
 		return -1;
 	}
 
-	MsgS2C_GetRoleResponse get_resp;
-	char* reconn_session = get_session_code(session_buf_, RECONN_SESSION_CODE_BUF_LENGTH);
-	ci->reconn_session = reconn_session;
-	get_resp.set_reconnect_session(reconn_session);
-	*get_resp.mutable_role_data() = *response.mutable_role_data();
-	if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
-		LogError("serialize MsgS2C_VerifyResponse failed");
-		return -1;
-	}
-
-	if (ci->send(MSGID_S2C_GET_ROLE_RESPONSE, tmp_, response.ByteSize()) < 0) {
-		LogError("send MsgS2C_VerifyResponse failed");
-		return -1;
+	uint64_t role_id = response.role_data().role_id();
+	if (role_id == 0) {
+		MsgError error;
+		error.set_error_code(PROTO_ERROR_GET_ROLE_NONE);
+		if (!error.SerializeToArray(tmp_, sizeof(tmp_))) {
+			LogError("serialize MsgError failed");
+			return -1;
+		}
+		if (ci->send(MSGID_ERROR, tmp_, error.ByteSize()) < 0) {
+			LogError("send MsgError failed");
+			return -1;
+		}
+		LogInfo("send error: PROTO_ERROR_GET_ROLE_NONE");
+	} else {
+		MsgS2C_GetRoleResponse get_resp;
+		char* reconn_session = get_session_code(session_buf_, RECONN_SESSION_CODE_BUF_LENGTH);
+		ci->reconn_session = reconn_session;
+		get_resp.set_reconnect_session(reconn_session);
+		get_resp.set_allocated_role_data(response.mutable_role_data());
+		if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
+			LogError("serialize MsgS2C_GetRoleResponse failed");
+			return -1;
+		}
+		if (ci->send(MSGID_S2C_GET_ROLE_RESPONSE, tmp_, response.ByteSize()) < 0) {
+			LogError("send MsgS2C_GetRoleResponse failed");
+			return -1;
+		}
+		ci->add_role_id(role_id);
+		LogInfo("send MsgS2C_GetRoleResponse");
 	}
 
 	return info->len;
@@ -102,6 +116,33 @@ int GameHandler::processGetRoleResponse(JmyMsgInfo* info)
 
 int GameHandler::processCreateRoleResponse(JmyMsgInfo* info)
 {
+	MsgGS2GT_CreateRoleResponse response;
+	if (!response.ParseFromArray(info->data, info->len)) {
+		LogError("parse MsgGS2GT_CreateRoleResponse failed");
+		return -1;
+	}
+
+	ClientInfo* ci = CLIENT_MANAGER->getClientInfoByAccount(response.account());
+	if (!ci) {
+		LogError("get ClientInfo by account %s failed", response.account().c_str());
+		return -1;
+	}
+
+	uint64_t role_id = response.role_data().role_id();
+	ci->add_role_id(role_id);
+
+	MsgS2C_CreateRoleResponse create_resp;
+	create_resp.set_allocated_role_data(response.mutable_role_data());
+	if (!create_resp.SerializeToArray(tmp_, sizeof(tmp_))) {
+		LogError("serialize MsgS2C_CreateRoleResponse failed");
+		return -1;
+	}
+	if (ci->send(MSGID_S2C_CREATE_ROLE_RESPONSE, tmp_, create_resp.ByteSize()) < 0) {
+		LogError("send MsgS2C_CreateRoleResponse failed");
+		return -1;
+	}
+
+	LogInfo("create role(account:%s, role_id:%llu) response", response.account().c_str(), role_id);
 	return info->len;
 }
 
@@ -121,7 +162,7 @@ int GameHandler::processEnterGameResponse(JmyMsgInfo* info)
 	}
 
 	MsgS2C_EnterGameResponse rsp_to_clt;
-	rsp_to_clt.set_role_id(client_info->curr_uid);
+	rsp_to_clt.set_role_id(client_info->curr_role_id);
 	if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
 		LogError("serialize MsgS2C_EnterGameResponse failed");
 		return -1;
@@ -132,7 +173,7 @@ int GameHandler::processEnterGameResponse(JmyMsgInfo* info)
 		return -1;
 	}
 
-	LogInfo("user_id(%llu) enter game success", client_info->curr_uid);
+	LogInfo("user_id(%llu) enter game success", client_info->curr_role_id);
 	return info->len;
 }
 

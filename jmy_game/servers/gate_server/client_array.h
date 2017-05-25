@@ -14,17 +14,15 @@ class JmyTcpConnectionMgr;
 struct ClientInfo {
 	bool used;
 	int id;
-	uint64_t curr_uid;
+	uint64_t curr_role_id;
 	std::string account;
-	//JmyTcpConnection* conn;
 	int conn_id;
 	JmyTcpConnectionMgr* conn_mgr;
 	std::string enter_session;
 	std::string reconn_session;
-	bool get_role_list;
-	std::vector<MsgBaseRoleData*> role_list;
+	std::vector<uint64_t> role_id_list;
 
-	ClientInfo() : used(false), id(0), curr_uid(0), conn_id(0), conn_mgr(nullptr), get_role_list(false) {}
+	ClientInfo() : used(false), id(0), curr_role_id(0), conn_id(0), conn_mgr(nullptr) {}
 	int send(int msg_id, const char* data, unsigned short len) {
 		if (!used) return -1;
 		JmyTcpConnection* conn = get_connection(conn_id, conn_mgr);
@@ -50,37 +48,17 @@ struct ClientInfo {
 			return false;
 		return conn == conn2;
 	}
-
-	bool has_role(uint64_t role_id) {
-		std::vector<MsgBaseRoleData*>::iterator it = role_list.begin();
-		for (; it!=role_list.end(); ++it) {
-			MsgBaseRoleData* p = *it;
-			if (p && p->role_id() == role_id)
+	bool has_role_id(uint64_t role_id) {
+		std::vector<uint64_t>::iterator it = role_id_list.begin();
+		for (; it!=role_id_list.end(); ++it) {
+			if (*it == role_id)
 				return true;
 		}
 		return false;
 	}
-
-	bool add_role(const MsgBaseRoleData& role) {
-		if (has_role(role.role_id()))
-			return false;
-
-		MsgBaseRoleData* r = new MsgBaseRoleData;
-		*r = role;
-		role_list.push_back(r);
-		return true;
-	}
-
-	bool remove_role(uint64_t role_id) {
-		std::vector<MsgBaseRoleData*>::iterator it = role_list.begin();
-		for (; it!=role_list.end(); ++it) {
-			MsgBaseRoleData* p = *it;
-			if (p && p->role_id() == role_id) {
-				role_list.erase(it);
-				return true;
-			}
-		}
-		return false;
+	void add_role_id(uint64_t role_id) {
+		if (!has_role_id(role_id))
+			role_id_list.push_back(role_id);
 	}
 };
 

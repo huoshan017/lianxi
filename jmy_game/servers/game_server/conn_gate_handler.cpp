@@ -88,6 +88,7 @@ int ConnGateHandler::processGetRole(JmyMsgInfo* info)
 		LogError("send MsgGS2DS_GetRoleRequest failed");
 		return -1;
 	}
+	LogInfo("process get role(account:%s) request", request.account().c_str());
 	return info->len;
 }
 

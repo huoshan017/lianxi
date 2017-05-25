@@ -5,7 +5,7 @@
 #include "db_tables_define.h"
 #include "global_data.h"
 
-DBServer::DBServer() : server_(service_)
+DBServer::DBServer() : server_(service_), db_mgr_(nullptr)
 {
 }
 
@@ -25,7 +25,8 @@ bool DBServer::init(const char* confpath)
 		return false;
 	}
 
-	if (!db_mgr_.init(SERVER_CONFIG.mysql_host, SERVER_CONFIG.mysql_user, SERVER_CONFIG.mysql_password, s_jmy_game_db_config)) {
+	db_mgr_ = new MysqlDBManager();
+	if (!db_mgr_->init(SERVER_CONFIG.mysql_host, SERVER_CONFIG.mysql_user, SERVER_CONFIG.mysql_password, s_jmy_game_db_config)) {
 		LogError("failed to init mysql_db_manager");
 		return false;
 	}
@@ -57,7 +58,8 @@ bool DBServer::init(const char* confpath)
 void DBServer::close()
 {
 	server_.close();
-	db_mgr_.clear();
+	db_mgr_->clear();
+	delete db_mgr_;
 	GLOBAL_DATA->clear();
 }
 
@@ -65,7 +67,8 @@ int DBServer::run()
 {
 	while (server_.run() >= 0) {
 		//if (DB_MGR->run() < 0) { break;}
-		if (db_mgr_.run() < 0) {break;}
+		if (db_mgr_->run() < 0) {break;}
+		GLOBAL_DATA->run();
 		service_.poll();
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
