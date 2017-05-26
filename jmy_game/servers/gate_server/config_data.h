@@ -16,7 +16,6 @@ static JmyResendConfig s_retran_config = {
 static JmyId2MsgHandler s_client_handlers[] = {
 	{ MSGID_C2S_GET_ROLE_REQUEST,	ClientHandler::processGetRoleRequest },  // handle role list request
 	{ MSGID_C2S_CREATE_ROLE_REQUEST,ClientHandler::processCreateRoleRequest },// handle create role request
-	//{ MSGID_C2S_DELETE_ROLE_REQUEST,ClientHandler::processDeleteRoleRequest },// handle delete role request
 	{ MSGID_C2S_ENTER_GAME_REQUEST, ClientHandler::processEnterGameRequest }, // handle enter game request
 	{ MSGID_C2S_LEAVE_GAME_REQUEST, ClientHandler::processLeaveGameRequest }, // handle leave game request
 	{ MSGID_C2S_RECONNECT_REQUEST,	ClientHandler::processReconnectRequest }  // handle reconnect request
@@ -50,8 +49,8 @@ static JmyId2MsgHandler s_game_handlers[] = {
 	{ MSGID_GS2GT_CONNECT_GATE_REQUEST, GameHandler::processConnectGateRequest },
 	{ MSGID_GS2GT_GET_ROLE_RESPONSE, GameHandler::processGetRoleResponse },
 	{ MSGID_GS2GT_CREATE_ROLE_RESPONSE, GameHandler::processCreateRoleResponse },
-	{ MSGID_GS2GT_ENTER_GAME_RESPONSE, GameHandler::processEnterGameResponse },
-	{ MSGID_GS2GT_LEAVE_GAME_RESPONSE, GameHandler::processLeaveGameResponse }
+	//{ MSGID_GS2GT_ENTER_GAME_RESPONSE, GameHandler::processEnterGameResponse },
+	//{ MSGID_GS2GT_LEAVE_GAME_RESPONSE, GameHandler::processLeaveGameResponse }
 };
 static jmy_msg_handler s_default_game_handler = GameHandler::processDefault;
 static JmyBaseEventHandlers s_game_base_event_handlers = {

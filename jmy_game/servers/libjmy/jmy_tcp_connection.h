@@ -48,13 +48,13 @@ public:
 	void setUnusedData(void* data) { unused_data_ = data; }
 	JmyTcpConnectionMgr& getConnectionMgr() { return mgr_; }
 
-	int handleAck(JmyAckInfo*);
+	//int handleAck(JmyAckInfo*);
 	int handleHeartbeat();
 	int handleDisconnect();
 	int handleDisconnectAck();
 
 protected:
-	int sendAck(JmyAckInfo*);
+	//int sendAck(JmyAckInfo*);
 	int sendHeartbeat();
 	int sendDisconnect();
 	int sendDisconnectAck();

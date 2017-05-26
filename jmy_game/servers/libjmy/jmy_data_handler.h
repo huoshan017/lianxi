@@ -53,8 +53,8 @@ public:
 	int writeUserData(Buffer* buffer, int msg_id, const char* data, unsigned int len);
 	template <class Buffer>
 	int writeUserIdAndData(Buffer* buffer, int user_id, int msg_id, const char* data, unsigned short len);
-	template <class Buffer>
-	int writeAck(Buffer* buffer, unsigned short msg_count, unsigned short curr_id);
+	//template <class Buffer>
+	//int writeAck(Buffer* buffer, unsigned short msg_count, unsigned short curr_id);
 	template <class Buffer>
 	int writeHeartbeat(Buffer* buffer);
 	template <class Buffer>
@@ -72,7 +72,7 @@ private:
 
 	int handleOne(JmySessionBuffer& session_buffer, unsigned int offset, JmyPacketUnpackData& data, int session_id, void* param);
 	int handleMsg(JmyMsgInfo*);
-	int handleAck(JmyAckMsgInfo*);
+	//int handleAck(JmyAckMsgInfo*);
 	int handleHeartbeat(JmyHeartbeatMsgInfo*);
 	int handleDisconnect(JmyDisconnectMsgInfo*);
 	int handleDisconnectAck(JmyDisconnectAckMsgInfo*);
@@ -81,7 +81,7 @@ private:
 	std::unordered_map<int, jmy_msg_handler> msg_handler_map_;
 	jmy_msg_handler default_msg_handler_;
 	JmyPacketUnpackData unpack_data_;
-	JmyAckMsgInfo ack_info_;
+	//JmyAckMsgInfo ack_info_;
 	JmyHeartbeatMsgInfo heartbeat_info_;
 	JmyDisconnectMsgInfo disconn_info_;
 	JmyDisconnectAckMsgInfo disconn_ack_info_;
@@ -219,6 +219,7 @@ int JmyDataHandler::writeUserIdAndData(Buffer* buffer, int user_id, int msg_id, 
 	return len;
 }
 
+#if 0
 template <class SessionBuffer>
 int JmyDataHandler::writeAck(SessionBuffer* buffer, unsigned short ack_count, unsigned short curr_id)
 {
@@ -234,6 +235,7 @@ int JmyDataHandler::writeAck(SessionBuffer* buffer, unsigned short ack_count, un
 	}
 	return 0;
 }
+#endif
 
 template <class SessionBuffer>
 int JmyDataHandler::writeHeartbeat(SessionBuffer* buffer)

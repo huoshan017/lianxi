@@ -183,6 +183,7 @@ int JmyTcpConnection::send(int user_id, int msg_id, const char* data, unsigned s
 	return len;
 }
 
+#if 0
 int JmyTcpConnection::sendAck(JmyAckInfo* info)
 {
 	if (state_ != JMY_CONN_STATE_CONNECTED)
@@ -201,6 +202,7 @@ int JmyTcpConnection::sendAck(JmyAckInfo* info)
 	}
 	return 0;
 }
+#endif
 
 int JmyTcpConnection::sendHeartbeat()
 {
@@ -253,6 +255,7 @@ int JmyTcpConnection::sendDisconnectAck()
 	return 0;
 }
 
+#if 0
 int JmyTcpConnection::handleAck(JmyAckInfo* info)
 {
 	if (info->ack_count > 0) {
@@ -271,6 +274,7 @@ int JmyTcpConnection::handleAck(JmyAckInfo* info)
 	}
 	return 0;
 }
+#endif
 
 int JmyTcpConnection::handleHeartbeat()
 {
@@ -306,6 +310,7 @@ int JmyTcpConnection::handle_recv()
 		return -1;
 	}
 
+#if 0
 	// ack recv data count
 	JmyResendConfig* rc = mgr_.getConf().retran_conf;
 	if (rc) {
@@ -321,6 +326,7 @@ int JmyTcpConnection::handle_recv()
 			buffer_->total_reconn_info.recv_count += count;
 		}
 	}
+#endif
 	return count;
 }
 

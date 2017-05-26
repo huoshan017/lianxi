@@ -191,6 +191,7 @@ private:
 private:
 	MysqlDBConfigManager config_mgr_;
 	MysqlConnectorPool conn_pool_;
+	MysqlConnector* write_conn_;
 	char buf_[3][1024*128];
 	char buf2_[3][1024*128];
 	char big_buf_[2][1024*1024];
@@ -235,7 +236,7 @@ char* MysqlDBManager::format_insert_field_value_str(int table_index, const char*
 		return nullptr;
 	}
 
-	if (!mysql_get_field_value_format((MysqlTableFieldType)field_info->field_type, field_info->create_flags, arg.field_value, buf, buf_len)) {
+	if (!mysql_get_field_value_format(write_conn_, (MysqlTableFieldType)field_info->field_type, field_info->create_flags, arg.field_value, buf, buf_len)) {
 		LogError("field_type(%d), create_flags(%d) get format error", field_info->field_type, field_info->create_flags);
 		return nullptr;
 	}
@@ -272,7 +273,7 @@ char* MysqlDBManager::format_update_field_value_str(int table_index, const char*
 	}
 
 	char tmp[32];
-	if (!mysql_get_field_value_format((MysqlTableFieldType)field_info->field_type, field_info->create_flags, arg.field_value, tmp, sizeof(tmp))) {
+	if (!mysql_get_field_value_format(write_conn_, (MysqlTableFieldType)field_info->field_type, field_info->create_flags, arg.field_value, tmp, sizeof(tmp))) {
 		LogError("field_type(%d), create_flags(%d) get format error", field_info->field_type, field_info->create_flags);
 		return nullptr;
 	}

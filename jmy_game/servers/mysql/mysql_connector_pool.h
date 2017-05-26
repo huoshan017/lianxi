@@ -170,6 +170,12 @@ public:
 		}
 	};
 
+	MysqlConnector* get_write_connector(int index) {
+		if (index<0 || index>=write_connectors_.size())
+			return nullptr;
+		return &(write_connectors_[index]->connector);
+	}
+
 	bool push_read_cmd(CmdInfo& info);
 	bool push_write_cmd(CmdInfo& info);
 	int run();

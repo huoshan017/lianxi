@@ -90,15 +90,16 @@ int GameHandler::processGetRole(JmyMsgInfo* info)
 			LogError("send get account(%s) role response failed", request.account().c_str());
 			return -1;
 		}
-		LogInfo("send get account(%s) role response", request.account().c_str());
+		LogInfo("send get user(addr:0x%x, account:%s, role_id:%llu) response", user, request.account().c_str(), user->get_role_id());
 	}
 
 	return info->len;
 }
 
 static inline uint64_t gen_unique_role_id(int server_id) {
-	uint64_t id = (std::time(nullptr)<<32) & 0xffffffff00000000;
-	id += (server_id<<16)&0xffff0000;
+	uint64_t id = server_id;
+	id = (id<<48) & 0xffff000000000000;
+	id += (std::time(0)<<16) & 0xffff0000;
 	static uint16_t counter = 0;
 	id += counter;
 	counter += 1;
@@ -119,17 +120,16 @@ int GameHandler::processCreateRole(JmyMsgInfo* info)
 	mysql_records_manager2<t_player, uint64_t, std::string>& player_mgr = TABLES_MGR.get_t_player_table();
 	t_player* user = player_mgr.get_by_key2(request.account());
 	if (!user) {
-		LogError("not exist role for account(%s)", request.account().c_str());
-		return -1;
+		user = player_mgr.get_new_by_key2(request.account());
 	}
 
-	user = player_mgr.get_new_by_key2(request.account());
 	user->set_account(request.account());
 	int game_id = GAME_MGR->getIdByConnId(info->conn_id);
 	uint64_t role_id = gen_unique_role_id(game_id);
 	user->set_role_id(role_id);
 	user->set_sex(request.sex());
 	user->set_nick_name(request.nick_name());
+	player_mgr.make_pair(role_id, request.account());
 
 	GLOBAL_DATA->setAccount2UserId(user->get_account(), role_id);
 	// not found in db, insert new record
@@ -154,7 +154,7 @@ int GameHandler::processCreateRole(JmyMsgInfo* info)
 		return -1;
 	}
 
-	LogInfo("to inserting new record(account:%s)", user->get_account().c_str());
+	LogInfo("to inserting new record(addr:0x%x, account:%s, role_id:%llu)", user, user->get_account().c_str(), user->get_role_id());
 
 	return info->len;
 }

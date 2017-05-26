@@ -152,15 +152,15 @@ int ClientHandler::processEnterGameRequest(JmyMsgInfo* info)
 
 	uint64_t role_id = request.role_id();
 	if (!ci->has_role_id(role_id)) {
-		LogWarn("role_id(%llu) not exists", role_id);
 		send_error(conn, PROTO_ERROR_ENTER_GAME_ROLE_INVALID);
+		LogWarn("role_id(%llu) not exists", role_id);
 		return info->len;
 	}
 
 	ci->curr_role_id = role_id;
 
 	SEND_GAME_USER_MSG(ci->id, info->msg_id, info->data, info->len);
-	LogInfo("send message to game server, user_id(conn_id:%d)", info->conn_id);
+	LogInfo("process enter game request , role_id(%llu)", role_id);
 
 	return info->len;
 }

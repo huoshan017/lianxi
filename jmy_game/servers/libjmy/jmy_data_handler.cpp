@@ -294,7 +294,7 @@ int JmyDataHandler::handleMsg(JmyMsgInfo* info)
 		if (default_msg_handler_) {
 			int res = default_msg_handler_(info);
 			if (res == 0) {
-				LibJmyLogWarn("not found msg(%d) handler, conn_id(%d)", info->msg_id, info->conn_id);
+				//LibJmyLogWarn("not found msg(%d) handler, conn_id(%d)", info->msg_id, info->conn_id);
 				return 0;
 			} else if (res < 0) {
 				return -1;
@@ -313,6 +313,7 @@ int JmyDataHandler::handleMsg(JmyMsgInfo* info)
 	return info->len;
 }
 
+#if 0
 int JmyDataHandler::handleAck(JmyAckMsgInfo* info)
 {
 	if (!info) return -1;
@@ -355,6 +356,7 @@ int JmyDataHandler::handleAck(JmyAckMsgInfo* info)
 #endif
 	return 0;
 }
+#endif
 
 int JmyDataHandler::handleHeartbeat(JmyHeartbeatMsgInfo* info)
 {
@@ -432,6 +434,7 @@ int JmyDataHandler::handleOne(
 			return -1;
 		}
 	}
+#if 0
 	// ack
 	else if (data.type == JMY_PACKET_ACK) {
 		ack_info_.session_id = conn_id;
@@ -441,6 +444,7 @@ int JmyDataHandler::handleOne(
 		if (handleAck(&ack_info_) < 0)
 			return -1;
 	}
+#endif
 	// heart beat
 	else if (data.type == JMY_PACKET_HEARTBEAT) {
 		heartbeat_info_.session_id = conn_id;

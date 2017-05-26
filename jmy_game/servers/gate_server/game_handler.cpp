@@ -111,7 +111,7 @@ int GameHandler::processGetRoleResponse(JmyMsgInfo* info)
 			return -1;
 		}
 		ci->add_role_id(role_id);
-		LogInfo("send MsgS2C_GetRoleResponse");
+		LogInfo("get role: %llu response", role_id);
 	}
 
 	return info->len;
@@ -197,5 +197,13 @@ int GameHandler::processLeaveGameResponse(JmyMsgInfo* info)
 
 int GameHandler::processDefault(JmyMsgInfo* info)
 {
+	switch (info->msg_id) {
+	case MSGID_S2C_ENTER_GAME_RESPONSE:
+		return processEnterGameResponse(info);
+	case MSGID_S2C_LEAVE_GAME_RESPONSE:
+		return processLeaveGameResponse(info);
+	default:
+		break;
+	}
 	return info->len;
 }

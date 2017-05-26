@@ -91,5 +91,7 @@ int DBResCBFuncs::sendGetRoleResponse(t_player* user, int conn_id)
 		LogError("send MsgDS2GS_RequireUserDataResponse failed");
 		return -1;
 	}
+
+	LogInfo("send get role response: role_id(%llu)", user->get_role_id());
 	return 0;
 }

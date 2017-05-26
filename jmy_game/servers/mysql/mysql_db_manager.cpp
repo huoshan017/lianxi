@@ -1,7 +1,7 @@
 #include "mysql_db_manager.h"
 //#include "config_loader.h"
 
-MysqlDBManager::MysqlDBManager() : index_(0), big_index_(0)
+MysqlDBManager::MysqlDBManager() : write_conn_(nullptr), index_(0), big_index_(0)
 {
 }
 
@@ -21,6 +21,8 @@ bool MysqlDBManager::init(const std::string& host, const std::string& user, cons
 		LogError("init mysql_connector_pool (db_name: %s) failed", config.dbname);
 		return false;
 	}
+
+	write_conn_ = conn_pool_.get_write_connector(0);
 
 	if (!config_mgr_.init(config)) {
 		LogError("init mysql_db_config_manager (db_name: %s) failed", config.dbname);
