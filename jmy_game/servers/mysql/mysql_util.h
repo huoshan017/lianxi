@@ -3,6 +3,7 @@
 #include "mysql_defines.h"
 #include "mysql_connector.h"
 #include <iostream>
+#include <stdlib.h>
 
 #define IS_MYSQL_INT_TYPE(type) \
 		(type == MYSQL_FIELD_TYPE_TINYINT || \
@@ -69,23 +70,27 @@ inline long mysql_field_default_length(MysqlTableFieldType field_type) {
 }
 
 template <typename FieldType>
-inline bool mysql_get_field_value_format(MysqlConnector* connector, MysqlTableFieldType ft, int flags, const FieldType& value, char* format_buf, int format_buf_len) {
+inline bool mysql_get_field_value_format(MysqlConnector* connector, MysqlTableFieldType ft, int flags, const FieldType& value, char* format_buf, int format_buf_len, char* format_buf2, int format_buf2_len) {
 	(void)flags;
 	if (IS_MYSQL_BINARY_TYPE(ft) || IS_MYSQL_BLOB_TYPE(ft)) {
-		if (value.SerializeToArray(format_buf, format_buf_len)) {
-			if (value.ByteSize() == 0) {
-				std::snprintf(format_buf, format_buf_len, "\'\'");
-			} else {
-				format_buf[value.ByteSize()] = '\0';
-			}
+		if (value.ByteSize() == 0) {
+			std::snprintf(format_buf, format_buf_len, "\'\'");
 			return true;
+		} else {
+			if (value.SerializeToArray(format_buf2, format_buf2_len)) {
+				connector->real_escape_string(format_buf, format_buf2, format_buf2_len);
+				return true;
+			}
 		}
 	}
 	return false;
 }
 
 template <>
-inline bool mysql_get_field_value_format<int>(MysqlConnector* connector, MysqlTableFieldType ft, int flags, const int& value, char* format_buf, int format_buf_len) {
+inline bool mysql_get_field_value_format<int>(MysqlConnector* connector, MysqlTableFieldType ft, int flags, const int& value, char* format_buf, int format_buf_len, char* format_buf2, int format_buf2_len) {
+	(void)connector;
+	(void)format_buf2;
+	(void)format_buf2_len;
 	if (ft == MYSQL_FIELD_TYPE_TINYINT || ft == MYSQL_FIELD_TYPE_SMALLINT ||
 		ft == MYSQL_FIELD_TYPE_MEDIUMINT || ft == MYSQL_FIELD_TYPE_INT) {
 		if (flags & MYSQL_TABLE_CREATE_UNSIGNED) {
@@ -100,7 +105,10 @@ inline bool mysql_get_field_value_format<int>(MysqlConnector* connector, MysqlTa
 }
 
 template <>
-inline bool mysql_get_field_value_format<unsigned int>(MysqlConnector* connector, MysqlTableFieldType ft, int flags, const unsigned int& value, char* format_buf, int format_buf_len) {
+inline bool mysql_get_field_value_format<unsigned int>(MysqlConnector* connector, MysqlTableFieldType ft, int flags, const unsigned int& value, char* format_buf, int format_buf_len, char* format_buf2, int format_buf2_len) {
+	(void)connector;
+	(void)format_buf2;
+	(void)format_buf2_len;
 	if (ft == MYSQL_FIELD_TYPE_TINYINT || ft == MYSQL_FIELD_TYPE_SMALLINT ||
 		ft == MYSQL_FIELD_TYPE_MEDIUMINT || ft == MYSQL_FIELD_TYPE_INT) {
 		if (flags & MYSQL_TABLE_CREATE_UNSIGNED) {
@@ -112,8 +120,10 @@ inline bool mysql_get_field_value_format<unsigned int>(MysqlConnector* connector
 }
 
 template <>
-inline bool mysql_get_field_value_format<uint64_t>(MysqlConnector* connector, MysqlTableFieldType ft, int flags, const uint64_t& value, char* format_buf, int format_buf_len)
-{
+inline bool mysql_get_field_value_format<uint64_t>(MysqlConnector* connector, MysqlTableFieldType ft, int flags, const uint64_t& value, char* format_buf, int format_buf_len, char* format_buf2, int format_buf2_len) {
+	(void)connector;
+	(void)format_buf2;
+	(void)format_buf2_len;
 	if (ft == MYSQL_FIELD_TYPE_BIGINT) {
 		if (flags & MYSQL_TABLE_CREATE_UNSIGNED) {
 			std::snprintf(format_buf, format_buf_len, "%lu", value);
@@ -127,8 +137,11 @@ inline bool mysql_get_field_value_format<uint64_t>(MysqlConnector* connector, My
 }
 
 template <>
-inline bool mysql_get_field_value_format<int64_t>(MysqlConnector* connector, MysqlTableFieldType ft, int flags, const int64_t& value, char* format_buf, int format_buf_len)
+inline bool mysql_get_field_value_format<int64_t>(MysqlConnector* connector, MysqlTableFieldType ft, int flags, const int64_t& value, char* format_buf, int format_buf_len, char* format_buf2, int format_buf2_len)
 {
+	(void)connector;
+	(void)format_buf2;
+	(void)format_buf2_len;
 	if (ft == MYSQL_FIELD_TYPE_BIGINT) {
 		if (flags & MYSQL_TABLE_CREATE_UNSIGNED) {
 			std::snprintf(format_buf, format_buf_len, "%lu", value);
@@ -142,8 +155,11 @@ inline bool mysql_get_field_value_format<int64_t>(MysqlConnector* connector, Mys
 }
 
 template <>
-inline bool mysql_get_field_value_format<unsigned long long>(MysqlConnector* connector, MysqlTableFieldType ft, int flags, const unsigned long long& value, char* format_buf, int format_buf_len)
+inline bool mysql_get_field_value_format<unsigned long long>(MysqlConnector* connector, MysqlTableFieldType ft, int flags, const unsigned long long& value, char* format_buf, int format_buf_len, char* format_buf2, int format_buf2_len)
 {
+	(void)connector;
+	(void)format_buf2;
+	(void)format_buf2_len
 	if (ft == MYSQL_FIELD_TYPE_BIGINT) {
 		if (flags & MYSQL_TABLE_CREATE_UNSIGNED) {
 			std::snprintf(format_buf, format_buf_len, "%llu", value);
@@ -157,8 +173,11 @@ inline bool mysql_get_field_value_format<unsigned long long>(MysqlConnector* con
 }
 
 template <>
-inline bool mysql_get_field_value_format<double>(MysqlConnector* connector, MysqlTableFieldType ft, int flags, const double& value, char* format_buf, int format_buf_len)
+inline bool mysql_get_field_value_format<double>(MysqlConnector* connector, MysqlTableFieldType ft, int flags, const double& value, char* format_buf, int format_buf_len, char* format_buf2, int format_buf2_len)
 {
+	(void)connector;
+	(void)format_buf2;
+	(void)format_buf2_len;
 	(void)flags;
 	if (ft == MYSQL_FIELD_TYPE_FLOAT || ft == MYSQL_FIELD_TYPE_DOUBLE) {
 		std::snprintf(format_buf, format_buf_len, "%f", value);
@@ -167,22 +186,26 @@ inline bool mysql_get_field_value_format<double>(MysqlConnector* connector, Mysq
 	return false;
 }
 
-inline bool mysql_get_field_value_format(MysqlConnector* connector, MysqlTableFieldType ft, int flags, const char* value, char* format_buf, int format_buf_len)
+inline bool mysql_get_field_value_format(MysqlConnector* connector, MysqlTableFieldType ft, int flags, const char* value, char* format_buf, int format_buf_len, char* format_buf2, int format_buf2_len)
 {
 	(void)flags;
+	(void)format_buf_len;
 	if (IS_MYSQL_TEXT_TYPE(ft) || IS_MYSQL_BINARY_TYPE(ft)) {
-		std::snprintf(format_buf, format_buf_len, "\'%s\'", value);
+		std::snprintf(format_buf2, format_buf2_len, "\'%s\'", value);
+		connector->real_escape_string(format_buf, format_buf2, format_buf2_len);
 		return true;
 	}
 	return false;
 }
 
 template <>
-inline bool mysql_get_field_value_format<std::string>(MysqlConnector* connector, MysqlTableFieldType ft, int flags, const std::string& value, char* format_buf, int format_buf_len)
+inline bool mysql_get_field_value_format<std::string>(MysqlConnector* connector, MysqlTableFieldType ft, int flags, const std::string& value, char* format_buf, int format_buf_len, char* format_buf2, int format_buf2_len)
 {
 	(void)flags;
+	(void)format_buf_len;
 	if (IS_MYSQL_TEXT_TYPE(ft) || IS_MYSQL_BINARY_TYPE(ft)) {
-		std::snprintf(format_buf, format_buf_len, "\'%s\'", value.c_str());
+		std::snprintf(format_buf2, format_buf2_len, "\'%s\'", value.c_str());
+		connector->real_escape_string(format_buf, format_buf2, format_buf2_len);
 		return true;
 	}
 	return false;

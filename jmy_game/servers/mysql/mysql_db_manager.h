@@ -134,9 +134,9 @@ private:
 	char* format_insert_field_name_str(const char* head_buf, int buf_num, const FirstFieldNameValueArg& first, const RestFieldNameValueArg&... rest);
 
 	template <typename FieldNameValueArg>
-	char* format_insert_field_value_str(int table_index, const char* head_buf, int buf_num, const FieldNameValueArg& arg);
+	char* format_insert_field_value_str(int table_index, const char* head_buf, int buf_num, int buf2_num, const FieldNameValueArg& arg);
 	template <typename FirstFieldNameValueArg, typename... RestFieldNameValueArg>
-	char* format_insert_field_value_str(int table_index, const char* head_buf, int buf_num, const FirstFieldNameValueArg& first, const RestFieldNameValueArg&... rest);
+	char* format_insert_field_value_str(int table_index, const char* head_buf, int buf_num, int buf2_num, const FirstFieldNameValueArg& first, const RestFieldNameValueArg&... rest);
 
 	template <typename FieldNameValueArg>
 	char* format_update_field_value_str(int table_index, const char* head_buf, int buf_num, const FieldNameValueArg& arg);
@@ -196,6 +196,7 @@ private:
 	char buf2_[3][1024*128];
 	char big_buf_[2][1024*1024];
 	int index_, index2_, big_index_;
+	char tmp_buf_[1024*128];
 };
 
 template <typename FieldNameValueArg>
@@ -223,7 +224,7 @@ char* MysqlDBManager::format_insert_field_name_str(const char* head_buf, int buf
 }
 
 template <typename FieldNameValueArg>
-char* MysqlDBManager::format_insert_field_value_str(int table_index, const char* head_buf, int buf_num, const FieldNameValueArg& arg)
+char* MysqlDBManager::format_insert_field_value_str(int table_index, const char* head_buf, int buf_num, int buf2_num, const FieldNameValueArg& arg)
 {
 	char* buf = nullptr;
 	int buf_len = 0;
@@ -236,7 +237,13 @@ char* MysqlDBManager::format_insert_field_value_str(int table_index, const char*
 		return nullptr;
 	}
 
-	if (!mysql_get_field_value_format(write_conn_, (MysqlTableFieldType)field_info->field_type, field_info->create_flags, arg.field_value, buf, buf_len)) {
+	char* buf2 = nullptr;
+	int buf2_len = 0;
+	if (!get_buf_info(buf2_num, buf2, buf2_len)) {
+		return nullptr;
+	}
+
+	if (!mysql_get_field_value_format(write_conn_, (MysqlTableFieldType)field_info->field_type, field_info->create_flags, arg.field_value, buf, buf_len, buf2, buf2_len)) {
 		LogError("field_type(%d), create_flags(%d) get format error", field_info->field_type, field_info->create_flags);
 		return nullptr;
 	}
@@ -253,12 +260,12 @@ char* MysqlDBManager::format_insert_field_value_str(int table_index, const char*
 }
 
 template <typename FirstFieldNameValueArg, typename... RestFieldNameValueArg>
-char* MysqlDBManager::format_insert_field_value_str(int table_index, const char* head_buf, int buf_num, const FirstFieldNameValueArg& first, const RestFieldNameValueArg&... rest)
+char* MysqlDBManager::format_insert_field_value_str(int table_index, const char* head_buf, int buf_num, int buf2_num, const FirstFieldNameValueArg& first, const RestFieldNameValueArg&... rest)
 {
-	char* t = format_insert_field_value_str(table_index, head_buf, buf_num, first);
+	char* t = format_insert_field_value_str(table_index, head_buf, buf_num, buf2_num, first);
 	if (!t) return nullptr;
 	if (to_next_index(buf_num) < 0) return nullptr;
-	return format_insert_field_value_str(table_index, t, buf_num, rest...);
+	return format_insert_field_value_str(table_index, t, buf_num, buf2_num, rest...);
 }
 
 template <typename FieldNameValueArg>
@@ -272,8 +279,7 @@ char* MysqlDBManager::format_update_field_value_str(int table_index, const char*
 		return nullptr;
 	}
 
-	char tmp[32];
-	if (!mysql_get_field_value_format(write_conn_, (MysqlTableFieldType)field_info->field_type, field_info->create_flags, arg.field_value, tmp, sizeof(tmp))) {
+	if (!mysql_get_field_value_format(write_conn_, (MysqlTableFieldType)field_info->field_type, field_info->create_flags, arg.field_value, tmp_buf_, sizeof(tmp_buf_))) {
 		LogError("field_type(%d), create_flags(%d) get format error", field_info->field_type, field_info->create_flags);
 		return nullptr;
 	}
@@ -282,7 +288,7 @@ char* MysqlDBManager::format_update_field_value_str(int table_index, const char*
 	if (!get_buf_info(buf_num, buf, buf_len)) {
 		return nullptr;
 	}
-	std::snprintf(buf, buf_len, "%s=%s", arg.field_name, tmp);
+	std::snprintf(buf, buf_len, "%s=%s", arg.field_name, tmp_buf_);
 
 	if (head_buf) {
 		char* prev_buf = buf;
