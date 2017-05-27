@@ -278,7 +278,7 @@ char* MysqlDBManager::format_update_field_value_str(int table_index, const char*
 		return nullptr;
 	}
 
-	if (!mysql_get_field_value_format(write_conn_, (MysqlTableFieldType)field_info->field_type, field_info->create_flags, arg.field_value, buf, buf_len, tmp_buf_, sizeof(tmp_buf_))) {
+	if (!mysql_get_field_value_format(write_conn_, (MysqlTableFieldType)field_info->field_type, field_info->create_flags, arg.field_value, tmp_buf_, sizeof(tmp_buf_), buf, buf_len)) {
 		LogError("field_type(%d), create_flags(%d) get format error", field_info->field_type, field_info->create_flags);
 		return nullptr;
 	}
