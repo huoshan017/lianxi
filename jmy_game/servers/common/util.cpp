@@ -58,13 +58,3 @@ char* get_session_code(char* session_buf, int buf_len)
 	session_buf[buf_len] = '\0';
 	return session_buf;
 }
-
-int send_error(JmyTcpConnection* conn, ProtoErrorType error)
-{
-	char tmp[64];
-	if (!conn) return -1;
-	MsgError response;
-	response.set_error_code(error);
-	response.SerializeToArray(tmp, sizeof(tmp));
-	return conn->send(MSGID_ERROR, tmp, response.ByteSize());
-}

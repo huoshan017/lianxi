@@ -1,5 +1,6 @@
 #include "global_data.h"
 #include "gate_server.h"
+#include "../../proto/src/common.pb.h"
 
 GlobalData::GlobalData() : the_game_id_(0)
 {
@@ -147,4 +148,14 @@ int GlobalData::sendGameMsg(int user_id, int msg_id, const char* data, unsigned 
 		return -1;
 	}
 	return len;
+}
+
+int send_error(JmyTcpConnection* conn, ProtoErrorType error)
+{
+	char tmp[64];
+	if (!conn) return -1;
+	MsgError response;
+	response.set_error_code(error);
+	response.SerializeToArray(tmp, sizeof(tmp));
+	return conn->send(MSGID_ERROR, tmp, response.ByteSize());
 }

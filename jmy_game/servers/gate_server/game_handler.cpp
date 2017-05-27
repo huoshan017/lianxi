@@ -111,6 +111,7 @@ int GameHandler::processGetRoleResponse(JmyMsgInfo* info)
 			return -1;
 		}
 		ci->add_role_id(role_id);
+		ci->curr_role_id = role_id;
 		LogInfo("get role: %llu response", role_id);
 	}
 
@@ -133,6 +134,7 @@ int GameHandler::processCreateRoleResponse(JmyMsgInfo* info)
 
 	uint64_t role_id = response.role_data().role_id();
 	ci->add_role_id(role_id);
+	ci->curr_role_id = role_id;
 
 	MsgS2C_CreateRoleResponse create_resp;
 	create_resp.mutable_role_data()->set_sex(response.role_data().sex());
@@ -152,57 +154,25 @@ int GameHandler::processCreateRoleResponse(JmyMsgInfo* info)
 	return info->len;
 }
 
-int GameHandler::processEnterGameResponse(JmyMsgInfo* info)
-{
-	MsgGS2GT_EnterGameResponse response;
-	if (!response.ParseFromArray(info->data, info->len)) {
-		LogError("parse MsgGS2GT_EnterGameResponse failed");
-		return -1;
-	}
-
-	ClientInfo* client_info = CLIENT_MANAGER->getClientInfo(info->user_id);
-	if (!client_info) {
-		//send_error(client_info->conn, PROTO_ERROR_ENTER_GAME_INVALID_ACCOUNT);
-		LogError("cant get ClientInfo by id(%d)", info->user_id);
-		return -1;
-	}
-
-	MsgS2C_EnterGameResponse rsp_to_clt;
-	rsp_to_clt.set_role_id(client_info->curr_role_id);
-	if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
-		LogError("serialize MsgS2C_EnterGameResponse failed");
-		return -1;
-	}
-	
-	if (client_info->send(MSGID_S2C_ENTER_GAME_RESPONSE, tmp_, response.ByteSize()) < 0) {
-		LogError("send message MsgS2C_EnterGameResponse failed to client(%d) failed", info->user_id);
-		return -1;
-	}
-
-	LogInfo("user_id(%llu) enter game success", client_info->curr_role_id);
-	return info->len;
-}
-
-int GameHandler::processLeaveGameResponse(JmyMsgInfo* info)
-{
-	ClientInfo* client_info = CLIENT_MANAGER->getClientInfo(info->user_id);
-	if (!client_info) {
-		LogError("cant get ClientInfo by id(%d)", info->user_id);
-		return -1;
-	}
-	client_info->close();
-	LogInfo("player %s leave game");
-	return info->len;
-}
-
 int GameHandler::processDefault(JmyMsgInfo* info)
 {
 	switch (info->msg_id) {
-	case MSGID_S2C_ENTER_GAME_RESPONSE:
-		return processEnterGameResponse(info);
-	case MSGID_S2C_LEAVE_GAME_RESPONSE:
-		return processLeaveGameResponse(info);
 	default:
+		{
+			JmyTcpConnection* conn = get_connection(info);
+			if (!conn) return -1;
+			if (!info->user_id) return -1;
+			ClientInfo* ci = CLIENT_MANAGER->getClientInfo(info->user_id);
+			if (!ci) {
+				LogError("get ClientInfo by user_id(%d) failed", info->user_id);
+				return -1;
+			}
+			if (ci->send(info->msg_id, info->data, info->len) < 0) {
+				LogError("send message: %d with default failed", info->msg_id);
+				return -1;
+			}
+			LogInfo("process default msg(%d)", info->msg_id);
+		}
 		break;
 	}
 	return info->len;

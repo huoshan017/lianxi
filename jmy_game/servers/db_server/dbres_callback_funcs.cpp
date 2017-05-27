@@ -57,6 +57,8 @@ int DBResCBFuncs::getPlayerInfo(MysqlConnector::Result& res, void* param, long p
 		return -1;
 	}
 
+	player_mgr.make_pair(user->get_role_id(), user->get_account());
+
 	if (sendGetRoleResponse(user, (int)param_l) < 0) {
 		LogError("send get role response failed");
 		return -1;

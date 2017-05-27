@@ -137,12 +137,6 @@ int ClientHandler::processEnterGameRequest(JmyMsgInfo* info)
 		return -1;
 	}
 
-	MsgC2S_EnterGameRequest request;
-	if (!request.ParseFromArray(info->data, info->len)) {
-		LogError("parse MsgC2S_EnterGameRequest failed");
-		return -1;
-	}
-
 	// check role id is valid
 	ClientInfo* ci = CLIENT_MANAGER->getClientInfoByConnId(info->conn_id);
 	if (!ci) {
@@ -150,25 +144,43 @@ int ClientHandler::processEnterGameRequest(JmyMsgInfo* info)
 		return -1;
 	}
 
-	uint64_t role_id = request.role_id();
-	if (!ci->has_role_id(role_id)) {
-		send_error(conn, PROTO_ERROR_ENTER_GAME_ROLE_INVALID);
-		LogWarn("role_id(%llu) not exists", role_id);
-		return info->len;
+	if (ci->curr_role_id == 0) {
+		send_error(conn, PROTO_ERROR_ENTER_GAME_INVALID_ACCOUNT);
+		LogError("current role_id not found");
+		return -1;
 	}
 
-	ci->curr_role_id = role_id;
+	MsgGT2GS_EnterGameRequest request;
+	request.set_role_id(ci->curr_role_id);
+	if (!request.SerializeToArray(tmp_, sizeof(tmp_))) {
+		LogError("serialize MsgGT2GS_EnterGameRequest failed");
+		return -1;
+	}
 
-	SEND_GAME_USER_MSG(ci->id, info->msg_id, info->data, info->len);
-	LogInfo("process enter game request , role_id(%llu)", role_id);
+	SEND_GAME_USER_MSG(ci->id, MSGID_GT2GS_ENTER_GAME_REQUEST, tmp_, request.ByteSize());
+	LogInfo("process enter game request, role_id(%llu)", ci->curr_role_id);
 
 	return info->len;
 }
 
 int ClientHandler::processLeaveGameRequest(JmyMsgInfo* info)
 {
-	if (!CLIENT_MANAGER->removeByConnId(info->conn_id))
+	ClientInfo* ci = CLIENT_MANAGER->getClientInfoByConnId(info->conn_id);
+	if (!ci) return -1;
+	ci->close();
+
+	MsgGT2GS_LeaveGameRequest request;
+	if (!request.SerializeToArray(tmp_, sizeof(tmp_))) {
+		LogError("serialize MsgGT2GS_LeaveGameRequest failed");
 		return -1;
+	}
+
+	if (SEND_GAME_USER_MSG(ci->id, MSGID_GT2GS_LEAVE_GAME_REQUEST, tmp_, request.ByteSize()) < 0) {
+		LogError("send MsgGT2GS_LeaveGameRequest failed");
+		return -1;
+	}
+
+	LogInfo("process leave game request, role_id(%llu)", ci->curr_role_id);
 	return info->len;
 }
 

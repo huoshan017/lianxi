@@ -43,6 +43,7 @@ static JmyId2MsgHandler s_game_handlers[] = {
 	{ MSGID_S2C_GET_ROLE_RESPONSE, GameHandler::processGetRole },
 	{ MSGID_S2C_CREATE_ROLE_RESPONSE, GameHandler::processCreateRole },
 	{ MSGID_S2C_ENTER_GAME_RESPONSE, GameHandler::processEnterGame },
+	{ MSGID_S2C_ENTER_GAME_COMPLETE_NOTIFY, GameHandler::processEnterGameComplete },
 	{ MSGID_S2C_RECONNECT_RESPONSE, GameHandler::processReconnect },
 	{ MSGID_ERROR, GameHandler::processError }
 };

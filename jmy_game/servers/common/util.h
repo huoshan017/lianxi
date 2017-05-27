@@ -43,5 +43,3 @@ char* get_session_code(char*, int);
 inline int get_server_type(int server_id) {
 	return server_id/SERVER_ID_DEVIDE;
 }
-
-int send_error(JmyTcpConnection* conn, ProtoErrorType);

@@ -59,8 +59,7 @@ int GameHandler::processGetRole(JmyMsgInfo* info)
 	LogInfo("get role: race(%d), sex(%d), role_id(%llu), nick_name(%s)", rd.race(), rd.sex(), rd.role_id(), rd.nick_name().c_str());
 
 	reconn_session_ = response.reconnect_session();
-	const MsgBaseRoleData& role_data = response.role_data();
-	if (send_enter_game_request(conn, role_data.role_id()) < 0)
+	if (send_enter_game_request(conn) < 0)
 		return -1;
 
 	return info->len;
@@ -79,8 +78,7 @@ int GameHandler::processCreateRole(JmyMsgInfo* info)
 	const MsgBaseRoleData& rd = response.role_data();
 	LogInfo("create role: race(%d), sex(%d), role_id(%llu), nick_name(%s)", rd.race(), rd.sex(), rd.role_id(), rd.nick_name().c_str());
 
-	const MsgBaseRoleData& role_data = response.role_data();
-	if (send_enter_game_request(conn, role_data.role_id()) < 0)
+	if (send_enter_game_request(conn) < 0)
 		return -1;
 
 	return info->len;
@@ -93,7 +91,33 @@ int GameHandler::processEnterGame(JmyMsgInfo* info)
 		LogError("parse MsgS2C_EnterGameResponse failed");
 		return -1;
 	}
-	LogInfo("processEnterGame");
+	LogInfo("enter game");
+	return info->len;
+}
+
+int GameHandler::processEnterGameComplete(JmyMsgInfo* info)
+{
+	JmyTcpConnection* conn = get_connection(info);
+	if (!conn) return -1;
+
+	LogInfo("enter game complete");
+
+	MsgC2S_SetRoleDataRequest request;
+	MsgBaseRoleData* role_data = request.mutable_role_data();
+	role_data->set_hp(1);
+	role_data->set_sex(1);
+	role_data->set_race(1);
+	role_data->set_level(2);
+	if (!request.SerializeToArray(tmp_, sizeof(tmp_))) {
+		LogError("serialize MsgC2S_SetRoleDataRequest failed");
+		return -1;
+	}
+
+	if (conn->send(MSGID_C2S_SET_ROLE_DATA_REQUEST, tmp_, request.ByteSize()) < 0) {
+		LogError("send MsgC2S_SetRoleDataRequest failed");
+		return -1;
+	}
+	LogInfo("enter game complete");
 	return info->len;
 }
 
@@ -142,10 +166,9 @@ void GameHandler::setEnterSession(const std::string& session)
 	enter_session_ = std::move(session);
 }
 
-int GameHandler::send_enter_game_request(JmyTcpConnection* conn, uint64_t role_id)
+int GameHandler::send_enter_game_request(JmyTcpConnection* conn)
 {
 	MsgC2S_EnterGameRequest enter_req;
-	enter_req.set_role_id(role_id);
 	if (!enter_req.SerializeToArray(tmp_, sizeof(tmp_))) {
 		LogError("serialize MsgC2S_EnterGameRequest failed");
 		return -1;

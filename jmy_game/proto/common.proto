@@ -25,6 +25,10 @@ enum MsgIdType {
 	MSGID_S2C_LEAVE_GAME_RESPONSE			= 10024; // leave game response
 	MSGID_C2S_RECONNECT_REQUEST				= 10025; // reconnect gate server
 	MSGID_S2C_RECONNECT_RESPONSE			= 10026; // reconnect response
+
+	// test msg
+	MSGID_C2S_SET_ROLE_DATA_REQUEST			= 19001; // set role data request
+	MSGID_S2C_SET_ROLE_DATA_RESPONSE		= 19002; // set role data response
 }
 
 message MsgError {
@@ -116,12 +120,12 @@ message MsgS2C_DeleteRoleResponse {
 
 // client -> gate  [MSGID_C2S_ENTER_GAME_REQUEST]  request enter game, send to gate server
 message MsgC2S_EnterGameRequest {
-	uint64 role_id = 1;
+	//uint64 role_id = 1;
 }
 
 // gate -> client  [MSGID_S2C_ENTER_GAME_RESPONSE]  response for enter game request
 message MsgS2C_EnterGameResponse {
-	uint64 role_id = 1;
+	//uint64 role_id = 1;
 }
 
 // gate -> client  [MSGID_S2C_ENTER_GAME_COMPLETE_NOTIFY]  enter game complete
@@ -145,4 +149,14 @@ message MsgC2S_ReconnectRequest {
 // gate -> client  [MSGID_S2C_RECONNECT_RESPONSE]  response for reconnect request
 message MsgS2C_ReconnectResponse {
 	bytes reconnect_session = 1;
+}
+
+// client -> gate  [MSGID_C2S_SET_ROLE_DATA_REQUEST]
+message MsgC2S_SetRoleDataRequest {
+	MsgBaseRoleData role_data = 1;
+}
+
+// gate -> client  [MSGID_S2C_SET_ROLE_DATA_RESPONSE]
+message MsgS2C_SetRoleDataResponse {
+	MsgBaseRoleData role_data = 1;
 }

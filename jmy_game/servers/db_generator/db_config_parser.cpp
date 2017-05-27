@@ -1120,6 +1120,8 @@ bool DBConfigParser::gen_get_result_of_select_record_func(std::fstream& out_file
 		out_file2 << "  while ((row = res.fetch()) != nullptr) {" << std::endl;
 		out_file2 << "    " << table_name << "* data = result_list.get_new_no_insert();" << std::endl;
 	}
+
+	bool has_blob = false;
 	int m = 0;
 	for (int n=0; n<(int)config_.tables_fields[table_index].size(); ++n) {
 		const std::string& field_type = config_.tables_fields[table_index][n].field_type;
@@ -1179,9 +1181,14 @@ bool DBConfigParser::gen_get_result_of_select_record_func(std::fstream& out_file
 					std::cout << "user define data from " << field_type << " not found" << std::endl;
 					return false;
 				}
+				if (!has_blob) {
+					if (result_type == "multi") out_file2 << "  ";
+					out_file2 << "  const unsigned long* row_len = res.row_lengths();" << std::endl;
+					has_blob = true;
+				}
 				if (result_type == "multi") out_file2 << "  ";
 				out_file2 << "  if (!data->get_mutable_" << field_name
-					<< "().ParseFromArray(row[" << m << "], std::strlen(row[" << m << "]))) {" << std::endl;
+					<< "().ParseFromArray(row[" << m << "], row_len[" << m << "])) {" << std::endl;
 				if (result_type == "multi") out_file2 << "  ";
 				out_file2 << "    LogError(\"user define " << user_define << " parse failed\");" << std::endl;
 				if (result_type == "multi") out_file2 << "  ";

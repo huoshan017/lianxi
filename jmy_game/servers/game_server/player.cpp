@@ -114,7 +114,7 @@ Player* PlayerManager::malloc(int user_id, uint64_t role_id)
 	int index = user_id - start_player_id_;
 	if (!online_role_ids_ || (index<0) || (index>=max_player_size_))
 		return nullptr;
-	online_role_ids_[index] = user_id;
+	online_role_ids_[index] = role_id;
 	Player* p = pool_.malloc();
 	p->user_id = user_id;
 	p->role_id = role_id;

@@ -1,6 +1,7 @@
 #pragma once
 #include "../libjmy/jmy_singleton.hpp"
 #include "../common/agent.h"
+#include "../../proto/src/error.pb.h"
 #include <unordered_map>
 
 // login
@@ -53,3 +54,5 @@ private:
 #define SEND_GAME_MSG(msg_id, data, len)				(GLOBAL_DATA->sendGameMsg(msg_id, data, len))
 #define SEND_GAME_USER_MSG(user_id, msg_id, data, len)	(GLOBAL_DATA->sendGameMsg(user_id, msg_id, data, len))
 #define GAME_SERVER_ID									(GLOBAL_DATA->getGameServerId())
+
+int send_error(JmyTcpConnection* conn, ProtoErrorType);

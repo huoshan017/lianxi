@@ -16,6 +16,7 @@ public:
 	static int processGetRole(JmyMsgInfo*);
 	static int processCreateRole(JmyMsgInfo*);
 	static int processEnterGame(JmyMsgInfo*);
+	static int processEnterGameComplete(JmyMsgInfo*);
 	static int processReconnect(JmyMsgInfo*);
 	static int processDefault(JmyMsgInfo*);
 	static int processError(JmyMsgInfo*);
@@ -23,7 +24,7 @@ public:
 	static void setEnterSession(const std::string& enter_session);
 
 private:
-	static int send_enter_game_request(JmyTcpConnection* conn, uint64_t role_id);
+	static int send_enter_game_request(JmyTcpConnection* conn);
 
 private:
 	static char tmp_[JMY_MAX_MSG_SIZE];

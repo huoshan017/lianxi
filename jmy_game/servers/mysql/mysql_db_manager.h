@@ -134,9 +134,9 @@ private:
 	char* format_insert_field_name_str(const char* head_buf, int buf_num, const FirstFieldNameValueArg& first, const RestFieldNameValueArg&... rest);
 
 	template <typename FieldNameValueArg>
-	char* format_insert_field_value_str(int table_index, const char* head_buf, int buf_num, int buf2_num, const FieldNameValueArg& arg);
+	char* format_insert_field_value_str(int table_index, const char* head_buf, int buf_num, const FieldNameValueArg& arg);
 	template <typename FirstFieldNameValueArg, typename... RestFieldNameValueArg>
-	char* format_insert_field_value_str(int table_index, const char* head_buf, int buf_num, int buf2_num, const FirstFieldNameValueArg& first, const RestFieldNameValueArg&... rest);
+	char* format_insert_field_value_str(int table_index, const char* head_buf, int buf_num, const FirstFieldNameValueArg& first, const RestFieldNameValueArg&... rest);
 
 	template <typename FieldNameValueArg>
 	char* format_update_field_value_str(int table_index, const char* head_buf, int buf_num, const FieldNameValueArg& arg);
@@ -224,7 +224,7 @@ char* MysqlDBManager::format_insert_field_name_str(const char* head_buf, int buf
 }
 
 template <typename FieldNameValueArg>
-char* MysqlDBManager::format_insert_field_value_str(int table_index, const char* head_buf, int buf_num, int buf2_num, const FieldNameValueArg& arg)
+char* MysqlDBManager::format_insert_field_value_str(int table_index, const char* head_buf, int buf_num, const FieldNameValueArg& arg)
 {
 	char* buf = nullptr;
 	int buf_len = 0;
@@ -237,13 +237,7 @@ char* MysqlDBManager::format_insert_field_value_str(int table_index, const char*
 		return nullptr;
 	}
 
-	char* buf2 = nullptr;
-	int buf2_len = 0;
-	if (!get_buf_info(buf2_num, buf2, buf2_len)) {
-		return nullptr;
-	}
-
-	if (!mysql_get_field_value_format(write_conn_, (MysqlTableFieldType)field_info->field_type, field_info->create_flags, arg.field_value, buf, buf_len, buf2, buf2_len)) {
+	if (!mysql_get_field_value_format(write_conn_, (MysqlTableFieldType)field_info->field_type, field_info->create_flags, arg.field_value, buf, buf_len, tmp_buf_, sizeof(tmp_buf_))) {
 		LogError("field_type(%d), create_flags(%d) get format error", field_info->field_type, field_info->create_flags);
 		return nullptr;
 	}
@@ -260,12 +254,12 @@ char* MysqlDBManager::format_insert_field_value_str(int table_index, const char*
 }
 
 template <typename FirstFieldNameValueArg, typename... RestFieldNameValueArg>
-char* MysqlDBManager::format_insert_field_value_str(int table_index, const char* head_buf, int buf_num, int buf2_num, const FirstFieldNameValueArg& first, const RestFieldNameValueArg&... rest)
+char* MysqlDBManager::format_insert_field_value_str(int table_index, const char* head_buf, int buf_num, const FirstFieldNameValueArg& first, const RestFieldNameValueArg&... rest)
 {
-	char* t = format_insert_field_value_str(table_index, head_buf, buf_num, buf2_num, first);
+	char* t = format_insert_field_value_str(table_index, head_buf, buf_num, first);
 	if (!t) return nullptr;
 	if (to_next_index(buf_num) < 0) return nullptr;
-	return format_insert_field_value_str(table_index, t, buf_num, buf2_num, rest...);
+	return format_insert_field_value_str(table_index, t, buf_num, rest...);
 }
 
 template <typename FieldNameValueArg>
@@ -279,15 +273,16 @@ char* MysqlDBManager::format_update_field_value_str(int table_index, const char*
 		return nullptr;
 	}
 
-	if (!mysql_get_field_value_format(write_conn_, (MysqlTableFieldType)field_info->field_type, field_info->create_flags, arg.field_value, tmp_buf_, sizeof(tmp_buf_))) {
-		LogError("field_type(%d), create_flags(%d) get format error", field_info->field_type, field_info->create_flags);
-		return nullptr;
-	}
-
 	char* buf = nullptr; int buf_len = 0;
 	if (!get_buf_info(buf_num, buf, buf_len)) {
 		return nullptr;
 	}
+
+	if (!mysql_get_field_value_format(write_conn_, (MysqlTableFieldType)field_info->field_type, field_info->create_flags, arg.field_value, buf, buf_len, tmp_buf_, sizeof(tmp_buf_))) {
+		LogError("field_type(%d), create_flags(%d) get format error", field_info->field_type, field_info->create_flags);
+		return nullptr;
+	}
+	
 	std::snprintf(buf, buf_len, "%s=%s", arg.field_name, tmp_buf_);
 
 	if (head_buf) {
@@ -360,7 +355,7 @@ bool MysqlDBManager::updateRecord(int table_index, const char* key_name, const K
 	const char* format = format_update_field_value_str(table_index, nullptr, 0, args...);
 	if (!format) return false;
 	char tmp[64];
-	const char* key_format = config_mgr_.get_field_type_format(table_index, key_name, key_value, tmp, sizeof(tmp));
+	const char* key_format = config_mgr_.get_field_type_format(write_conn_, table_index, key_name, key_value, tmp, sizeof(tmp));
 	if (!key_format) return false;
 	std::snprintf(big_buf_[big_index_], sizeof(big_buf_[big_index_]), "UPDATE %s SET %s WHERE %s=%s", ti->name, format, key_name, key_format);
 	return push_write_cmd(big_buf_[big_index_], strlen(big_buf_[big_index_]));
@@ -389,9 +384,9 @@ bool MysqlDBManager::updateRecord(int table_index, const char* key_name, const K
 	const char* format = format_update_field_value_str(table_index, nullptr, 0, args...);
 	if (!format) return false;
 	char tmp[64], tmp2[64];
-	const char* key_format = config_mgr_.get_field_type_format(table_index, key_name, key_value, tmp, sizeof(tmp));
+	const char* key_format = config_mgr_.get_field_type_format(write_conn_, table_index, key_name, key_value, tmp, sizeof(tmp));
 	if (!key_format) return false;
-	const char* key2_format = config_mgr_.get_field_type_format(table_index, key2_name, key2_value, tmp2, sizeof(tmp2));
+	const char* key2_format = config_mgr_.get_field_type_format(write_conn_, table_index, key2_name, key2_value, tmp2, sizeof(tmp2));
 	if (!key2_format) return false;
 	std::snprintf(big_buf_[big_index_], sizeof(big_buf_[big_index_]), "UPDATE %s SET %s WHERE %s=%s AND %s=%s",
 			ti->name, format, key_name, key_format, key2_name, key2_format);
@@ -421,11 +416,11 @@ bool MysqlDBManager::updateRecord(int table_index, const char* key_name, const K
 	const char* format = format_update_field_value_str(table_index, nullptr, 0, args...);
 	if (!format) return false;
 	char tmp[64], tmp2[64], tmp3[64];
-	const char* key_format = config_mgr_.get_field_type_format(table_index, key_name, key_value, tmp, sizeof(tmp));
+	const char* key_format = config_mgr_.get_field_type_format(write_conn_, table_index, key_name, key_value, tmp, sizeof(tmp));
 	if (!key_format) return false;
-	const char* key2_format = config_mgr_.get_field_type_format(table_index, key2_name, key2_value, tmp2, sizeof(tmp2));
+	const char* key2_format = config_mgr_.get_field_type_format(write_conn_, table_index, key2_name, key2_value, tmp2, sizeof(tmp2));
 	if (!key2_format) return false;
-	const char* key3_format = config_mgr_.get_field_type_format(table_index, key3_name, key3_value, tmp3, sizeof(tmp3));
+	const char* key3_format = config_mgr_.get_field_type_format(write_conn_, table_index, key3_name, key3_value, tmp3, sizeof(tmp3));
 	if (!key3_format) return false;
 
 	std::snprintf(big_buf_[big_index_], sizeof(big_buf_[big_index_]), "UPDATE %s SET %s WHERE %s=%s AND %s=%s AND %s=%s",
@@ -453,7 +448,7 @@ bool MysqlDBManager::deleteRecord(int table_index, const char* key_name, const K
 		LogError("get table(%d) info failed", table_index);
 		return false;
 	}
-	const char* format = config_mgr_.get_field_type_format(table_index, key_name, key_value, buf_[index_], sizeof(buf_[index_]));
+	const char* format = config_mgr_.get_field_type_format(write_conn_, table_index, key_name, key_value, buf_[index_], sizeof(buf_[index_]));
 	if (!format) {
 		LogError("table_index(%d) key_name(%s) get field_type format failed", table_index, key_name);
 		return false;
@@ -521,7 +516,7 @@ bool MysqlDBManager::selectRecord(const char* table_name,
 		return false;
 	}
 
-	const char* key_value_format = config_mgr_.get_field_type_format(table_index, key_name, key_value, buf, buf_len);
+	const char* key_value_format = config_mgr_.get_field_type_format(write_conn_, table_index, key_name, key_value, buf, buf_len);
 	if (!key_value_format) {
 		LogError("table_index(%d) key_name(%s) get field_type format failed", table_index, key_name);
 		return false;
@@ -593,7 +588,7 @@ bool MysqlDBManager::selectRecord(
 		LogError("get table(%d) info failed", table_index);
 		return false;
 	}
-	const char* format = config_mgr_.get_field_type_format(table_index, key_name, key_value, buf_[index_], sizeof(buf_[index_]));
+	const char* format = config_mgr_.get_field_type_format(write_conn_, table_index, key_name, key_value, buf_[index_], sizeof(buf_[index_]));
 	if (!format) {
 		LogError("table_index(%d) key_name(%s) get field_type format failed", table_index, key_name);
 		return false;
@@ -616,13 +611,13 @@ bool MysqlDBManager::selectRecord(
 		LogError("get table(%d) info failed", table_index);
 		return false;
 	}
-	const char* format = config_mgr_.get_field_type_format(table_index, key_name, key_value, buf_[index_], sizeof(buf_[index_]));
+	const char* format = config_mgr_.get_field_type_format(write_conn_, table_index, key_name, key_value, buf_[index_], sizeof(buf_[index_]));
 	if (!format) {
 		LogError("table_index(%d) key_name(%s) get field_type format failed", table_index, key_name);
 		return false;
 	}
 
-	const char* format2 = config_mgr_.get_field_type_format(table_index, key2_name, key2_value, buf2_[index2_], sizeof(buf2_[index2_]));
+	const char* format2 = config_mgr_.get_field_type_format(write_conn_, table_index, key2_name, key2_value, buf2_[index2_], sizeof(buf2_[index2_]));
 	if (!format2) {
 		LogError("table_index(%d) key_name(%s) get field_type format failed", table_index, key2_name);
 		return false;
@@ -658,7 +653,7 @@ bool MysqlDBManager::selectRecord(
 		return false;
 	}
 
-	const char* format = config_mgr_.get_field_type_format(table_index, key_name, key_value, buf, buf_len);
+	const char* format = config_mgr_.get_field_type_format(write_conn_, table_index, key_name, key_value, buf, buf_len);
 	if (!format) {
 		LogError("table_index(%d) key_name(%s) get field_type format failed", table_index, key_name);
 		return false;
@@ -686,13 +681,13 @@ bool MysqlDBManager::selectRecord(
 		LogError("get table(%d) info failed", table_index);
 		return false;
 	}
-	const char* format = config_mgr_.get_field_type_format(table_index, key_name, key_value, buf_[index_], sizeof(buf_[index_]));
+	const char* format = config_mgr_.get_field_type_format(write_conn_, table_index, key_name, key_value, buf_[index_], sizeof(buf_[index_]));
 	if (!format) {
 		LogError("table_index(%d) key_name(%s) get field_type format failed", table_index, key_name);
 		return false;
 	}
 
-	const char* format2 = config_mgr_.get_field_type_format(table_index, key2_name, key2_value, buf2_[index2_], sizeof(buf2_[index2_]));
+	const char* format2 = config_mgr_.get_field_type_format(write_conn_, table_index, key2_name, key2_value, buf2_[index2_], sizeof(buf2_[index2_]));
 	if (!format2) {
 		LogError("table_index(%d) key_name(%s) get field_type format failed", table_index, key2_name);
 		return false;

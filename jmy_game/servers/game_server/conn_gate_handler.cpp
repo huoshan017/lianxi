@@ -138,16 +138,27 @@ int ConnGateHandler::processEnterGame(JmyMsgInfo* info)
 
 	MsgS2C_EnterGameResponse response;
 	if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
-		LogError("serialize MsgGS2GT_EnterGameResponse failed");
+		LogError("serialize MsgS2C_EnterGameResponse failed");
 		return -1;
 	}
 
 	if (SEND_GATE_USER_MSG(user_id, MSGID_S2C_ENTER_GAME_RESPONSE, tmp_, response.ByteSize()) < 0) {
-		LogError("send MsgGS2GT_EnterGameResponse failed");
+		LogError("send MsgS2C_EnterGameResponse failed");
+		return -1;
+	}
+
+	MsgS2C_EnterGameCompleteNotify complete_notify;
+	if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
+		LogError("serialize MsgS2C_EnterGameCompleteNotify failed");
+		return -1;
+	}
+
+	if (SEND_GATE_USER_MSG(user_id, MSGID_S2C_ENTER_GAME_COMPLETE_NOTIFY, tmp_, response.ByteSize()) < 0) {
+		LogError("serialize MsgS2C_EnterGameCompleteNotify failed");
 		return -1;
 	}
 	
-	LogInfo("processEnterGame: user_id(%d)", user_id);
+	LogInfo("processEnterGame: role_id(%llu), user_id(%d)", request.role_id(), user_id);
 	return info->len;
 }
 
@@ -164,21 +175,50 @@ int ConnGateHandler::processLeaveGame(JmyMsgInfo* info)
 		LogError("cant get Player by user_id(%d)", info->user_id);
 		return -1;
 	}
+
+	PLAYER_MGR->free(request.role_id());
 	
-	LogInfo("processLeaveGame: user_id(%d)", info->user_id);
+	LogInfo("processLeaveGame: role_id(%llu), user_id(%d)", request.role_id(), info->user_id);
 	return info->len;
 }
 
 int ConnGateHandler::processDefault(JmyMsgInfo* info)
 {
 	switch (info->msg_id) {
-	case MSGID_C2S_ENTER_GAME_REQUEST:
-		return processEnterGame(info);
-	case MSGID_C2S_LEAVE_GAME_REQUEST:
-		return processLeaveGame(info);	
+	case MSGID_C2S_SET_ROLE_DATA_REQUEST:
+		return processSetRoleData(info);
 	default:
 		LogWarn("not handled msg_id(%d)", info->msg_id);
 		break;
 	}
+	return info->len;
+}
+
+int ConnGateHandler::processSetRoleData(JmyMsgInfo* info)
+{
+	MsgC2S_SetRoleDataRequest request;
+	if (!request.ParseFromArray(info->data, info->len)) {
+		LogError("parse MsgC2S_SetRoleDataRequest failed");
+		return -1;
+	}
+
+	MsgGS2DS_SetRoleDataRequest set_req;
+	uint64_t role_id = PLAYER_MGR->getRoleIdByUserId(info->user_id);
+	set_req.set_role_id(role_id);
+	MsgBaseRoleData* role_data = set_req.mutable_role_data();
+	const MsgBaseRoleData& const_role_data = request.role_data();
+	role_data->set_hp(const_role_data.hp());
+	role_data->set_sex(const_role_data.sex());
+	role_data->set_race(const_role_data.race());
+	role_data->set_level(const_role_data.level());
+	if (!set_req.SerializeToArray(tmp_, sizeof(tmp_))) {
+		LogError("serialize MsgGS2DS_SetRoleDataRequest failed");
+		return -1;
+	}
+	if (SEND_DB_MSG(MSGID_GS2DS_SET_ROLE_DATA_REQUEST, tmp_, set_req.ByteSize()) < 0) {
+		LogError("send MsgGS2DS_SetRoleDataRequest failed");
+		return -1;
+	}
+	LogInfo("send MsgGS2DS_SetRoleDataRequest");
 	return info->len;
 }

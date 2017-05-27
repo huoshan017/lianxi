@@ -171,7 +171,7 @@ public:
 	};
 
 	MysqlConnector* get_write_connector(int index) {
-		if (index<0 || index>=write_connectors_.size())
+		if (index<0 || index>=(int)(write_connectors_.size()))
 			return nullptr;
 		return &(write_connectors_[index]->connector);
 	}

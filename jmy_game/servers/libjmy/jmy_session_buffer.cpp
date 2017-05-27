@@ -384,11 +384,6 @@ void JmySessionBufferList::reset()
 	curr_count_ = 0;
 }
 
-void JmySessionBufferList::addDropCondition(JmyBufferDropCondition cond, uint32_t param)
-{
-	drop_cond_.setCond(cond, param);
-}
-
 bool JmySessionBufferList::writeData(const char* data, unsigned int len)
 {
 	if (max_count_>0 && curr_count_+1>max_count_) {

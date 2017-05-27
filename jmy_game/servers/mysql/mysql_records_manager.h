@@ -136,7 +136,6 @@ public:
 		if (curr_iter_ == states_.end())
 			return nullptr;
 		TableRecord* record = curr_iter_->first;
-		++curr_iter_;
 		return record;
 	}
 
@@ -303,9 +302,9 @@ public:
 		if (!key_record_map_.find_1(key, record)) {
 			if (!key2_record_map_.find_1(key2, record))
 				return false;
-			key2_record_map_.insert(key2, record);
-		} else {
 			key_record_map_.insert(key, record);
+		} else {
+			key2_record_map_.insert(key2, record);
 		}
 		return true;
 	}

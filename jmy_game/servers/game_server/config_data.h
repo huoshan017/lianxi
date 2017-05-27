@@ -15,6 +15,8 @@ static JmyId2MsgHandler s_conn_gate_handlers[] = {
 	{ MSGID_GT2GS_CONNECT_GATE_RESPONSE, ConnGateHandler::processConnectGateResponse },
 	{ MSGID_GT2GS_GET_ROLE_REQUEST,	  ConnGateHandler::processGetRole },
 	{ MSGID_GT2GS_CREATE_ROLE_REQUEST,	ConnGateHandler::processCreateRole },
+	{ MSGID_GT2GS_ENTER_GAME_REQUEST, ConnGateHandler::processEnterGame },
+	{ MSGID_GT2GS_LEAVE_GAME_REQUEST, ConnGateHandler::processLeaveGame }
 };
 static JmyBaseEventHandlers s_conn_gate_base_event_handlers = {
 	ConnGateHandler::onConnect,
