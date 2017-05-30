@@ -379,7 +379,7 @@ int JmyTcpConnection::handle_send()
 				JmyPacketType pt = (JmyPacketType)buffer_->send_buff_list.readLen(bytes_transferred);
 				if (pt > 0) {
 					// check send data count
-					JmyResendConfig* rc = mgr_.getConf().retran_conf;
+					/*JmyResendConfig* rc = mgr_.getConf().retran_conf;
 					if (rc && buffer_->total_reconn_info.send_count+1 >= rc->max_cached_send_count) {
 						force_close();
 						LibJmyLogError("cached send buffer count is max");
@@ -390,6 +390,7 @@ int JmyTcpConnection::handle_send()
 						buffer_->total_reconn_info.send_count += 1;
 						//LibJmyLogInfo("send list count %d", total_reconn_info_.send_count);
 					}
+					*/
 				}
 				// continue send
 				handle_send();

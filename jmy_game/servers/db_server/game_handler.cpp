@@ -129,7 +129,15 @@ int GameHandler::processCreateRole(JmyMsgInfo* info)
 	user->set_role_id(role_id);
 	user->set_sex(request.sex());
 	user->set_nick_name(request.nick_name());
-	player_mgr.make_pair(role_id, request.account());
+	if (!player_mgr.insert_key_record(role_id, user)) {
+		LogError("insert key(role_id:%llu) record failed", role_id);
+		return -1;
+	}
+	t_player* user2 = player_mgr.get_by_key(role_id);
+	if (!user2) {
+		LogError("not found t_player by role_id(%llu)", role_id);
+		return -1;
+	}
 
 	GLOBAL_DATA->setAccount2UserId(user->get_account(), role_id);
 	// not found in db, insert new record

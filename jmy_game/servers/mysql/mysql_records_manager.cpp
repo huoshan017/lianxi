@@ -35,7 +35,7 @@ int test() {
 	mysql_records_manager2<player, int, std::string> player_manager2;
 	player* p3 = player_manager2.get_new_by_key2("player3");
 	p3->id = 3;
-	player_manager2.make_pair(3, "player3");
+	player_manager2.insert_key_record(3, p3);
 	player* p33 = player_manager2.get_by_key(3);
 	if (p3 != p33) {
 		std::cout << "p3 != p33" << std::endl;

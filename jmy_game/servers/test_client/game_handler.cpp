@@ -103,19 +103,21 @@ int GameHandler::processEnterGameComplete(JmyMsgInfo* info)
 	LogInfo("enter game complete");
 
 	MsgC2S_SetRoleDataRequest request;
-	MsgBaseRoleData* role_data = request.mutable_role_data();
-	role_data->set_hp(1);
-	role_data->set_sex(1);
-	role_data->set_race(1);
-	role_data->set_level(2);
-	if (!request.SerializeToArray(tmp_, sizeof(tmp_))) {
-		LogError("serialize MsgC2S_SetRoleDataRequest failed");
-		return -1;
-	}
+	for (int i=0; i<100; ++i) {
+		MsgBaseRoleData* role_data = request.mutable_role_data();
+		role_data->set_hp(1+i);
+		role_data->set_sex(1+i);
+		role_data->set_race(1+i);
+		role_data->set_level(2+i);
+		if (!request.SerializeToArray(tmp_, sizeof(tmp_))) {
+			LogError("serialize MsgC2S_SetRoleDataRequest failed");
+			return -1;
+		}
 
-	if (conn->send(MSGID_C2S_SET_ROLE_DATA_REQUEST, tmp_, request.ByteSize()) < 0) {
-		LogError("send MsgC2S_SetRoleDataRequest failed");
-		return -1;
+		if (conn->send(MSGID_C2S_SET_ROLE_DATA_REQUEST, tmp_, request.ByteSize()) < 0) {
+			LogError("send MsgC2S_SetRoleDataRequest failed");
+			return -1;
+		}
 	}
 	LogInfo("enter game complete");
 	return info->len;

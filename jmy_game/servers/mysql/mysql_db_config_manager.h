@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <vector>
 #include "mysql_defines.h"
+#include "../common/util.h"
 
 struct MysqlDatabaseConfig;
 struct MysqlTableInfo;
@@ -26,8 +27,10 @@ public:
 	const char* get_field_type_format(MysqlConnector* connector, int table_index, const char* field_name, const FieldType& value, char* format_buf, int format_buflen) {
 		const MysqlTableFieldInfo* fi = get_field_info(table_index, field_name);
 		if (!fi) return nullptr;
-		if (!mysql_get_field_value_format(connector, fi->field_type, fi->create_flags, value, format_buf, format_buflen, nullptr, 0))
+		if (!mysql_get_field_value_format(connector, fi->field_type, fi->create_flags, value, format_buf, format_buflen, nullptr, 0)) {
+			LogError("get field value format failed");
 			return nullptr;
+		}
 		return format_buf;
 	}
 

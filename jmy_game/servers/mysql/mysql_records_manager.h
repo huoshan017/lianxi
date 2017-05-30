@@ -40,6 +40,10 @@ public:
 		states_.clear();
 	}
 
+	size_t size() {
+		return states_.size();
+	}
+
 	record_state_info* get_state(TableRecord* t) {
 		typename std::unordered_map<TableRecord*, record_state_info>::iterator it = states_.find(t);
 		if (it == states_.end()) {
@@ -280,6 +284,9 @@ public:
 			} else if (res == 2) {
 				remove(record);
 			}
+			if (!state_mgr_.next_update_record()) {
+				break;
+			}
 		}
 		state_mgr_.clear();
 	}
@@ -296,18 +303,6 @@ class mysql_records_manager2
 public:
 	mysql_records_manager2() {}
 	~mysql_records_manager2() {}
-
-	bool make_pair(const Key& key, const Key2& key2) {
-		TableRecord* record = nullptr;
-		if (!key_record_map_.find_1(key, record)) {
-			if (!key2_record_map_.find_1(key2, record))
-				return false;
-			key_record_map_.insert(key, record);
-		} else {
-			key2_record_map_.insert(key2, record);
-		}
-		return true;
-	}
 
 	TableRecord* get_by_key(const Key& key) {
 		TableRecord* record = nullptr;
@@ -333,6 +328,28 @@ public:
 		TableRecord* record = jmy_mem_malloc<TableRecord>();
 		key2_record_map_.insert(key2, record);
 		return record;
+	}
+
+	bool insert_key_record(const Key& key, TableRecord* record) {
+		// must exists
+		if (!key2_record_map_.find_2(record, tmp_key2_))
+			return false;
+		TableRecord* tmp_record = nullptr;
+		if (!key_record_map_.find_1(key, tmp_record)) {
+			key_record_map_.insert(key, record);
+		}
+		return true;
+	}
+
+	bool insert_key2_record(const Key2& key2, TableRecord* record) {
+		// must exists
+		if (!key_record_map_.find_2(record, tmp_key_))
+			return false;
+		TableRecord* tmp_record = nullptr;
+		if (!key2_record_map_.find_1(key2, tmp_record)) {
+			key2_record_map_.insert(key2, record);
+		}
+		return true;
 	}
 
 	bool remove_by_key(const Key& key) {
@@ -432,6 +449,8 @@ public:
 	}
 
 	void update() {
+		if (state_mgr_.size() == 0)
+			return;
 		state_mgr_.start_update();
 		TableRecord* record = nullptr;
 		while ((record = state_mgr_.get_update_record()) != nullptr) {
@@ -441,6 +460,8 @@ public:
 			} else if (res == 2) {
 				remove_record(record);
 			}
+			if (!state_mgr_.next_update_record())
+				break;
 		}
 		state_mgr_.clear();
 	}
@@ -494,6 +515,8 @@ public:
 	}
 
 	void update() {
+		if (key_set_committed_.size() == 0)
+			return;
 		typename std::set<Key>::iterator it = key_set_committed_.begin();
 		for (; it!=key_set_committed_.end(); ++it) {
 			const Key& k = *it;

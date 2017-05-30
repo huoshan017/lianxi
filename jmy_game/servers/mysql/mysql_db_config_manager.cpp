@@ -1,6 +1,5 @@
 #include "mysql_db_config_manager.h"
 #include "mysql_util.h"
-#include "../common/util.h"
 
 MysqlDBConfigManager::MysqlDBConfigManager()
 {

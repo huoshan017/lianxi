@@ -270,6 +270,7 @@ char* MysqlDBManager::format_update_field_value_str(int table_index, const char*
 
 	const MysqlTableFieldInfo* field_info = config_mgr_.get_field_info(table_index, arg.field_name);
 	if (!field_info) {
+		LogError("get table(index:%d) field(name:%s) info failed", table_index, arg.field_name);
 		return nullptr;
 	}
 

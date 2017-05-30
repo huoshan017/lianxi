@@ -726,15 +726,17 @@ static void gen_struct_update_func(std::fstream& out_file, std::fstream& out_fil
 		if (!field_type_str)
 			continue;
 
+		/*
 		std::string field_name = "field_" + fields[i].name;
 		out_file2 << "  char* " << field_name << " = nullptr;" << std::endl;
 		out_file2 << "  if (this->get_" << fields[i].name << "_state() == MYSQL_TABLE_FIELD_STATE_CHANGED) {" << std::endl;
 		out_file2 << "    " << field_name << " = (char*)\"" << fields[i].name << "\";" << std::endl;
 		out_file2 << "  }" << std::endl;
+		*/
 
 		std::string nv = "nv_" + fields[i].name;
 		out_file2 << "  MysqlFieldNameValue<" << field_type_str << "> " << nv
-			<< "(\"" << fields[i].name << "\", this->get_" << fields[i].name << "()" << ");" << std::endl; 
+			<< "((get_" << fields[i].name << "_state() == MYSQL_TABLE_FIELD_STATE_CHANGED)" << "?\"" << fields[i].name << "\":nullptr, this->get_" << fields[i].name << "()" << ");" << std::endl; 
 		if (format_params_string == "") {
 			format_params_string = nv;
 		} else {
@@ -1361,15 +1363,18 @@ bool DBConfigParser::gen_update_record_func(std::fstream& out_file, std::fstream
 		if (!field_type_str)
 			continue;
 
+		/*
 		std::string field_name = "field_" + fields[i].name;
-		out_file2 << "  char* " << field_name << " = nullptr;" << std::endl;
+		std::string field_name_value = "nullptr";
+		out_file2 << "  char* " << field_name << " = " << field_name_value << ";" << std::endl;
 		out_file2 << "  if (data.get_" << fields[i].name << "_state() == MYSQL_TABLE_FIELD_STATE_CHANGED) {" << std::endl;
 		out_file2 << "    " << field_name << " = (char*)\"" << fields[i].name << "\";" << std::endl;
 		out_file2 << "  }" << std::endl;
+		*/
 
 		std::string nv = "nv_" + fields[i].name;
 		out_file2 << "  MysqlFieldNameValue<" << field_type_str << "> " << nv
-			<< "(\"" << fields[i].name << "\", data.get_" << fields[i].name << "()" << ");" << std::endl; 
+			<< "(\"" << "data.get_" << fields[i].name << "_state() == MYSQL_TABLE_FIELD_STATE_CHANGED?\"" << fields[i].name << "\":nullptr, data.get_" << fields[i].name << "()" << ");" << std::endl; 
 		if (format_params_string == "") {
 			format_params_string = nv;
 		} else {
