@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../libjmy/jmy_const.h"
-#include <unordered_map>
+#include "gm.h"
 
 struct JmyEventInfo;
 struct JmyMsgInfo;
@@ -22,8 +22,10 @@ public:
 	static int processDefault(JmyMsgInfo*);
 
 private:
+	static int processChat(JmyMsgInfo*);
 	static int processSetRoleData(JmyMsgInfo*);
 
 private:
 	static char tmp_[JMY_MAX_MSG_SIZE];
+	static GmManager gm_;
 };

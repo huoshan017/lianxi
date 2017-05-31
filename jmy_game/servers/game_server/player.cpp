@@ -130,6 +130,14 @@ Player* PlayerManager::malloc(uint64_t role_id)
 	return p;
 }
 
+bool PlayerManager::bind_account_role_id(const std::string& account, uint64_t role_id)
+{
+	if (all_players_.find(role_id) == all_players_.end())
+		return false;
+	account2role_id_.insert(account, role_id);
+	return true;
+}
+
 Player* PlayerManager::get(int id)
 {
 	int index = id - start_player_id_;
@@ -149,6 +157,14 @@ Player* PlayerManager::getByRoleId(uint64_t role_id)
 	return it->second;
 }
 
+Player* PlayerManager::getByAccount(const std::string& account)
+{
+	uint64_t role_id = 0;
+	if (!account2role_id_.find_1(account, role_id))
+		return nullptr;
+	return getByRoleId(role_id);
+}
+
 bool PlayerManager::free(int user_id)
 {
 	int index = user_id - start_player_id_;
@@ -162,6 +178,8 @@ bool PlayerManager::free(int user_id)
 
 	if (!pool_.free(it->second))
 		return false;
+
+	account2role_id_.remove_2(role_id);
 
 	online_role_ids_[index] = 0;
 	all_players_.erase(it);
@@ -180,9 +198,12 @@ bool PlayerManager::free(Player* p)
 
 	if (!pool_.free(p))
 		return false;
+
+	account2role_id_.remove_2(role_id);
 	
 	all_players_.erase(role_id);
 	online_role_ids_[index] = 0;
+
 	return true;
 }
 

@@ -9,6 +9,7 @@
 #include "global_data.h"
 
 char ConnGateHandler::tmp_[JMY_MAX_MSG_SIZE];
+GmManager ConnGateHandler::gm_;
 
 int ConnGateHandler::onConnect(JmyEventInfo* info)
 {
@@ -185,12 +186,35 @@ int ConnGateHandler::processLeaveGame(JmyMsgInfo* info)
 int ConnGateHandler::processDefault(JmyMsgInfo* info)
 {
 	switch (info->msg_id) {
+	case MSGID_C2S_CHAT_REQUEST:
+		return processChat(info);
 	case MSGID_C2S_SET_ROLE_DATA_REQUEST:
 		return processSetRoleData(info);
 	default:
 		LogWarn("not handled msg_id(%d)", info->msg_id);
 		break;
 	}
+	return info->len;
+}
+
+int ConnGateHandler::processChat(JmyMsgInfo* info)
+{
+	MsgC2S_ChatRequest request;
+	if (!request.ParseFromArray(info->data, info->len)) {
+		LogError("parse MsgC2S_ChatRequest failed");
+		return -1;
+	}
+	const std::string& content = request.content();
+	std::vector<std::string> results;
+	if (gm_.parse_command(content, results)) {
+		Player* p = PLAYER_MGR->get(info->user_id);
+		if (!p) return -1;
+		if (!gm_.execute_command(p->role_id, results))
+			return -1;
+		LogInfo("executed gm command");
+		return info->len;
+	}
+
 	return info->len;
 }
 

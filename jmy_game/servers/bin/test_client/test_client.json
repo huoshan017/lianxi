@@ -3,6 +3,6 @@
 	"connect_port" : 10000,
 	"enable_reconnect" : true,
 	"log_conf_path" : "./log.conf",
-	"account" : "test15",
+	"account" : "test16",
 	"password" : "111111"
 }

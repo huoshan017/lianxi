@@ -100,8 +100,6 @@ int GameHandler::processEnterGameComplete(JmyMsgInfo* info)
 	JmyTcpConnection* conn = get_connection(info);
 	if (!conn) return -1;
 
-	LogInfo("enter game complete");
-
 	MsgC2S_SetRoleDataRequest request;
 	for (int i=0; i<100; ++i) {
 		MsgBaseRoleData* role_data = request.mutable_role_data();

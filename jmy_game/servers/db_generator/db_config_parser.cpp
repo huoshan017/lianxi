@@ -658,6 +658,12 @@ static void gen_set_field_state_func(std::fstream& out_file, const DBConfigParse
 	out_file << "  }" << std::endl;
 }
 
+static void gen_commit_field_changed_func(std::fstream& out_file, const DBConfigParser::FieldInfo& field_info) {
+	out_file << "  void commit_" << field_info.name << "_changed() {" << std::endl;
+	out_file << "    " << field_info.name << "_state = MYSQL_TABLE_FIELD_STATE_CHANGED;" << std::endl;
+	out_file << "  }" << std::endl;
+}
+
 static void gen_struct_insert_func(std::fstream& out_file, std::fstream& out_file2, 
 		const DBConfigParser::TableInfo& table_info,
 		std::vector<DBConfigParser::FieldInfo>& fields) {
@@ -777,7 +783,6 @@ bool DBConfigParser::generate_struct_file(std::fstream& out_file, std::fstream& 
 	out_file << "#include <set>" << std::endl;
 	out_file << "#include <unordered_map>" << std::endl;
 	out_file << "#include <list>" << std::endl;
-	out_file << "#include \"../common/bi_map.h\"" << std::endl;
 	out_file << "#include \"../mysql/mysql_connector.h\"" << std::endl;
 	out_file << "#include \"../mysql/mysql_records_manager.h\"" << std::endl;
 	for (int i=0; i<(int)config_.struct_include_strings.size(); ++i) {
@@ -827,6 +832,7 @@ bool DBConfigParser::generate_struct_file(std::fstream& out_file, std::fstream& 
 					gen_get_const_obj_field_func(out_file, fi, ft_str);
 					gen_init_const_obj_field_func(out_file, fi, ft_str);
 					gen_set_const_obj_field_func(out_file, fi, ft_str);
+					gen_commit_field_changed_func(out_file, fi);
 				}
 				gen_get_field_state_func(out_file, fi);
 				gen_set_field_state_func(out_file, fi);
