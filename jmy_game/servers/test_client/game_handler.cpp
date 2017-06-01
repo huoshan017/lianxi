@@ -117,6 +117,17 @@ int GameHandler::processEnterGameComplete(JmyMsgInfo* info)
 			return -1;
 		}
 	}
+
+	MsgC2S_ChatRequest chat_req;
+	chat_req.set_content("/gm additem 10000 1");
+	if (!chat_req.SerializeToArray(tmp_, sizeof(tmp_))) {
+		LogError("serialize MsgC2S_ChatRequest failed");
+		return -1;
+	}
+	if (conn->send(MSGID_C2S_CHAT_REQUEST, tmp_, chat_req.ByteSize()) < 0) {
+		LogError("send MsgC2S_ChatRequest failed");
+		return -1;
+	}
 	LogInfo("enter game complete");
 	return info->len;
 }

@@ -3,6 +3,8 @@
 #include "config_data.h"
 #include "config_loader.h"
 #include <thread>
+#include "gm.h"
+#include "gm_cmd.h"
 
 static const char* ServerConfPath = "./game_server.json";
 
@@ -57,6 +59,8 @@ bool GameServer::init()
 		LogError("start connect db_server failed");
 		return false;
 	}
+
+	GM_MGR->load_cmds(gm_cmds, sizeof(gm_cmds)/sizeof(gm_cmds[0]));
 
 	return true;
 }

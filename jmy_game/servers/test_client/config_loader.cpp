@@ -81,26 +81,37 @@ bool ConfigLoader::loadJson(const char* jsonpath)
 		std::cout << log_conf << ": " << config_.log_conf_path << std::endl;
 	}
 
-	// account
-	const char* account = "account";
-	if (doc_.HasMember(account)) {
-		if (!doc_[account].IsString()) {
-			std::cout << account << " type is not string" << std::endl;
+	// account_prefix
+	const char* account_prefix = "account_prefix";
+	if (doc_.HasMember(account_prefix)) {
+		if (!doc_[account_prefix].IsString()) {
+			std::cout << account_prefix << " type is not string" << std::endl;
 			return false;
 		}
-		config_.account = doc_[account].GetString();
-		std::cout << account << ": " << config_.account << std::endl;
+		config_.account_prefix = doc_[account_prefix].GetString();
+		std::cout << account_prefix << ": " << config_.account_prefix << std::endl;
 	}
 
-	// password
-	const char* password = "password";
-	if (doc_.HasMember(password)) {
-		if (!doc_[password].IsString()) {
-			std::cout << password << " type is not string" << std::endl;
+	// account_start_index 
+	const char* account_start_index = "account_start_index";
+	if (doc_.HasMember(account_start_index)) {
+		if (!doc_[account_start_index].IsInt()) {
+			std::cout << account_start_index << " type is not int" << std::endl;
 			return false;
 		}
-		config_.password = doc_[password].GetString();
-		std::cout << password << ": " << config_.password << std::endl;
+		config_.account_start_index = doc_[account_start_index].GetInt();
+		std::cout << account_start_index << ": " << config_.account_start_index << std::endl;
+	}
+
+	// account_num
+	const char* account_num = "account_num";
+	if (doc_.HasMember(account_num)) {
+		if (!doc_[account_num].IsInt()) {
+			std::cout << account_num << " type is not int" << std::endl;
+			return false;
+		}
+		config_.account_num = doc_[account_num].GetInt();
+		std::cout << account_num << ": " << config_.account_num << std::endl;
 	}
 
 	jsonpath_ = jsonpath;

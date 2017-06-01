@@ -19,6 +19,8 @@ public:
 
 private:
 	static int processSetRoleData(JmyMsgInfo*);
+	static int processAddItem(JmyMsgInfo*);
+	static int processRmItem(JmyMsgInfo*);
 
 private:
 	static char tmp_[JMY_MAX_MSG_SIZE];

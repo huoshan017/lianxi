@@ -20,8 +20,9 @@ public:
 		unsigned short connect_port;
 		bool enable_reconnect;
 		std::string log_conf_path;
-		std::string account;
-		std::string password;
+		std::string account_prefix;
+		int account_start_index;
+		int account_num;
 	};
 
 	const ClientConfig& getClientConfig() const { return config_; }

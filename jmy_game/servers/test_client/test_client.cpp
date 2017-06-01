@@ -4,45 +4,14 @@
 #include "../common/util.h"
 #include <thread>
 
-TestClient::TestClient()
-: login_client_(nullptr), game_client_(nullptr), client_master_(service_), state_(InNone), exit_(false)
+TestClient::TestClient(JmyTcpClient* login_client, JmyTcpClient* game_client)
+: login_client_(login_client), game_client_(game_client), state_(InNone), exit_(false)
 {
 }
 
 TestClient::~TestClient()
 {
 	close();
-}
-
-bool TestClient::init(const char* confpath)
-{
-	if (!CONFIG_LOADER->loadJson(confpath)) {
-		std::cout << "failed to load client config " << confpath << std::endl;
-		return false;
-	}
-
-	if (!global_log_init(CLIENT_CONFIG.log_conf_path.c_str())) {
-		std::cout << "failed to init log with path " << CLIENT_CONFIG.log_conf_path.c_str() << std::endl;
-		return false;
-	}
-
-	if (!client_master_.init(4)) {
-		LogError("client_master init with size(%d) failed", 10);
-		return false;
-	}
-	login_client_ = client_master_.generate();
-	if (!login_client_) {
-		LogError("client_master generate client failed");
-		return false;
-	}
-
-	login_client_->setIP(const_cast<char*>(CLIENT_CONFIG.connect_ip.c_str()), CLIENT_CONFIG.connect_port);
-	if (!login_client_->start(s_login_config)) {
-		LogError("start connect login failed");
-		return false;
-	}
-	state_ = InLogin;
-	return true;
 }
 
 void TestClient::close()
@@ -53,7 +22,6 @@ void TestClient::close()
 	if (game_client_) {
 		game_client_->close();
 	}
-	client_master_.close();
 }
 
 int TestClient::run()
@@ -70,8 +38,6 @@ int TestClient::run()
 		} else {
 		}
 		do_events();
-		service_.poll();
-		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 	state_ = InNone;
 	return 0;
@@ -90,13 +56,6 @@ void TestClient::postConnectGameEvent(const char* ip, unsigned short port)
 
 bool TestClient::connect_game(const char* ip, unsigned short port)
 {
-	if (!game_client_) {
-		game_client_ = client_master_.generate();
-		if (!game_client_) {
-			LogError("get new client failed");
-			return false;
-		}
-	}
 	game_client_->setIP(ip, port);
 	if (!game_client_->start(s_game_config)) {
 		LogError("connect server(%s:%d) failed", ip, port);
@@ -138,4 +97,82 @@ int TestClient::do_events()
 		}
 	}
 	return c;
+}
+
+// TestClientManager
+TestClientManager::TestClientManager() : client_master_(service_)
+{
+}
+
+TestClientManager::~TestClientManager()
+{
+}
+
+bool TestClientManager::init(const char* conf_path)
+{
+	if (!CONFIG_LOADER->loadJson(conf_path)) {
+		std::cout << "failed to load client config " << conf_path << std::endl;
+		return false;
+	}
+
+	if (!global_log_init(CLIENT_CONFIG.log_conf_path.c_str())) {
+		std::cout << "failed to init log with path " << CLIENT_CONFIG.log_conf_path.c_str() << std::endl;
+		return false;
+	}
+
+	if (!client_master_.init(4)) {
+		LogError("client_master init with size(%d) failed", 10);
+		return false;
+	}
+
+	return true;
+}
+
+void TestClientManager::clear()
+{
+	client_master_.close();
+}
+
+bool TestClientManager::startClient(const std::string& account)
+{
+	JmyTcpClient* login_client = client_master_.generate();
+	if (!login_client) {
+		LogError("client_master generate client failed");
+		return false;
+	}
+
+	login_client->setIP(const_cast<char*>(CLIENT_CONFIG.connect_ip.c_str()), CLIENT_CONFIG.connect_port);
+	if (!login_client->start(s_login_config)) {
+		LogError("start connect login failed");
+		return false;
+	}
+	
+	JmyTcpClient* game_client = client_master_.generate();
+	if (!game_client) {
+		LogError("get new client failed");
+		return false;
+	}
+	return true;
+}
+
+bool TestClientManager::stopClient(const std::string& account)
+{
+	return true;
+}
+
+int TestClientManager::run()
+{
+	std::unordered_map<std::string, TestClient*>::iterator it = clients_.begin();
+	while (true) {
+		it = clients_.begin();
+		for (; it!=clients_.end(); ++it) {
+			if (!it->second) {
+				continue;
+			}
+			it->second->run();
+		}
+		service_.poll();
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	}
+	return 0;
 }

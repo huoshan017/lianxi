@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include "../libjmy/jmy_singleton.hpp"
 
 typedef int (*gm_command_func)(uint64_t role_id, const std::vector<std::string>&); 
 
@@ -10,7 +11,8 @@ struct GmCommand {
 	gm_command_func func;
 };
 
-class GmManager {
+class GmManager : public JmySingleton<GmManager>
+{
 public:
 	GmManager();
 	~GmManager();
@@ -21,3 +23,5 @@ public:
 private:
 	std::unordered_map<std::string, const GmCommand*> cmd_map_;
 };
+
+#define GM_MGR (GmManager::getInstance())

@@ -66,7 +66,6 @@ void DBServer::close()
 int DBServer::run()
 {
 	while (server_.run() >= 0) {
-		//if (DB_MGR->run() < 0) { break;}
 		if (db_mgr_->run() < 0) {break;}
 		GLOBAL_DATA->run();
 		service_.poll();

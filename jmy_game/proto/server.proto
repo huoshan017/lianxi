@@ -50,6 +50,10 @@ enum MsgIdTypeServer {
 
 	MSGID_GS2DS_SET_ROLE_DATA_REQUEST		= 25100; // set role data request
 	MSGID_DS2GS_SET_ROLE_DATA_RESPONSE		= 25101; // set role data response
+	MSGID_GS2DS_ADD_ITEM_REQUEST			= 25102; // add item request
+	MSGID_DS2GS_ADD_ITEM_RESPONSE			= 25103; // add item response
+	MSGID_GS2DS_RM_ITEM_REQUEST				= 25104; // remove item request
+	MSGID_DS2GS_RM_ITEM_RESPONSE			= 25105; // remove item response
 }
 
 /*** LoginServer <-> GateServer ***/
@@ -249,4 +253,32 @@ message MsgGS2DS_SetRoleDataRequest {
 message MsgDS2GS_SetRoleDataResponse {
 	uint64 role_id = 1;
 	MsgBaseRoleData role_data = 2;
+}
+
+// game -> db  [MSGID_GS2DS_ADD_ITEM_REQUEST]
+message MsgGS2DS_AddItemRequest {
+	uint64 role_id = 1;
+	uint32 type_id = 2;
+	uint32 item_num = 3;
+}
+
+// db -> game  [MSGID_DS2GS_ADD_ITEM_RESPOSNE]
+message MsgDS2GS_AddItemResponse {
+	uint64 role_id = 1;
+	uint32 type_id = 2;
+	uint32 item_num = 3;
+}
+
+// game -> db  [MSGID_GS2DS_RM_ITEM_REQUEST]
+message MsgGS2DS_RmItemRequest {
+	uint64 role_id = 1;
+	uint32 type_id = 2;
+	uint32 item_num = 3;
+}
+
+// game -> db  [MSGID_DS2GS_RM_ITEM_RESPONSE]
+message MsgDS2GS_RmItemResponse {
+	uint64 role_id = 1;
+	uint32 type_id = 2;
+	uint32 item_num = 3;
 }

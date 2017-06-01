@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../libjmy/jmy_const.h"
-#include "gm.h"
 
 struct JmyEventInfo;
 struct JmyMsgInfo;
@@ -27,5 +26,4 @@ private:
 
 private:
 	static char tmp_[JMY_MAX_MSG_SIZE];
-	static GmManager gm_;
 };

@@ -7,9 +7,9 @@
 #include "config_loader.h"
 #include "player.h"
 #include "global_data.h"
+#include "gm.h"
 
 char ConnGateHandler::tmp_[JMY_MAX_MSG_SIZE];
-GmManager ConnGateHandler::gm_;
 
 int ConnGateHandler::onConnect(JmyEventInfo* info)
 {
@@ -206,10 +206,10 @@ int ConnGateHandler::processChat(JmyMsgInfo* info)
 	}
 	const std::string& content = request.content();
 	std::vector<std::string> results;
-	if (gm_.parse_command(content, results)) {
+	if (GM_MGR->parse_command(content, results)) {
 		Player* p = PLAYER_MGR->get(info->user_id);
 		if (!p) return -1;
-		if (!gm_.execute_command(p->role_id, results))
+		if (!GM_MGR->execute_command(p->role_id, results))
 			return -1;
 		LogInfo("executed gm command");
 		return info->len;

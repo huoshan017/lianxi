@@ -14,6 +14,7 @@ public:
 	static int processGetRoleResponse(JmyMsgInfo*);
 	static int processCreateRoleResponse(JmyMsgInfo*);
 	static int processEnterGameResponse(JmyMsgInfo*);
+	static int processAddItemResponse(JmyMsgInfo*);
 	static int processDefault(JmyMsgInfo*);
 
 private:

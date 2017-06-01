@@ -33,9 +33,6 @@ enum MsgIdType {
 	// test msg
 	MSGID_C2S_SET_ROLE_DATA_REQUEST			= 19001; // set role data request
 	MSGID_S2C_SET_ROLE_DATA_RESPONSE		= 19002; // set role data response
-	// test item
-	MSGID_C2S_ADD_ITEM_REQUEST				= 19003; // add item request
-	MSGID_S2C_ADD_ITEM_RESPONSE				= 19004; // add item response
 }
 
 message MsgError {

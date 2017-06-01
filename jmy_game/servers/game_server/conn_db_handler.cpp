@@ -127,6 +127,18 @@ int ConnDBHandler::processEnterGameResponse(JmyMsgInfo* info)
 	return info->len;
 }
 
+int ConnDBHandler::processAddItemResponse(JmyMsgInfo* info)
+{
+	MsgDS2GS_AddItemResponse response;
+	if (!response.ParseFromArray(info->data, info->len)) {
+		LogError("parse MsgDS2GS_AddItemResponse failed");
+		return -1;
+	}
+	
+	LogInfo("process MsgDS2GS_AddItemResponse: type_id(%u), item_num(%d)", response.type_id(), response.item_num());
+	return info->len;
+}
+
 int ConnDBHandler::processDefault(JmyMsgInfo* info)
 {
 	return info->len;

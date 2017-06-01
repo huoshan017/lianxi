@@ -5,6 +5,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <cstring>
+#include "../common/util.h"
 
 #define IS_MYSQL_INT_TYPE(type) \
 		(type == MYSQL_FIELD_TYPE_TINYINT || \
@@ -80,7 +81,7 @@ inline bool mysql_get_field_value_format(MysqlConnector* connector, MysqlTableFi
 			return true;
 		} else {
 			if (value.SerializeToArray(format_buf, format_buf_len)) {
-				connector->real_escape_string(tmp_buf, format_buf, format_buf_len);
+				connector->real_escape_string(tmp_buf, format_buf, value.ByteSize());
 				std::snprintf(format_buf, format_buf_len, "\'%s\'", tmp_buf);
 				return true;
 			}

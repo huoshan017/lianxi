@@ -18,7 +18,6 @@ int LoginHandler::onConnect(JmyEventInfo* info)
 	}
 	MsgC2S_LoginRequest request;
 	request.set_account(CLIENT_CONFIG.account);
-	request.set_password(CLIENT_CONFIG.password);
 	if (!request.SerializeToArray(tmp_, sizeof(tmp_))) {
 		LogError("serialize msg MsgC2S_LoginRequest failed");
 		return -1;
