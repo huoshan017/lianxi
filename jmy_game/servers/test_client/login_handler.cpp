@@ -16,8 +16,14 @@ int LoginHandler::onConnect(JmyEventInfo* info)
 		LogError("get connection failed in onConnect");
 		return -1;
 	}
+
 	MsgC2S_LoginRequest request;
-	request.set_account(CLIENT_CONFIG.account);
+	if (!CLIENT_MGR->getAccountByConnId(info->conn_id)) {
+		LogError("cant get account by conn_id(%d)", info->conn_id);
+		return -1;
+	}
+
+	request.set_account(CLIENT_MGR->getTmpAccount());
 	if (!request.SerializeToArray(tmp_, sizeof(tmp_))) {
 		LogError("serialize msg MsgC2S_LoginRequest failed");
 		return -1;
@@ -98,8 +104,14 @@ int LoginHandler::processSelectedServer(JmyMsgInfo* info)
 		return -1;
 	}
 
+	TestClient* client = CLIENT_MGR->getClientByConnId(info->conn_id);
+	if (!client) {
+		LogError("get account by conn_id(%d)", info->conn_id);
+		return -1;
+	}
+
 	GameHandler::setEnterSession(response.session_code());
-	TEST_CLIENT->postConnectGameEvent(response.server_ip().c_str(), response.port());
+	client->postConnectGameEvent(response.server_ip().c_str(), response.port());
 	LogInfo("processSelectedServer: session_code(%s), gate_ip(%s), gate_port(%d)",
 			response.session_code().c_str(), response.server_ip().c_str(), response.port());
 	return info->len;

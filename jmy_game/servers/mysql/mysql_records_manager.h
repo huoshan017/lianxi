@@ -74,7 +74,7 @@ public:
 			state.data.insert_data.cb = cb;
 			state.data.insert_data.param = param;
 			state.data.insert_data.l_param = param_l;
-			states_.insert(std::make_pair(record, s));
+			states_.insert(std::make_pair(record, state));
 		}
 		return true;
 	}

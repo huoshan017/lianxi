@@ -5,6 +5,7 @@
 #include <mutex>
 #include <boost/thread/thread.hpp>
 #include "../libjmy/jmy_mem.h"
+#include "../common/util.h"
 #include "mysql_defines.h"
 #include "mysql_config_loader.h"
 
@@ -138,6 +139,7 @@ public:
 			cmd_list.clear();
 		}
 		void push(CmdInfo& info) {
+			LogInfo("push cmd: %s", info.sql);
 			std::lock_guard<std::mutex> lk(cmd_mtx_);
 			cmd_list.push_back(std::move(info));
 		}

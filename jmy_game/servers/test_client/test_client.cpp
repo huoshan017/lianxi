@@ -1,6 +1,7 @@
 #include "test_client.h"
 #include "config_loader.h"
 #include "config_data.h"
+#include "../libjmy/jmy_mem.h"
 #include "../common/util.h"
 #include <thread>
 
@@ -16,17 +17,17 @@ TestClient::~TestClient()
 
 void TestClient::close()
 {
-	if (login_client_) {
-		login_client_->close();
-	}
-	if (game_client_) {
-		game_client_->close();
-	}
+}
+
+int TestClient::start()
+{
+	state_ = InLogin;
+	return 0;
 }
 
 int TestClient::run()
 {
-	while (!exit_) {
+	if (!exit_) {
 		if (state_ == InLogin) {
 			if (login_client_ && login_client_->run() < 0) {
 				return -1;
@@ -39,7 +40,6 @@ int TestClient::run()
 		}
 		do_events();
 	}
-	state_ = InNone;
 	return 0;
 }
 
@@ -120,7 +120,7 @@ bool TestClientManager::init(const char* conf_path)
 		return false;
 	}
 
-	if (!client_master_.init(4)) {
+	if (!client_master_.init(4*CLIENT_CONFIG.account_num)) {
 		LogError("client_master init with size(%d) failed", 10);
 		return false;
 	}
@@ -135,6 +135,11 @@ void TestClientManager::clear()
 
 bool TestClientManager::startClient(const std::string& account)
 {
+	if (clients_.find(account) != clients_.end()) {
+		LogInfo("already start client(%s)", account.c_str());
+		return true;
+	}
+
 	JmyTcpClient* login_client = client_master_.generate();
 	if (!login_client) {
 		LogError("client_master generate client failed");
@@ -146,23 +151,49 @@ bool TestClientManager::startClient(const std::string& account)
 		LogError("start connect login failed");
 		return false;
 	}
+
+	conn_id2accounts_.insert(std::make_pair(login_client->getId(), account));
 	
 	JmyTcpClient* game_client = client_master_.generate();
 	if (!game_client) {
 		LogError("get new client failed");
 		return false;
 	}
+
+	conn_id2accounts_.insert(std::make_pair(game_client->getId(), account));
+
+	TestClient* client = jmy_mem_malloc<TestClient>(login_client, game_client);
+	client->start();
+
+	clients_.insert(std::make_pair(account, client));
+	LogInfo("start client(%s)", account.c_str());
 	return true;
 }
 
 bool TestClientManager::stopClient(const std::string& account)
 {
+	std::unordered_map<std::string, TestClient*>::iterator it = clients_.find(account);
+	if (it == clients_.end()) {
+		LogWarn("not found client(%s)", account.c_str());
+		return false;
+	}
+	if (it->second) {
+		JmyTcpClient* client = it->second->getLoginClient();
+		client->close();
+		conn_id2accounts_.erase(client->getId());
+		client = it->second->getGameClient();
+		client->close();
+		conn_id2accounts_.erase(client->getId());
+		jmy_mem_free(it->second);
+	}
+	clients_.erase(it);
+	LogInfo("stop client(%s)", account.c_str());
 	return true;
 }
 
 int TestClientManager::run()
 {
-	std::unordered_map<std::string, TestClient*>::iterator it = clients_.begin();
+	std::unordered_map<std::string, TestClient*>::iterator it;
 	while (true) {
 		it = clients_.begin();
 		for (; it!=clients_.end(); ++it) {

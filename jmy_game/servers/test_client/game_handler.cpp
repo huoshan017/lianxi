@@ -4,6 +4,7 @@
 #include "../common/util.h"
 #include "../../proto/src/common.pb.h"
 #include "config_loader.h"
+#include "test_client.h"
 
 char GameHandler::tmp_[JMY_MAX_MSG_SIZE];
 std::string GameHandler::enter_session_;
@@ -19,7 +20,11 @@ int GameHandler::onConnect(JmyEventInfo* info)
 
 	MsgC2S_GetRoleRequest request;
 	request.set_enter_session(enter_session_);
-	request.set_account(CLIENT_CONFIG.account);
+	if (!CLIENT_MGR->getAccountByConnId(info->conn_id)) {
+		LogError("get account by conn_id(%d) failed", info->conn_id);
+		return -1;
+	}
+	request.set_account(CLIENT_MGR->getTmpAccount());
 	if (!request.SerializeToArray(tmp_, sizeof(tmp_))) {
 		LogError("serialize msg MsgC2S_EnterGameRequest failed");
 		return -1;
@@ -100,8 +105,9 @@ int GameHandler::processEnterGameComplete(JmyMsgInfo* info)
 	JmyTcpConnection* conn = get_connection(info);
 	if (!conn) return -1;
 
+#if 0
 	MsgC2S_SetRoleDataRequest request;
-	for (int i=0; i<100; ++i) {
+	for (int i=0; i<1; ++i) {
 		MsgBaseRoleData* role_data = request.mutable_role_data();
 		role_data->set_hp(1+i);
 		role_data->set_sex(1+i);
@@ -128,6 +134,8 @@ int GameHandler::processEnterGameComplete(JmyMsgInfo* info)
 		LogError("send MsgC2S_ChatRequest failed");
 		return -1;
 	}
+#endif
+
 	LogInfo("enter game complete");
 	return info->len;
 }

@@ -329,7 +329,6 @@ bool MysqlDBManager::insertRecord(int table_index, mysql_cmd_callback_func get_l
 	char* field_values_str = format_insert_field_value_str(table_index, nullptr, 1, args...);
 
 	std::snprintf(big_buf_[big_index_], sizeof(big_buf_[big_index_]), "INSERT INTO %s (%s) VALUES (%s)", ti->name, field_names_str, field_values_str);
-	LogInfo("insert sql string: %s", big_buf_[big_index_]);
 	return push_insert_cmd(big_buf_[big_index_], strlen(big_buf_[big_index_]), get_last_insert_id_func, param, param_l);
 }
 

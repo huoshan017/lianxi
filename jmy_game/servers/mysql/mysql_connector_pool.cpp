@@ -53,7 +53,9 @@ static void connector_read_func(MysqlConnectorPool::ConnectorInfo* conn) {
 static void connector_write_func(MysqlConnectorPool::ConnectorInfo* conn) {
 	MysqlConnectorPool::CmdInfo ci;
 	while (true) {
+		ci.sql = nullptr;
 		if (conn->pop(ci)) {
+			LogInfo("write query: %s", ci.sql);
 			if (!ci.write_cmd) {
 				if (!conn->connector.real_read_query(ci.sql, ci.sql_len)) {
 					LogWarn("real read query failed");
@@ -99,7 +101,7 @@ bool MysqlConnectorPool::init(const MysqlConnPoolConfig& config)
 		}
 		threads_.create_thread(std::bind(connector_write_func, ci));
 	}
-	for (; i<config.read_conn_size; ++i) {
+	for (i=0; i<config.read_conn_size; ++i) {
 		ci = jmy_mem_malloc<ConnectorInfo>();
 		read_connectors_.push_back(ci);
 		if (!one_connector_init((ci->connector), config)) {
@@ -137,7 +139,7 @@ void MysqlConnectorPool::close()
 
 bool MysqlConnectorPool::push_read_cmd(CmdInfo& info)
 {
-	if (curr_read_index_ > (int)(read_connectors_.size()-1)) {
+	if (curr_read_index_ >= (int)(read_connectors_.size()-1)) {
 		curr_read_index_ = 0;
 	} else {
 		curr_read_index_ += 1;
@@ -148,7 +150,7 @@ bool MysqlConnectorPool::push_read_cmd(CmdInfo& info)
 
 bool MysqlConnectorPool::push_write_cmd(CmdInfo& info)
 {
-	if (curr_write_index_ > (int)(write_connectors_.size()-1)) {
+	if (curr_write_index_ >= (int)(write_connectors_.size()-1)) {
 		curr_read_index_ = 0;
 	} else {
 		curr_read_index_ += 1;

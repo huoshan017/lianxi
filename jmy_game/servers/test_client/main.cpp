@@ -1,5 +1,7 @@
 #include "test_client.h"
-#include <iostream>
+#include "../common/util.h"
+#include "config_loader.h"
+#include <cstdlib>
 
 static const char* TestClientConfPath = "./test_client.json";
 
@@ -7,11 +9,19 @@ int main(int argc, char** argv)
 {
 	(void)argc;
 	(void)argv;
-	if (!TEST_CLIENT->init(TestClientConfPath)) {
-		std::cout << "test client init failed" << std::endl;
+	if (!CLIENT_MGR->init(TestClientConfPath)) {
+		LogError("test client init failed"); 
 		return -1;
 	}
-	TEST_CLIENT->run();
-	TEST_CLIENT->close();
+
+	int i = 0;
+	int s = CLIENT_CONFIG.account_num;
+	for (; i<s; ++i) {
+		std::string account = CLIENT_CONFIG.account_prefix + std::to_string(CLIENT_CONFIG.account_start_index+i);
+		if (!CLIENT_MGR->startClient(account)) {
+		}
+	}
+	CLIENT_MGR->run();
+	CLIENT_MGR->clear();
 	return 0;
 }

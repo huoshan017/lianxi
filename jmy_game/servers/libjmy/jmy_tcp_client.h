@@ -24,6 +24,7 @@ public:
 	int send(int msg_id, const char* data, unsigned int len);
 	int run();
 
+	int getId() const { return conn_->getId(); }
 	JmyConnState getState() const { return conn_->getConnState(); }
 	bool isNotConnect() const { return conn_->getConnState() == JMY_CONN_STATE_NOT_CONNECT; }
 	bool isConnected() const { return conn_->isConnected(); }

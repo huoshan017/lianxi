@@ -140,9 +140,8 @@ int GameHandler::processCreateRole(JmyMsgInfo* info)
 	}
 
 	GLOBAL_DATA->setAccount2UserId(user->get_account(), role_id);
-	// not found in db, insert new record
-	if (!user->insert_request(nullptr, nullptr, 0)) {
-		LogError("insert t_player record for account(%s) failed", user->get_account().c_str());
+	if (!player_mgr.commit_insert_request(user, nullptr, nullptr, 0)) {
+		LogError("commit insert request t_player(account:%s, role_id:%llu) failed", user->get_account().c_str(), role_id);
 		return -1;
 	}
 
@@ -161,8 +160,6 @@ int GameHandler::processCreateRole(JmyMsgInfo* info)
 		LogError("send MsgDS2GS_CreateRoleResponse failed");
 		return -1;
 	}
-
-	LogInfo("to inserting new record(addr:0x%x, account:%s, role_id:%llu)", user, user->get_account().c_str(), user->get_role_id());
 
 	return info->len;
 }

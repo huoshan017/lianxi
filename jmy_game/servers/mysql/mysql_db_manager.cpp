@@ -175,10 +175,14 @@ bool MysqlDBManager::push_write_cmd(const char* sql, unsigned int sql_len)
 
 bool MysqlDBManager::push_insert_cmd(const char* sql, unsigned int sql_len, mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l)
 {
-	if (!push_write_cmd(sql, sql_len))
+	bool res = push_write_cmd(sql, sql_len);
+	if (!res)
 		return false;
 
-	return push_get_last_insert_id_cmd(get_last_insert_id_func, param, param_l);
+	if (get_last_insert_id_func) {
+		res = push_get_last_insert_id_cmd(get_last_insert_id_func, param, param_l);
+	}
+	return res;
 }
 
 bool MysqlDBManager::push_get_last_insert_id_cmd(mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l)

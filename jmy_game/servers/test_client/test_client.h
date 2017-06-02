@@ -12,10 +12,15 @@ public:
 	TestClient(JmyTcpClient* login_client, JmyTcpClient* game_client);
 	~TestClient();
 	void close();
+
+	int start();
 	int run();
 
 	void postExitEvent();
 	void postConnectGameEvent(const char* ip, unsigned short port);
+
+	JmyTcpClient* getLoginClient() { return login_client_; }
+	JmyTcpClient* getGameClient() { return game_client_; }
 
 private:
 	int do_events();
@@ -47,10 +52,34 @@ public:
 
 	int run();
 
+	bool getAccountByConnId(int conn_id) {
+		std::unordered_map<int, std::string>::iterator it = conn_id2accounts_.find(conn_id);
+		if (it == conn_id2accounts_.end())
+			return false;
+		tmp_account_ = it->second;
+		return true;
+	}
+
+	const std::string& getTmpAccount() const { return tmp_account_; }
+
+	TestClient* getClientByConnId(int conn_id) {
+		std::unordered_map<int, std::string>::iterator it = conn_id2accounts_.find(conn_id);
+		if (it == conn_id2accounts_.end())
+			return nullptr;
+
+		std::unordered_map<std::string, TestClient*>::iterator tit = clients_.find(it->second);
+		if (tit == clients_.end())
+			return nullptr;
+
+		return tit->second;
+	}
+
 private:
 	boost::asio::io_service service_;
 	std::unordered_map<std::string, TestClient*> clients_;
 	JmyTcpClientMaster client_master_;
+	std::unordered_map<int, std::string> conn_id2accounts_;
+	std::string tmp_account_;
 };
 
 #define CLIENT_MGR (TestClientManager::getInstance())

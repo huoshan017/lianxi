@@ -29,7 +29,7 @@ JmyTcpConnection* get_connection(int conn_id, JmyTcpConnectionMgr* conn_mgr)
 	}
 	JmyTcpConnection* conn = conn_mgr->get(conn_id);
 	if (!conn) {
-		LogError("not found connection by session_id(%d)", conn_id);
+		LogError("not found connection by conn_id(%d)", conn_id);
 	}
 	return conn;
 }
