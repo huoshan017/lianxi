@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../libjmy/jmy_util.h"
-#include "../../proto/src/error.pb.h"
 #include "defines.h"
 #include <ctime>
 
