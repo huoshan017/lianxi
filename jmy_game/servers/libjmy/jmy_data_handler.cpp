@@ -160,8 +160,11 @@ int JmyDataHandler::processData(JmyDoubleSessionBuffer& recv_buffer, int session
 					LibJmyLogError("next message data size(%d) is too large than max buffer size(%d)", unpack_data_.data, recv_buffer.getTotalLen()-2);
 					return -1;
 				}
+				LibJmyLogInfo("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! unpack_data_.data(%d) > recv_buffer.getTotalLen()",
+						unpack_data_.data, recv_buffer.getTotalLen());
 			}
 			buff.readLen(nhandled);
+			LibJmyLogInfo("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ nhandled=%d", nhandled);
 			break;
 		}
 		
@@ -171,6 +174,7 @@ int JmyDataHandler::processData(JmyDoubleSessionBuffer& recv_buffer, int session
 				LibJmyLogError("back to normal buffer failed");
 				return -1;
 			}
+			LibJmyLogInfo("##############################");
 		}
 		nhandled += res;
 		if (unpack_data_.type == JMY_PACKET_USER_DATA || unpack_data_.type == JMY_PACKET_USER_ID_DATA) {
@@ -307,6 +311,7 @@ int JmyDataHandler::handleMsg(JmyMsgInfo* info)
 		}
 	}
 
+	LibJmyLogDebug("to handle msg: %d", info->msg_id);
 	if (it->second(info) < 0)
 		return -1;
 

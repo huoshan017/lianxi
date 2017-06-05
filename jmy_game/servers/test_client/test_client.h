@@ -52,15 +52,13 @@ public:
 
 	int run();
 
-	bool getAccountByConnId(int conn_id) {
+	bool getAccountByConnId(int conn_id, std::string& account) {
 		std::unordered_map<int, std::string>::iterator it = conn_id2accounts_.find(conn_id);
 		if (it == conn_id2accounts_.end())
 			return false;
-		tmp_account_ = it->second;
+		account = it->second;
 		return true;
 	}
-
-	const std::string& getTmpAccount() const { return tmp_account_; }
 
 	TestClient* getClientByConnId(int conn_id) {
 		std::unordered_map<int, std::string>::iterator it = conn_id2accounts_.find(conn_id);
@@ -79,7 +77,6 @@ private:
 	std::unordered_map<std::string, TestClient*> clients_;
 	JmyTcpClientMaster client_master_;
 	std::unordered_map<int, std::string> conn_id2accounts_;
-	std::string tmp_account_;
 };
 
 #define CLIENT_MGR (TestClientManager::getInstance())

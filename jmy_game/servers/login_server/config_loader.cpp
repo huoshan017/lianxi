@@ -137,6 +137,7 @@ bool ConfigLoader::loadJson(const char* jsonpath)
 		LogError("log_conf_path type is not string");
 		return false;
 	}
+	config_.log_conf_path = doc_["log_conf_path"].GetString();
 	jsonpath_ = jsonpath;
 	
 	LogInfo("load %s success", jsonpath);

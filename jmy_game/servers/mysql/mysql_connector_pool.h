@@ -139,11 +139,8 @@ public:
 			cmd_list.clear();
 		}
 		void push(CmdInfo& info) {
-			LogInfo("!!!!!!!  push cmd: %s", info.sql);
 			std::lock_guard<std::mutex> lk(cmd_mtx_);
 			cmd_list.push_back(std::move(info));
-			const CmdInfo& ci = cmd_list.back();
-			LogInfo("@@@@@@@  pushed cmd: %s", ci.sql);
 		}
 		bool pop(CmdInfo& info) {
 			if (cmd_list.size() == 0)
@@ -151,7 +148,6 @@ public:
 			std::lock_guard<std::mutex> lk(cmd_mtx_);
 			if (cmd_list.size() == 0)
 				return false;
-			LogInfo("#######  to pop cmd: %s, addr: 0x%x", cmd_list.front().sql, &cmd_list.front());
 			info = std::move(cmd_list.front());
 			cmd_list.pop_front();
 			return true;

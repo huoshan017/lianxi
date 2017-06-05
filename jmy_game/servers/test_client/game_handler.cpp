@@ -20,11 +20,12 @@ int GameHandler::onConnect(JmyEventInfo* info)
 
 	MsgC2S_GetRoleRequest request;
 	request.set_enter_session(enter_session_);
-	if (!CLIENT_MGR->getAccountByConnId(info->conn_id)) {
+	std::string account;
+	if (!CLIENT_MGR->getAccountByConnId(info->conn_id, account)) {
 		LogError("get account by conn_id(%d) failed", info->conn_id);
 		return -1;
 	}
-	request.set_account(CLIENT_MGR->getTmpAccount());
+	request.set_account(account);
 	if (!request.SerializeToArray(tmp_, sizeof(tmp_))) {
 		LogError("serialize msg MsgC2S_EnterGameRequest failed");
 		return -1;
@@ -96,7 +97,13 @@ int GameHandler::processEnterGame(JmyMsgInfo* info)
 		LogError("parse MsgS2C_EnterGameResponse failed");
 		return -1;
 	}
-	LogInfo("enter game");
+
+	std::string account;
+	if (!CLIENT_MGR->getAccountByConnId(info->conn_id, account)) {
+		LogError("cant get account by conn_id(%d)", info->conn_id);
+		return -1;
+	}
+	LogInfo("%s enter game", account.c_str());
 	return info->len;
 }
 

@@ -119,7 +119,10 @@ void JmyTcpConnection::start()
 			}
 			//LibJmyLogDebug("received %d data", bytes_transferred);
 
-			handle_recv();
+			if (handle_recv() < 0) {
+				force_close();
+				return;
+			}
 
 			start();
 		} else {

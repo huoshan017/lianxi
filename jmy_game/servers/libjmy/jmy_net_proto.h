@@ -24,7 +24,7 @@ enum JmyPacketType {
 	JMY_PACKET_DISCONNECT		= 8,
 	JMY_PACKET_DISCONNECT_ACK	= 9,
 	JMY_PACKET_USER_ID_DATA		= 10,
-	// user defined type 100 -- 254
+	// user defined type 100-254
 	JMY_PACKET_TYPE_USER		= 100,
 	JMY_PACKET_TYPE_MAX 		= 255
 };

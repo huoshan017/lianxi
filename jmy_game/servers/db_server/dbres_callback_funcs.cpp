@@ -108,6 +108,6 @@ int DBResCBFuncs::sendGetRoleResponse(t_player* user, int conn_id)
 		return -1;
 	}
 
-	LogInfo("send get role response: role_id(%llu)", user->get_role_id());
+	LogInfo("send get role response: role_id(%llu), account(%s)", user->get_role_id(), user->get_account().c_str());
 	return 0;
 }

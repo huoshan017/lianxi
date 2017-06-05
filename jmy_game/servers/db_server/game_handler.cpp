@@ -90,7 +90,7 @@ int GameHandler::processGetRole(JmyMsgInfo* info)
 			LogError("send get account(%s) role response failed", request.account().c_str());
 			return -1;
 		}
-		LogInfo("send get user(addr:0x%x, account:%s, role_id:%llu) response", user, request.account().c_str(), user->get_role_id());
+		LogInfo("send get user(addr:0x%x, account:%s) response", user, request.account().c_str());
 	}
 
 	return info->len;

@@ -18,12 +18,13 @@ int LoginHandler::onConnect(JmyEventInfo* info)
 	}
 
 	MsgC2S_LoginRequest request;
-	if (!CLIENT_MGR->getAccountByConnId(info->conn_id)) {
+	std::string account;
+	if (!CLIENT_MGR->getAccountByConnId(info->conn_id, account)) {
 		LogError("cant get account by conn_id(%d)", info->conn_id);
 		return -1;
 	}
 
-	request.set_account(CLIENT_MGR->getTmpAccount());
+	request.set_account(account);
 	if (!request.SerializeToArray(tmp_, sizeof(tmp_))) {
 		LogError("serialize msg MsgC2S_LoginRequest failed");
 		return -1;

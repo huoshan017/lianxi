@@ -92,7 +92,7 @@ int GameHandler::processGetRoleResponse(JmyMsgInfo* info)
 			LogError("send MsgError failed");
 			return -1;
 		}
-		LogInfo("send error: PROTO_ERROR_GET_ROLE_NONE");
+		LogInfo("get account(%s) not found, send error: PROTO_ERROR_GET_ROLE_NONE", response.account().c_str());
 	} else {
 		MsgS2C_GetRoleResponse get_resp;
 		char* reconn_session = get_session_code(session_buf_, RECONN_SESSION_CODE_BUF_LENGTH);
@@ -112,7 +112,7 @@ int GameHandler::processGetRoleResponse(JmyMsgInfo* info)
 		}
 		ci->add_role_id(role_id);
 		ci->curr_role_id = role_id;
-		LogInfo("get role: %llu response", role_id);
+		LogInfo("get role: %llu(account:%s) response", role_id, response.account().c_str());
 	}
 
 	return info->len;
