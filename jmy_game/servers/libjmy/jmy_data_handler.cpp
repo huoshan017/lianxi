@@ -164,7 +164,7 @@ int JmyDataHandler::processData(JmyDoubleSessionBuffer& recv_buffer, int session
 						unpack_data_.data, recv_buffer.getTotalLen());
 			}
 			buff.readLen(nhandled);
-			LibJmyLogInfo("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ nhandled=%d", nhandled);
+			LibJmyLogInfo("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ addr=0x%x  nhandled=%d", buff.getReadBuff(), nhandled);
 			break;
 		}
 		
@@ -174,7 +174,6 @@ int JmyDataHandler::processData(JmyDoubleSessionBuffer& recv_buffer, int session
 				LibJmyLogError("back to normal buffer failed");
 				return -1;
 			}
-			LibJmyLogInfo("##############################");
 		}
 		nhandled += res;
 		if (unpack_data_.type == JMY_PACKET_USER_DATA || unpack_data_.type == JMY_PACKET_USER_ID_DATA) {
@@ -186,6 +185,11 @@ int JmyDataHandler::processData(JmyDoubleSessionBuffer& recv_buffer, int session
 		}
 	}
 	return count;
+}
+
+int JmyDataHandler::processData(JmySessionBufferList* buffer_list, int conn_id, JmyTcpConnectorMgr* mgr)
+{
+	return 0;
 }
 
 int JmyDataHandler::writeUserData(JmySessionBuffer& send_buffer, int msg_id, const char* data, unsigned int len)

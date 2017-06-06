@@ -7,8 +7,6 @@
 #include "test_client.h"
 
 char GameHandler::tmp_[JMY_MAX_MSG_SIZE];
-std::string GameHandler::enter_session_;
-std::string GameHandler::reconn_session_;
 
 int GameHandler::onConnect(JmyEventInfo* info)
 {
@@ -19,13 +17,18 @@ int GameHandler::onConnect(JmyEventInfo* info)
 	}
 
 	MsgC2S_GetRoleRequest request;
-	request.set_enter_session(enter_session_);
 	std::string account;
 	if (!CLIENT_MGR->getAccountByConnId(info->conn_id, account)) {
 		LogError("get account by conn_id(%d) failed", info->conn_id);
 		return -1;
 	}
 	request.set_account(account);
+	TestClient* client = CLIENT_MGR->getClientByConnId(info->conn_id);
+	if (!client) {
+		LogError("get TestClient failed by conn_id(%d)", info->conn_id);
+		return -1;
+	}
+	request.set_enter_session(client->getEnterSession());
 	if (!request.SerializeToArray(tmp_, sizeof(tmp_))) {
 		LogError("serialize msg MsgC2S_EnterGameRequest failed");
 		return -1;
@@ -64,7 +67,14 @@ int GameHandler::processGetRole(JmyMsgInfo* info)
 	const MsgBaseRoleData& rd = response.role_data();
 	LogInfo("get role: race(%d), sex(%d), role_id(%llu), nick_name(%s)", rd.race(), rd.sex(), rd.role_id(), rd.nick_name().c_str());
 
-	reconn_session_ = response.reconnect_session();
+	TestClient* client = CLIENT_MGR->getClientByConnId(info->conn_id);
+	if (!client) {
+		LogError("get TestClient failed by conn_id(%d)", info->conn_id);
+		return -1;
+	}
+
+	client->setReconnSession(response.reconnect_session());
+
 	if (send_enter_game_request(conn) < 0)
 		return -1;
 
@@ -163,6 +173,7 @@ int GameHandler::processError(JmyMsgInfo* info)
 	}
 
 	if (error.error_code() == PROTO_ERROR_GET_ROLE_NONE) {
+#if 0
 		MsgC2S_CreateRoleRequest request;
 		request.set_sex(0);
 		request.set_race(0);
@@ -176,6 +187,15 @@ int GameHandler::processError(JmyMsgInfo* info)
 			return -1;
 		}
 		LogInfo("send create role request");
+#endif
+		std::string account;
+		if (!CLIENT_MGR->getAccountByConnId(info->conn_id, account)) {
+			LogError("get account failed by conn_id(%d)", info->conn_id);
+			return -1;
+		}
+		static int err_count = 0;
+		err_count += 1;
+		LogInfo("account(%s) err_count(%d)", account.c_str(), err_count);
 	}
 
 	LogInfo("processError");
@@ -185,11 +205,6 @@ int GameHandler::processError(JmyMsgInfo* info)
 int GameHandler::processDefault(JmyMsgInfo* info)
 {
 	return info->len;
-}
-
-void GameHandler::setEnterSession(const std::string& session)
-{
-	enter_session_ = std::move(session);
 }
 
 int GameHandler::send_enter_game_request(JmyTcpConnection* conn)

@@ -111,7 +111,7 @@ int LoginHandler::processSelectedServer(JmyMsgInfo* info)
 		return -1;
 	}
 
-	GameHandler::setEnterSession(response.session_code());
+	client->setEnterSession(response.session_code());
 	client->postConnectGameEvent(response.server_ip().c_str(), response.port());
 	LogInfo("processSelectedServer: session_code(%s), gate_ip(%s), gate_port(%d)",
 			response.session_code().c_str(), response.server_ip().c_str(), response.port());

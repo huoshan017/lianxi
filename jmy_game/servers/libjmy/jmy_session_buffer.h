@@ -126,25 +126,6 @@ private:
 	std::shared_ptr<JmySessionBufferPool> buff_pool_;
 };
 
-struct JmyBufferDropConditionData {
-	uint32_t conds;
-	uint32_t params[JMY_DROP_CONDITION_COUNT];
-	JmyBufferDropConditionData() : conds(0) {
-		std::memset(params, 0, sizeof(params));
-	}
-	bool noCond() { return conds == 0; }
-	bool hasCond(JmyBufferDropCondition cond) {
-		return (conds & cond) > 0;
-	}
-	uint32_t getParam(JmyBufferDropCondition cond) {
-		return params[cond];
-	}
-	void setCond(JmyBufferDropCondition cond, uint32_t param) {
-		conds |= cond;
-		params[cond] = param;
-	}
-};
-
 class JmySessionBufferList
 {
 public:
@@ -154,9 +135,6 @@ public:
 
 	bool init(unsigned int max_bytes = 0, unsigned int max_count = 0);
 	void reset();
-	//void addDropCondition(JmyBufferDropCondition cond, uint32_t param);
-	//bool hasCond(JmyBufferDropCondition cond) { return drop_cond_.hasCond(cond); }
-	//uint32_t getCondParam(JmyBufferDropCondition cond) { return drop_cond_.getParam(cond); }
 
 	bool writeData(const char* data, unsigned int len);
 	bool writeData(JmyData* datas, int count);
@@ -275,6 +253,5 @@ private:
 	unsigned int curr_used_bytes_;
 	unsigned int max_count_;
 	unsigned int curr_count_;
-	//JmyBufferDropConditionData drop_cond_;
 };
 

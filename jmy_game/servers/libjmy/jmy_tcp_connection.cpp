@@ -113,17 +113,15 @@ void JmyTcpConnection::start()
 		if (!err) {
 			if (bytes_transferred > 0) {
 				buffer_->recv_buff.writeLen(bytes_transferred);
+				if (handle_recv() < 0) {
+					force_close();
+					return;
+				}	
 			}
 			else if (bytes_transferred == 0) {
 				std::this_thread::sleep_for(std::chrono::milliseconds(100));
 			}
 			//LibJmyLogDebug("received %d data", bytes_transferred);
-
-			if (handle_recv() < 0) {
-				force_close();
-				return;
-			}
-
 			start();
 		} else {
 			int ev = err.value();

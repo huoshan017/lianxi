@@ -21,6 +21,12 @@ public:
 
 	JmyTcpClient* getLoginClient() { return login_client_; }
 	JmyTcpClient* getGameClient() { return game_client_; }
+	void setAccount(const std::string& account) { account_ = account; }
+	const std::string& getAccount() const { return account_; }
+	void setEnterSession(const std::string& session) { enter_session_ = session; }
+	void setReconnSession(const std::string& session) { reconn_session_ = session; }
+	const std::string& getEnterSession() const { return enter_session_; }
+	const std::string& getReconnSession() const { return reconn_session_; }
 
 private:
 	int do_events();
@@ -36,6 +42,9 @@ private:
 	} state_;
 	bool exit_;
 	UserEventList event_list_;
+	std::string account_;
+	std::string enter_session_;
+	std::string reconn_session_;
 };
 
 class TestClientManager : public JmySingleton<TestClientManager>

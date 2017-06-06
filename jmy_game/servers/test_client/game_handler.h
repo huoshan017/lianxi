@@ -28,6 +28,6 @@ private:
 
 private:
 	static char tmp_[JMY_MAX_MSG_SIZE];
-	static std::string enter_session_;
-	static std::string reconn_session_;
+	//static std::string enter_session_;
+	//static std::string reconn_session_;
 };

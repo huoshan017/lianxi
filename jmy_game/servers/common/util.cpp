@@ -3,6 +3,7 @@
 #include "../libjmy/jmy_log.h"
 #include "../../proto/src/common.pb.h"
 #include <random>
+#include <chrono>
 
 bool global_log_init(const char* logconfpath)
 {
@@ -49,8 +50,9 @@ JmyTcpConnection* get_connection(JmyEventInfo* info)
 char* get_session_code(char* session_buf, int buf_len)
 {
 	static char cs[] = "abcdefghijklmnopqrstuvwxyz0123456789~!@#$%^&*()_+`-={}[]:<>?,./";
+	static uint32_t c = 0;
 	// generate session string
-	std::default_random_engine gen(std::time(0));
+	std::default_random_engine gen(std::time(0)+(c++));
 	std::uniform_int_distribution<> dis(0, std::strlen(cs)-1);
 	for (int i=0; i<buf_len; ++i) {
 		session_buf[i] = cs[dis(gen)];

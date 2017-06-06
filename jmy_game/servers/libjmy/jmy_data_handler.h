@@ -31,6 +31,8 @@ public:
 	int processData(JmySessionBuffer& recv_buff, int connector_id, JmyTcpConnectorMgr* mgr);
 #endif
 	int processData(JmyDoubleSessionBuffer& recv_buffer, int session_id, void* param);
+	int processData(JmySessionBufferList* buffer_list, int conn_id, JmyTcpConnectorMgr* mgr);
+
 	// return write bytes count
 	int writeUserData(JmySessionBuffer& buffer, int msg_id, const char* data, unsigned int len);
 	int writeUserData(JmyDoubleSessionBuffer* buffer, int msg_id, const char* data, unsigned int len);
