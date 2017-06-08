@@ -34,7 +34,6 @@ bool JmyConnectionBufferMgr::init(int max_size, std::shared_ptr<JmySessionBuffer
 void JmyConnectionBufferMgr::clear()
 {
 	free_queue_.clear();
-	suspend_map_.clear();
 }
 
 bool JmyConnectionBufferMgr::getOneBuffer(std::shared_ptr<JmyConnectionBuffer>& buffer)
@@ -55,11 +54,14 @@ bool JmyConnectionBufferMgr::getBuffer(int id, std::shared_ptr<JmyConnectionBuff
 
 bool JmyConnectionBufferMgr::freeBuffer(int id)
 {
-	if (id >= max_size_-1) return false;
-	conn_buff_vec_[id].reset();
+	if (id<1 || id>max_size_) return false;
+	if (conn_buff_vec_[id-1]->state == JMY_CONN_BUFFER_STATE_IDLE)
+		return false;
+	free_queue_.push_front(conn_buff_vec_[id-1]);
 	return true;
 }
 
+/*
 void JmyConnectionBufferMgr::restoreBuffer(std::shared_ptr<JmyConnectionBuffer> buffer)
 {
 	buffer->state = JMY_CONN_BUFFER_STATE_IDLE;
@@ -92,3 +94,4 @@ bool JmyConnectionBufferMgr::restoreSuspendBuffer(int id)
 	restoreBuffer(it->second);
 	return true;
 }
+*/

@@ -58,7 +58,6 @@ public:
 	bool assign(const JmySessionBuffer& buffer);
 	void destroy();
 	void clear();
-	void reset();
 
 	bool isInited() const { return (buff_ && len_ > 0)?true:false; }
 	char* getBuff() const { return buff_; }
@@ -95,7 +94,6 @@ public:
 	bool init(unsigned int size, SessionBufferType type);
 	void destroy();
 	void clear();
-	void reset();
 
 	unsigned int getNormalLen() const;
 	unsigned int getLargeLen() const;
@@ -131,10 +129,10 @@ class JmySessionBufferList
 public:
 	JmySessionBufferList();
 	~JmySessionBufferList();
-	void destroy();
+	void destroy() {}
 
 	bool init(unsigned int max_bytes = 0, unsigned int max_count = 0);
-	void reset();
+	void clear();
 
 	bool writeData(const char* data, unsigned int len);
 	bool writeData(JmyData* datas, int count);

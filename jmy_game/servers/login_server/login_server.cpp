@@ -94,7 +94,7 @@ int LoginServer::run()
 		res = config_client_->run();
 		if (res < 0) break;
 		service_.poll();
-		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
 	return res;
 }

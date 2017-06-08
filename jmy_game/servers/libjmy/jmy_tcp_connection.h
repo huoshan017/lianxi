@@ -44,8 +44,6 @@ public:
 	std::shared_ptr<JmyConnectionBuffer> getBuffer() const { return buffer_; }
 	// set buffer
 	void setBuffer(std::shared_ptr<JmyConnectionBuffer> buffer) { buffer_ = buffer; }
-	void* getUnusedData() const { return unused_data_; }
-	void setUnusedData(void* data) { unused_data_ = data; }
 	JmyTcpConnectionMgr& getConnectionMgr() { return mgr_; }
 
 	//int handleAck(JmyAckInfo*);
@@ -76,7 +74,6 @@ protected:
 	std::shared_ptr<JmyConnectionBuffer> buffer_;				// recv and send buffer
 	JmyEventInfo event_info_;
 	std::chrono::system_clock::time_point last_run_tick_;
-	void* unused_data_;											// extra data when need to use
 };
 
 class JmyTcpConnectionMgr

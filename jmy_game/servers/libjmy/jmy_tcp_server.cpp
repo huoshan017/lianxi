@@ -129,6 +129,13 @@ int JmyTcpServer::listenStart(short port)
 int JmyTcpServer::do_accept()
 {
 	if (!inited_) return -1;
+
+	size_t s = conns_.size();
+	if (conf_.max_conn <= s) {
+		LibJmyLogWarn("already max connections: %d", s);
+		return 0;
+	}
+
 #if USE_CONNECTOR_AND_SESSION
 	acceptor_->async_accept(curr_session_.getSock(),
 #else
@@ -147,7 +154,8 @@ int JmyTcpServer::do_accept()
 					return;
 			}
 			do_accept();
-	});
+		}
+	);
 	return 1;
 }
 
@@ -249,7 +257,8 @@ int JmyTcpServer::run_conns()
 		if (del) {
 			if (conn) {
 				conn_mgr_.free(conn);
-				buffer_mgr_.suspendBuffer(conn->getBuffer());
+				conn->getBuffer()->clear();
+				buffer_mgr_.freeBuffer(conn->getBuffer()->id);
 			}
 			conns_.erase(it);
 		}

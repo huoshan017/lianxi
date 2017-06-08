@@ -5,6 +5,7 @@
 #include "jmy_log.h"
 #include <cassert>
 #include <memory.h>
+#include <cassert>
 
 JmySessionBuffer::JmySessionBuffer()
 	: proxy_(false), buff_(NULL), len_(0), type_(SESSION_BUFFER_TYPE_NONE), write_offset_(0), read_offset_(0)
@@ -204,6 +205,7 @@ bool JmyDoubleSessionBuffer::init(std::shared_ptr<JmySessionBufferPool> pool, Se
 		p = pool->mallocSendBuffer(s);
 	if (!p) {
 		LibJmyLogError("failed to init because cant malloc buffer(%d)", type);
+		assert(0);
 		return false;
 	}
 	assert(s > 0);
@@ -216,8 +218,25 @@ bool JmyDoubleSessionBuffer::init(std::shared_ptr<JmySessionBufferPool> pool, Se
 
 void JmyDoubleSessionBuffer::destroy()
 {
-	buff_.destroy();
-	large_buff_.destroy();
+	if (buff_pool_.get()) {
+		if (buff_.getBuff()) {
+			if (buff_.getType() == SESSION_BUFFER_TYPE_RECV) {
+				buff_pool_->freeRecvBuffer(buff_.getBuff());
+			} else {
+				buff_pool_->freeSendBuffer(buff_.getBuff());
+			}
+		}
+		if (large_buff_.getBuff()) {
+			if (large_buff_.getType() == SESSION_BUFFER_TYPE_RECV) {
+				buff_pool_->freeLargeRecvBuffer(large_buff_.getBuff());
+			} else {
+				buff_pool_->freeLargeSendBuffer(large_buff_.getBuff());
+			}
+		}
+	} else {
+		buff_.destroy();
+		large_buff_.destroy();
+	}
 }
 
 void JmyDoubleSessionBuffer::clear()
@@ -376,7 +395,7 @@ bool JmySessionBufferList::init(unsigned int max_bytes, unsigned int max_count)
 	return true;
 }
 
-void JmySessionBufferList::reset()
+void JmySessionBufferList::clear()
 {
 	using_list_.clear();
 	used_list_.clear();

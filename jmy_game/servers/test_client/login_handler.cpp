@@ -35,14 +35,18 @@ int LoginHandler::onConnect(JmyEventInfo* info)
 		return -1;
 	}
 	
-	LogInfo("login onConnect");
+	LogInfo("account(%s) login onConnect", account.c_str());
 	return 0;
 }
 
 int LoginHandler::onDisconnect(JmyEventInfo* info)
 {
-	(void)info;
-	LogInfo("login onDisconnect");
+	std::string account;
+	if (!CLIENT_MGR->getAccountByConnId(info->conn_id, account)) {
+		LogError("cant get account by conn_id(%d)", info->conn_id);
+		return -1;
+	}
+	LogInfo("account(%s) login onDisconnect", account.c_str());
 	return 0;
 }
 
@@ -73,6 +77,7 @@ int LoginHandler::processLogin(JmyMsgInfo* info)
 				i+1, si.name().c_str(), si.id(), si.is_maintenance(), si.is_busy());
 	}
 
+	/*
 	if (s > 0) {
 		// select server
 		MsgC2S_SelectServerRequest request;
@@ -86,8 +91,16 @@ int LoginHandler::processLogin(JmyMsgInfo* info)
 			return -1;
 		}
 	}
+	*/
 
-	LogInfo("processLogin: get %d servers info", s);
+	std::string account;
+	if (!CLIENT_MGR->getAccountByConnId(info->conn_id, account)) {
+		LogError("cant get account by conn_id(%d)", info->conn_id);
+		return -1;
+	}
+
+	static int login_count = 0;
+	LogInfo("processLogin: get %d servers info, account(%s), count(%d)", s, account.c_str(), ++login_count);
 	return info->len;
 }
 

@@ -4,6 +4,7 @@
 #include <memory>
 #include <list>
 #include <unordered_map>
+#include <unordered_set>
 
 enum JmyConnectionBufferState {
 	JMY_CONN_BUFFER_STATE_IDLE = 0,
@@ -61,11 +62,11 @@ struct JmyConnectionBuffer {
 		total_reconn_info.send_count = 0;	
 	}
 
-	void reset() {
-		send_buff_list.reset();
-		recv_buff_list.reset();
-		send_buff.reset();
-		recv_buff.reset();
+	void clear() {
+		send_buff_list.clear();
+		recv_buff_list.clear();
+		send_buff.clear();
+		recv_buff.clear();
 		total_reconn_info.recv_count = 0;
 		total_reconn_info.send_count = 0;
 	}
@@ -83,15 +84,11 @@ public:
 	bool getOneBuffer(std::shared_ptr<JmyConnectionBuffer>& buffer);
 	bool getBuffer(int id, std::shared_ptr<JmyConnectionBuffer>& buffer);
 	bool freeBuffer(int id);
-	void restoreBuffer(std::shared_ptr<JmyConnectionBuffer> buffer);
-	bool suspendBuffer(std::shared_ptr<JmyConnectionBuffer> buffer);
-	bool getSuspendBuffer(int id, std::shared_ptr<JmyConnectionBuffer>& buffer);
-	bool restoreSuspendBuffer(int id);
 
 private:
 	int max_size_;
 	std::shared_ptr<JmyConnectionBuffer>* conn_buff_vec_;
 	std::list<std::shared_ptr<JmyConnectionBuffer> > free_queue_;
-	std::unordered_map<int, std::shared_ptr<JmyConnectionBuffer> > suspend_map_;
+	std::unordered_set<std::shared_ptr<JmyConnectionBuffer> > used_set_;
 	std::shared_ptr<JmySessionBufferPool> buff_pool_;
 };

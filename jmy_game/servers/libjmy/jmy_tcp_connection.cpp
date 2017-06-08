@@ -4,7 +4,7 @@
 #include <thread>
 
 JmyTcpConnection::JmyTcpConnection(io_service& service, JmyTcpConnectionMgr& mgr, JmyConnType conn_type)
-	: id_(0), sock_(service), mgr_(mgr), conn_type_(conn_type), state_(JMY_CONN_STATE_NOT_USE), sending_data_(false), unused_data_(nullptr)
+	: id_(0), sock_(service), mgr_(mgr), conn_type_(conn_type), state_(JMY_CONN_STATE_NOT_USE), sending_data_(false)//, unused_data_(nullptr)
 {
 }
 
@@ -30,6 +30,8 @@ void JmyTcpConnection::force_close()
 		return;
 
 	sock_.close();
+	if (buffer_.get())
+		buffer_->clear();
 	state_ = JMY_CONN_STATE_DISCONNECTED;
 	handle_event(JMY_EVENT_DISCONNECT, 0);
 }
