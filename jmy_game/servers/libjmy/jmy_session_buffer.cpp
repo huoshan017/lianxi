@@ -218,6 +218,12 @@ bool JmyDoubleSessionBuffer::init(std::shared_ptr<JmySessionBufferPool> pool, Se
 
 void JmyDoubleSessionBuffer::destroy()
 {
+	buff_.destroy();
+	large_buff_.destroy();
+}
+
+void JmyDoubleSessionBuffer::clear()
+{
 	if (buff_pool_.get()) {
 		if (buff_.getBuff()) {
 			if (buff_.getType() == SESSION_BUFFER_TYPE_RECV) {
@@ -234,15 +240,9 @@ void JmyDoubleSessionBuffer::destroy()
 			}
 		}
 	} else {
-		buff_.destroy();
-		large_buff_.destroy();
+		buff_.clear();
+		large_buff_.clear();
 	}
-}
-
-void JmyDoubleSessionBuffer::clear()
-{
-	buff_.clear();
-	large_buff_.clear();
 }
 
 unsigned int JmyDoubleSessionBuffer::getNormalLen() const

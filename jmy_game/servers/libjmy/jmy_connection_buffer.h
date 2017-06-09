@@ -3,7 +3,7 @@
 #include "jmy_session_buffer.h"
 #include <memory>
 #include <list>
-#include <unordered_map>
+#include <vector>
 #include <unordered_set>
 
 enum JmyConnectionBufferState {
@@ -69,6 +69,7 @@ struct JmyConnectionBuffer {
 		recv_buff.clear();
 		total_reconn_info.recv_count = 0;
 		total_reconn_info.send_count = 0;
+		LibJmyLogInfo("clear connection buffer(%d)", id);
 	}
 };
 
@@ -87,7 +88,7 @@ public:
 
 private:
 	int max_size_;
-	std::shared_ptr<JmyConnectionBuffer>* conn_buff_vec_;
+	std::vector<std::shared_ptr<JmyConnectionBuffer> > conn_buff_vec_;
 	std::list<std::shared_ptr<JmyConnectionBuffer> > free_queue_;
 	std::unordered_set<std::shared_ptr<JmyConnectionBuffer> > used_set_;
 	std::shared_ptr<JmySessionBufferPool> buff_pool_;

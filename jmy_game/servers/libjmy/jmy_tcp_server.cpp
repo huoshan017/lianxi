@@ -130,18 +130,12 @@ int JmyTcpServer::do_accept()
 {
 	if (!inited_) return -1;
 
-	size_t s = conns_.size();
-	if (conf_.max_conn <= s) {
-		LibJmyLogWarn("already max connections: %d", s);
-		return 0;
-	}
-
 #if USE_CONNECTOR_AND_SESSION
 	acceptor_->async_accept(curr_session_.getSock(),
 #else
 	acceptor_->async_accept(curr_conn_.getSock(),
 #endif
-		[this](boost::system::error_code ec){
+		[this](boost::system::error_code ec) {
 			if (ec) {
 				if (ec.value()==boost::system::errc::operation_canceled || ec.value()==boost::system::errc::operation_in_progress) {
 					LibJmyLogError("error code(%d)", ec.value());
@@ -150,8 +144,14 @@ int JmyTcpServer::do_accept()
 					return;	
 				}
 			} else {
-				if (accept_new() < 0)
-					return;
+				size_t s = conns_.size();
+				if (conf_.max_conn <= s) {
+					curr_conn_.getSock().close();
+					LibJmyLogWarn("already max connections: %d", s);
+				} else {
+					if (accept_new() < 0)
+						return;
+				}
 			}
 			do_accept();
 		}
@@ -182,6 +182,8 @@ int JmyTcpServer::accept_new()
 	JmyTcpConnection* conn = conn_mgr_.getFree(id);
 	conn->getSock() = std::move(curr_conn_.getSock());
 	conn->getSock().set_option(ip::tcp::no_delay(true));
+	boost::asio::socket_base::linger option(true, 0);
+	conn->getSock().set_option(option);
 	conn->setDataHandler(handler_);
 	conn->setEventHandler(event_handler_);
 	std::shared_ptr<JmyConnectionBuffer> buffer;
@@ -231,7 +233,6 @@ int JmyTcpServer::run()
 #endif
 
 #if !USE_THREAD
-	//service_.poll();
 #endif
 	return 0;
 }
