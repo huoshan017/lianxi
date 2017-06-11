@@ -77,7 +77,20 @@ int LoginHandler::processLogin(JmyMsgInfo* info)
 				i+1, si.name().c_str(), si.id(), si.is_maintenance(), si.is_busy());
 	}
 
-	/*
+	MsgC2S_EchoRequest echo_req;
+	for (i=0; i<10000; ++i) {
+		echo_req.set_echo_str(std::to_string(i));
+		if (!echo_req.SerializeToArray(tmp_, sizeof(tmp_))) {
+			LogError("serialize msg MsgS2C_EchoResponse failed");
+			return -1;
+		}
+		if (conn->send(MSGID_C2S_ECHO_REQUEST, tmp_, echo_req.ByteSize()) < 0) {
+			LogError("send MsgS2C_EchoResponse failed");
+			return -1;
+		}
+	}
+
+#if 0
 	if (s > 0) {
 		// select server
 		MsgC2S_SelectServerRequest request;
@@ -91,7 +104,7 @@ int LoginHandler::processLogin(JmyMsgInfo* info)
 			return -1;
 		}
 	}
-	*/
+#endif
 
 	std::string account;
 	if (!CLIENT_MGR->getAccountByConnId(info->conn_id, account)) {
@@ -120,7 +133,7 @@ int LoginHandler::processSelectedServer(JmyMsgInfo* info)
 
 	TestClient* client = CLIENT_MGR->getClientByConnId(info->conn_id);
 	if (!client) {
-		LogError("get account by conn_id(%d)", info->conn_id);
+		LogError("get account by conn_id(%d) failed", info->conn_id);
 		return -1;
 	}
 
@@ -128,6 +141,31 @@ int LoginHandler::processSelectedServer(JmyMsgInfo* info)
 	client->postConnectGameEvent(response.server_ip().c_str(), response.port());
 	LogInfo("processSelectedServer: session_code(%s), gate_ip(%s), gate_port(%d)",
 			response.session_code().c_str(), response.server_ip().c_str(), response.port());
+	return info->len;
+}
+
+int LoginHandler::processEcho(JmyMsgInfo* info)
+{
+	JmyTcpConnection* conn = get_connection(info);
+	if (!conn) {
+		LogError("get connection failed");
+		return -1;
+	}
+
+	MsgS2C_EchoResponse response;
+	if (!response.ParseFromArray(info->data, info->len)) {
+		LogError("parse MsgS2C_EchoResponse failed");
+		return -1;
+	}
+
+	TestClient* client = CLIENT_MGR->getClientByConnId(info->conn_id);
+	if (!client) {
+		LogError("get client by conn_id(%d) failed", info->conn_id);
+		return -1;
+	}
+
+	static int echo_count = 0;
+	LogInfo("get echo response %d", ++echo_count);
 	return info->len;
 }
 

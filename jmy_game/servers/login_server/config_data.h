@@ -16,6 +16,7 @@ static JmyResendConfig s_retran_config = {
 static JmyId2MsgHandler s_client_handlers[] = {
 	{ MSGID_C2S_LOGIN_REQUEST, ClientHandler::processLogin },
 	{ MSGID_C2S_SELECT_SERVER_REQUEST, ClientHandler::processSelectServer },
+	{ MSGID_C2S_ECHO_REQUEST, ClientHandler::processEcho }
 };
 static JmyBaseEventHandlers s_client_base_event_handlers = {
 	ClientHandler::onConnect,

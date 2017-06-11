@@ -170,7 +170,7 @@ private:
 			b.data_ = NULL;
 			return *this;
 		}
-		~buffer() { /*destroy();*/ }
+		~buffer() { destroy(); }
 		JmyPacketType getPacketType() const { return jmy_net_proto_pack_type(data_); }
 		bool init(const char* data, unsigned int len) {
 			if (!data || !len) return false;
@@ -227,13 +227,13 @@ private:
 		}
 		void destroy() {
 			if (data_) {
-				jmy_mem_free((void*)data_); //delete []data_;
+				jmy_mem_free((void*)data_); 
 				uninit_count_ += 1;
 				data_ = NULL;
 			}
 			len_ = 0;
 			roffset_ = woffset_ = 0;
-			output_malloc_and_free_count();
+			//output_malloc_and_free_count();
 		}
 		void output_malloc_and_free_count() {
 			static std::chrono::system_clock::time_point last_tick = std::chrono::system_clock::now();

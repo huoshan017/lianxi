@@ -13,7 +13,8 @@ static JmyResendConfig s_retran_config = {
 };
 static JmyId2MsgHandler s_login_handlers[] = {
 	{ MSGID_S2C_LOGIN_RESPONSE, LoginHandler::processLogin },
-	{ MSGID_S2C_SELECT_SERVER_RESPONSE, LoginHandler::processSelectedServer }
+	{ MSGID_S2C_SELECT_SERVER_RESPONSE, LoginHandler::processSelectedServer },
+	{ MSGID_S2C_ECHO_RESPONSE, LoginHandler::processEcho }
 };
 static JmyBaseEventHandlers s_login_base_event_handlers = {
 	LoginHandler::onConnect,

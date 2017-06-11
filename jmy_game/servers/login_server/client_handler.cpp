@@ -138,6 +138,37 @@ int ClientHandler::processSelectServer(JmyMsgInfo* info)
 	
 	LogInfo("account(%s) conn_id(%d) select server(%d)", account.c_str(), info->conn_id, gate_id);
 
-	return 0;
+	return info->len;
 }
 
+int ClientHandler::processEcho(JmyMsgInfo* info)
+{
+	JmyTcpConnection* conn = get_connection(info);
+	if (!conn) {
+		LogError("get connection failed");
+		return -1;
+	}
+
+	MsgC2S_EchoRequest request;
+	if (!request.ParseFromArray(info->data, info->len)) {
+		LogError("parse MsgC2S_EchoRequest failed");
+		return -1;
+	}
+
+	MsgS2C_EchoResponse response;
+	response.set_echo_str(request.echo_str());
+	if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
+		LogError("serialize MsgS2C_EchoResponse failed");
+		return -1;
+	}
+
+	if (conn->send(MSGID_S2C_ECHO_RESPONSE, tmp_, response.ByteSize()) < 0) {
+		LogError("send MsgS2C_EchoResponse failed");
+		return -1;
+	}
+
+	static int count = 0;
+	LogInfo("process echo %d", ++count);
+
+	return info->len;
+}

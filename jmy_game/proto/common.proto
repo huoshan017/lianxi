@@ -33,12 +33,15 @@ enum MsgIdType {
 	// test msg
 	MSGID_C2S_SET_ROLE_DATA_REQUEST			= 19001; // set role data request
 	MSGID_S2C_SET_ROLE_DATA_RESPONSE		= 19002; // set role data response
+	MSGID_C2S_ECHO_REQUEST					= 19003; // echo request
+	MSGID_S2C_ECHO_RESPONSE					= 19004; // echo response
 }
 
 message MsgError {
 	ProtoErrorType error_code = 1;
 }
 
+/******************** client <-> login *******************/
 // client -> login  [MSGID_C2S_LOGIN_REQUEST]  login request, send to login server
 message MsgC2S_LoginRequest {
 	bytes account = 1;
@@ -69,6 +72,17 @@ message MsgS2C_SelectServerResponse {
 	int32 port = 3;
 }
 
+// client -> login  [MSGID_C2S_ECHO_REQUEST]
+message MsgC2S_EchoRequest {
+	bytes echo_str = 1;
+}
+
+// login -> client  [MSGID_S2C_ECHO_RESPONSE]
+message MsgS2C_EchoResponse {
+	bytes echo_str = 1;
+}
+
+/**************************** client <-> gate *************************/
 // client -> gate  [MSGID_C2S_GET_ROLE_REQUEST]
 message MsgC2S_GetRoleRequest {
 	bytes account = 1;
