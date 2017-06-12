@@ -358,7 +358,6 @@ void JmyTcpConnection::buffer_send()
 		}
 		sending_data_ = false;
 	});
-	sending_data_ = true;
 }
 
 void JmyTcpConnection::buffer_list_send()
@@ -373,17 +372,16 @@ void JmyTcpConnection::buffer_list_send()
 		}
 		if (bytes_transferred > 0) {
 			buffer_->send_buff_list.readLen(bytes_transferred);
-			if (buffer_->send_buff_list.getUsingSize()) {
+			//if (buffer_->send_buff_list.getUsingSize()) {
 				// continue send
-				buffer_list_send();
-			} else {
+				//buffer_list_send();
+			//} else {
 				sending_data_ = false;
-			}
+			//}
 		} else {
 			sending_data_ = false;
 		}
 	});
-	sending_data_ = true;
 }
 
 int JmyTcpConnection::start_send()
@@ -406,6 +404,7 @@ int JmyTcpConnection::start_send()
 	} else {
 		buffer_list_send();
 	}
+	sending_data_ = true;
 	return 1;
 }
 
