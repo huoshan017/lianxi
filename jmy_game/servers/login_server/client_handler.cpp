@@ -168,7 +168,7 @@ int ClientHandler::processEcho(JmyMsgInfo* info)
 	}
 
 	static int count = 0;
-	LogInfo("process echo %d", ++count);
+	LogInfo("process echo str(%s) count(%d)", response.echo_str().c_str(), ++count);
 
 	return info->len;
 }

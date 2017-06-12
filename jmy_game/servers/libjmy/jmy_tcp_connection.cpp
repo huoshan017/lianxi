@@ -33,6 +33,7 @@ void JmyTcpConnection::force_close()
 	if (buffer_.get())
 		buffer_->clear();
 	state_ = JMY_CONN_STATE_DISCONNECTED;
+	sending_data_ = false;
 	handle_event(JMY_EVENT_DISCONNECT, 0);
 }
 
@@ -99,6 +100,11 @@ bool JmyTcpConnection::connect(const char* ip, short port)
 
 void JmyTcpConnection::start()
 {
+	start_recv();
+}
+
+void JmyTcpConnection::start_recv()
+{
 	if (conn_type_ == JMY_CONN_TYPE_ACTIVE && state_ != JMY_CONN_STATE_CONNECTED) {
 		LibJmyLogWarn("active connection's state is not connected");
 		return;
@@ -121,10 +127,10 @@ void JmyTcpConnection::start()
 				}	
 			}
 			else if (bytes_transferred == 0) {
-				std::this_thread::sleep_for(std::chrono::milliseconds(100));
+				std::this_thread::sleep_for(std::chrono::milliseconds(10));
 			}
 			//LibJmyLogDebug("received %d data", bytes_transferred);
-			start();
+			start_recv();
 		} else {
 			int ev = err.value();
 			if (ev == boost::system::errc::no_such_file_or_directory) {
@@ -333,74 +339,73 @@ int JmyTcpConnection::handle_recv()
 	return count;
 }
 
-int JmyTcpConnection::handle_send()
+void JmyTcpConnection::buffer_send()
+{
+	sock_.async_write_some(
+			boost::asio::buffer(buffer_->send_buff.getReadBuff(), buffer_->send_buff.getReadLen()),
+			[this](const boost::system::error_code& err, size_t bytes_transferred) {
+		if (!err) {
+			if (bytes_transferred > 0) {
+				if (!buffer_->send_buff.readLen(bytes_transferred)) {
+					LibJmyLogError("send buff read len %d failed", bytes_transferred);
+					return;
+				}
+			}
+		} else {
+			force_close();
+			LibJmyLogError("connection(%d) async_write_some error: %d", id_, err.value());
+			return;
+		}
+		sending_data_ = false;
+	});
+	sending_data_ = true;
+}
+
+void JmyTcpConnection::buffer_list_send()
+{
+	sock_.async_write_some(
+			boost::asio::buffer(buffer_->send_buff_list.getReadBuff(), buffer_->send_buff_list.getReadLen()),
+			[this](const boost::system::error_code& err, size_t bytes_transferred) {
+		if (err) {
+			force_close();
+			LibJmyLogError("connection(%d) async_write_some error: %d(%s)", id_, err.value(), err.message().c_str());
+			return;
+		}
+		if (bytes_transferred > 0) {
+			buffer_->send_buff_list.readLen(bytes_transferred);
+			if (buffer_->send_buff_list.getUsingSize()) {
+				// continue send
+				buffer_list_send();
+			} else {
+				sending_data_ = false;
+			}
+		} else {
+			sending_data_ = false;
+		}
+	});
+	sending_data_ = true;
+}
+
+int JmyTcpConnection::start_send()
 {
 	if (state_ != JMY_CONN_STATE_CONNECTED)
 		return -1;
 
-	unsigned int read_len = 0;
-	read_len = buffer_->use_send_list ? buffer_->send_buff_list.getReadLen() : buffer_->send_buff.getReadLen();
-
+	unsigned int read_len = buffer_->use_send_list ? buffer_->send_buff_list.getReadLen() : buffer_->send_buff.getReadLen();
 	if (read_len == 0) {
 		return 0;
 	}
 
-	if (sending_data_)
+	if (sending_data_) {
+		LibJmyLogInfo("sending data");
 		return 0;
+	}
 
 	if (!buffer_->use_send_list) {
-		sock_.async_write_some(
-				boost::asio::buffer(buffer_->send_buff.getReadBuff(), buffer_->send_buff.getReadLen()),
-				[this](const boost::system::error_code& err, size_t bytes_transferred) {
-			if (!err) {
-				if (bytes_transferred > 0) {
-					if (!buffer_->send_buff.readLen(bytes_transferred)) {
-						LibJmyLogError("send buff read len %d failed", bytes_transferred);
-						return;
-					}
-				}
-				//LibJmyLogInfo("connection(%d) send %d bytes", getId(), bytes_transferred);
-			} else {
-				force_close();
-				LibJmyLogError("connection(%d) async_write_some error: %d", id_, err.value());
-				return;
-			}
-			sending_data_ = false;
-		});
+		buffer_send();
 	} else {
-		sock_.async_write_some(
-				boost::asio::buffer(buffer_->send_buff_list.getReadBuff(), buffer_->send_buff_list.getReadLen()),
-				[this](const boost::system::error_code& err, size_t bytes_transferred) {
-			if (err) {
-				force_close();
-				LibJmyLogError("connection(%d) async_write_some error: %d", id_, err.value());
-				return;
-			}
-			
-			sending_data_ = false;
-			if (bytes_transferred > 0) {
-				JmyPacketType pt = (JmyPacketType)buffer_->send_buff_list.readLen(bytes_transferred);
-				if (pt > 0) {
-					// check send data count
-					/*JmyResendConfig* rc = mgr_.getConf().retran_conf;
-					if (rc && buffer_->total_reconn_info.send_count+1 >= rc->max_cached_send_count) {
-						force_close();
-						LibJmyLogError("cached send buffer count is max");
-						return;
-					}
-
-					if (pt == JMY_PACKET_USER_DATA) {
-						buffer_->total_reconn_info.send_count += 1;
-						//LibJmyLogInfo("send list count %d", total_reconn_info_.send_count);
-					}
-					*/
-				}
-				// continue send
-				handle_send();
-			}
-		});
+		buffer_list_send();
 	}
-	sending_data_ = true;
 	return 1;
 }
 
@@ -443,7 +448,7 @@ int JmyTcpConnection::run()
 	if (state_ != JMY_CONN_STATE_CONNECTED)
 		return -1;
 
-	return handle_send();
+	return start_send();
 }
 
 /**

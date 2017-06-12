@@ -315,7 +315,6 @@ int JmyDataHandler::handleMsg(JmyMsgInfo* info)
 		}
 	}
 
-	LibJmyLogDebug("to handle msg: %d", info->msg_id);
 	if (it->second(info) < 0)
 		return -1;
 

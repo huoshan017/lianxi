@@ -279,7 +279,7 @@ int jmy_net_proto_unpack_data_head(const char* buf, unsigned int len, JmyPacketU
 			if ((int)(len-offset) < (int)data_len) {
 				data.data = data_len+offset; // next message len(include data head)
 				data.result = JMY_UNPACK_RESULT_USER_DATA_NOT_ENOUGH;
-				LibJmyLogInfo("next message len %d not enough, need %d", len, data_len);
+				LibJmyLogInfo("next message len %d not enough, need %d", len-offset, data_len);
 				return 0;
 			}
 			// msg id

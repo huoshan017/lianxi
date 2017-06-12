@@ -22,6 +22,9 @@ struct JmyConnectionBuffer {
 	bool use_recv_list;
 	JmyTotalReconnInfo total_reconn_info;				// hold total reconn info
 
+	JmyConnectionBuffer() : id(0), state(JMY_CONN_BUFFER_STATE_IDLE) {
+	}
+
 	void init(const JmyBufferConfig& config, std::shared_ptr<JmySessionBufferPool> pool) {
 		use_send_list = config.use_send_buff_list;
 		use_recv_list = config.use_recv_buff_list;

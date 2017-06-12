@@ -52,6 +52,10 @@ public:
 	int handleDisconnectAck();
 
 protected:
+	void start_recv();
+	int start_send();
+	void buffer_send();
+	void buffer_list_send();
 	//int sendAck(JmyAckInfo*);
 	int sendHeartbeat();
 	int sendDisconnect();

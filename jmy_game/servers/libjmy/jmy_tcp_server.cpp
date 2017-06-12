@@ -181,7 +181,7 @@ int JmyTcpServer::accept_new()
 	}
 	JmyTcpConnection* conn = conn_mgr_.getFree(id);
 	conn->getSock() = std::move(curr_conn_.getSock());
-	conn->getSock().set_option(ip::tcp::no_delay(true));
+	//conn->getSock().set_option(ip::tcp::no_delay(true));
 	boost::asio::socket_base::linger option(true, 0);
 	conn->getSock().set_option(option);
 	conn->setDataHandler(handler_);

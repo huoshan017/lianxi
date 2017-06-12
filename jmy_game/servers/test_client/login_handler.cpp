@@ -78,10 +78,10 @@ int LoginHandler::processLogin(JmyMsgInfo* info)
 	}
 
 	MsgC2S_EchoRequest echo_req;
-	for (i=0; i<10000; ++i) {
+	for (i=0; i<20000; ++i) {
 		echo_req.set_echo_str(std::to_string(i));
 		if (!echo_req.SerializeToArray(tmp_, sizeof(tmp_))) {
-			LogError("serialize msg MsgS2C_EchoResponse failed");
+			LogError("serialize MsgS2C_EchoResponse failed");
 			return -1;
 		}
 		if (conn->send(MSGID_C2S_ECHO_REQUEST, tmp_, echo_req.ByteSize()) < 0) {
@@ -165,7 +165,7 @@ int LoginHandler::processEcho(JmyMsgInfo* info)
 	}
 
 	static int echo_count = 0;
-	LogInfo("get echo response %d", ++echo_count);
+	LogInfo("get echo response str(%s) count(%d)", response.echo_str().c_str(), ++echo_count);
 	return info->len;
 }
 
