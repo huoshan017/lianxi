@@ -1,4 +1,4 @@
-CC = g++
+CC = clang++
 AR = ar
 
 THIRD_DIR = $(PWD)/../thirdparty

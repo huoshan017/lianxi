@@ -46,7 +46,7 @@ bool DBServer::init(const char* confpath)
 		return false;
 	}
 
-	if (server_.listenStart(s_game_config.listen_port) < 0) {
+	if (server_.listenStart(s_game_config.listen_ip, s_game_config.listen_port) < 0) {
 		LogError("main server listen port %d failed", s_game_config.listen_port);
 		return false;
 	}

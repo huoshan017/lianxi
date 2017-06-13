@@ -25,7 +25,7 @@ static JmyBaseEventHandlers s_client_base_event_handlers = {
 	nullptr,
 };
 static JmyConnectionConfig s_client_conn_config = {
-	{ 128, 128, 0, 0, false, true },
+	{ 64, 64, 0, 0, false, true },
 	(JmyResendConfig*)nullptr, //&s_retran_config,
 	s_client_handlers,
 	sizeof(s_client_handlers)/sizeof(s_client_handlers[0]),

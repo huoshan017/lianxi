@@ -33,7 +33,7 @@ bool LoginServer::init(const char* conf_path)
 		LogError("failed to load login config");
 		return -1;
 	}
-	if (main_server_.listenStart(s_client_config.listen_port) < 0) {
+	if (main_server_.listenStart(s_client_config.listen_ip, s_client_config.listen_port) < 0) {
 		LogError("main server listen port %d failed", s_client_config.listen_port);
 		return -1;
 	}
@@ -47,7 +47,7 @@ bool LoginServer::init(const char* conf_path)
 		LogError("failed to load listen gate config");
 		return -1;
 	}
-	if (listen_gate_server_.listenStart(s_gate_config.listen_port) < 0) {
+	if (listen_gate_server_.listenStart(s_gate_config.listen_ip, s_gate_config.listen_port) < 0) {
 		LogError("listen port %d for gate server failed", s_gate_config.listen_port);
 		return -1;
 	}
@@ -94,7 +94,7 @@ int LoginServer::run()
 		res = config_client_->run();
 		if (res < 0) break;
 		service_.poll();
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		std::this_thread::sleep_for(std::chrono::milliseconds(5));
 	}
 	return res;
 }

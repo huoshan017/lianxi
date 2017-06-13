@@ -23,7 +23,7 @@ JmyTcpServer::JmyTcpServer(io_service& service) :
 	buff_pool_ = std::make_shared<JmySessionBufferPool>();
 }
 
-JmyTcpServer::JmyTcpServer(io_service& service, short port) :
+JmyTcpServer::JmyTcpServer(io_service& service, unsigned short port) :
 	service_(service),
 	sock_(service_),
 #if USE_CONNECTOR_AND_SESSION
@@ -115,15 +115,21 @@ int JmyTcpServer::start()
 	return res;
 }
 
-int JmyTcpServer::listenStart(short port)
+int JmyTcpServer::listenStart(const std::string& ip, unsigned short port)
 {
 	if (!inited_) return -1;
-	ip::tcp::endpoint ep(ip::tcp::v4(), port);
+	//ip::tcp::endpoint ep(ip::tcp::v4(), port);
+	ip::tcp::endpoint ep(ip::address::from_string(ip), port);
 	acceptor_->open(ep.protocol());
 	acceptor_->set_option(socket_base::reuse_address(true));
 	acceptor_->bind(ep);
 	acceptor_->listen();
 	return start();
+}
+
+int JmyTcpServer::listenStart(const char* ip, unsigned short port)
+{
+	return listenStart(std::string(ip), port);
 }
 
 int JmyTcpServer::do_accept()

@@ -2,9 +2,10 @@
 #include "jmy_mem.h"
 #include "jmy_log.h"
 #include <thread>
+#include <boost/asio/spawn.hpp>
 
 JmyTcpConnection::JmyTcpConnection(io_service& service, JmyTcpConnectionMgr& mgr, JmyConnType conn_type)
-	: id_(0), sock_(service), mgr_(mgr), conn_type_(conn_type), state_(JMY_CONN_STATE_NOT_USE), sending_data_(false)//, unused_data_(nullptr)
+	: id_(0), strand_(service), sock_(service), mgr_(mgr), conn_type_(conn_type), state_(JMY_CONN_STATE_NOT_USE), sending_data_(false)//, unused_data_(nullptr)
 {
 }
 
@@ -101,6 +102,7 @@ bool JmyTcpConnection::connect(const char* ip, short port)
 void JmyTcpConnection::start()
 {
 	start_recv();
+	//start_send();
 }
 
 void JmyTcpConnection::start_recv()
@@ -319,29 +321,12 @@ int JmyTcpConnection::handle_recv()
 		return -1;
 	}
 
-#if 0
-	// ack recv data count
-	JmyResendConfig* rc = mgr_.getConf().retran_conf;
-	if (rc) {
-		if (buffer_->total_reconn_info.recv_count + count >= rc->ack_recv_count) {
-			JmyAckInfo ack_info;
-			ack_info.ack_count = buffer_->total_reconn_info.recv_count + count;
-			if (this->sendAck(&ack_info) < 0) {
-				LibJmyLogError("send ack failed");
-				return -1;
-			}
-			buffer_->total_reconn_info.recv_count = 0;
-		} else {
-			buffer_->total_reconn_info.recv_count += count;
-		}
-	}
-#endif
 	return count;
 }
 
 void JmyTcpConnection::buffer_send()
 {
-	sock_.async_write_some(
+	sock_.async_send(
 			boost::asio::buffer(buffer_->send_buff.getReadBuff(), buffer_->send_buff.getReadLen()),
 			[this](const boost::system::error_code& err, size_t bytes_transferred) {
 		if (!err) {
@@ -362,7 +347,7 @@ void JmyTcpConnection::buffer_send()
 
 void JmyTcpConnection::buffer_list_send()
 {
-	sock_.async_write_some(
+	sock_.async_send(
 			boost::asio::buffer(buffer_->send_buff_list.getReadBuff(), buffer_->send_buff_list.getReadLen()),
 			[this](const boost::system::error_code& err, size_t bytes_transferred) {
 		if (err) {
@@ -370,17 +355,14 @@ void JmyTcpConnection::buffer_list_send()
 			LibJmyLogError("connection(%d) async_write_some error: %d(%s)", id_, err.value(), err.message().c_str());
 			return;
 		}
-		if (bytes_transferred > 0) {
-			buffer_->send_buff_list.readLen(bytes_transferred);
-			//if (buffer_->send_buff_list.getUsingSize()) {
-				// continue send
-				//buffer_list_send();
-			//} else {
-				sending_data_ = false;
-			//}
-		} else {
+		buffer_->send_buff_list.readLen(bytes_transferred);
+		//if (buffer_->send_buff_list.getUsingSize()) {
+			// continue send
+			//buffer_list_send();
+		//} else {
 			sending_data_ = false;
-		}
+			//LibJmyLogInfo("%d bytes transferred, set sending false", bytes_transferred);
+		//}
 	});
 }
 
@@ -448,6 +430,57 @@ int JmyTcpConnection::run()
 		return -1;
 
 	return start_send();
+}
+
+void JmyTcpConnection::go()
+{
+	// read coroutine
+	boost::asio::spawn(strand_,
+		[this](boost::asio::yield_context yield) {
+			if (conn_type_ == JMY_CONN_TYPE_ACTIVE && state_ != JMY_CONN_STATE_CONNECTED) {
+				LibJmyLogWarn("active connection's state is not connected");
+				return;
+			}
+
+			if (!data_handler_.get() || !buffer_.get()) {
+				LibJmyLogError("handler(0x%x) or buffer(0x%x) not set", data_handler_.get(), buffer_.get());
+				return;
+			}
+
+			boost::system::error_code ec;
+			while (true) {
+				sock_.async_receive(boost::asio::buffer(buffer_->recv_buff.getWriteBuff(), buffer_->recv_buff.getWriteLen()), yield[ec]);
+				if (ec) {
+					int ev = ec.value();
+					if (ev == boost::system::errc::no_such_file_or_directory) {
+						LibJmyLogInfo("peer(%s:%d) is closed", sock_.remote_endpoint().address().to_string().c_str(), sock_.remote_endpoint().port());
+					} else if (ev == boost::system::errc::operation_canceled) {
+						LibJmyLogInfo("operation was canceled");
+						return;
+					} else {
+						LibJmyLogError("read some data failed, err_code(%d), err_str(%s)", ev, ec.message().c_str());
+					}
+					force_close();
+					return;
+				}
+
+				buffer_->recv_buff.writeLen(buffer_->recv_buff.getWriteLen());
+				if (handle_recv() < 0) {
+					force_close();
+					return;
+				}
+				if (conn_type_ == JMY_CONN_TYPE_PASSIVE && state_ != JMY_CONN_STATE_CONNECTED) {
+					state_ = JMY_CONN_STATE_CONNECTED;
+				}	
+			}
+		}
+	);
+
+	// write coroutine
+	boost::asio::spawn(strand_,
+		[this](boost::asio::yield_context yield) {
+		}
+	);
 }
 
 /**

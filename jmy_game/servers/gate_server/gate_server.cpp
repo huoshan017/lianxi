@@ -32,7 +32,7 @@ bool GateServer::init(const char* conf_path)
 		LogError("failed to load listen client config");
 		return false;
 	}
-	if (main_server_.listenStart(CONFIG_FILE.port) < 0) {
+	if (main_server_.listenStart(CONFIG_FILE.ip, CONFIG_FILE.port) < 0) {
 		LogError("main server listen port %d failed", CONFIG_FILE.port);
 		return false;
 	}
@@ -46,7 +46,7 @@ bool GateServer::init(const char* conf_path)
 		LogError("failed to load listen game server config");
 		return false;
 	}
-	if (listen_game_server_.listenStart(CONFIG_FILE.listen_game_port) < 0) {
+	if (listen_game_server_.listenStart(CONFIG_FILE.listen_game_ip, CONFIG_FILE.listen_game_port) < 0) {
 		LogError("listen game server port %d failed", CONFIG_FILE.listen_game_port);
 		return false;
 	}

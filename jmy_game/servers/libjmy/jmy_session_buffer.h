@@ -252,4 +252,3 @@ private:
 	unsigned int max_count_;
 	unsigned int curr_count_;
 };
-

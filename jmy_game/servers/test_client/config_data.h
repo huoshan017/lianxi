@@ -24,7 +24,7 @@ static JmyBaseEventHandlers s_login_base_event_handlers = {
 };
 static jmy_msg_handler s_login_default_msg_handler = LoginHandler::processDefault;
 static JmyConnectionConfig s_conn_login_config = {
-	{ 1024, 1024, 0, 0, false, true },
+	{ 128, 128, 0, 0, false, true },
 	&s_retran_config,
 	s_login_handlers,
 	sizeof(s_login_handlers)/sizeof(s_login_handlers[0]),

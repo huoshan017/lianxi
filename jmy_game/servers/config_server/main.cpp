@@ -40,12 +40,12 @@ int main(int argc, char* argv[])
 		LogError("failed to load login config");
 		return -1;
 	}
-	if (main_server.listenStart(s_conn_config.listen_port) < 0) {
+	if (main_server.listenStart(s_conn_config.listen_ip, s_conn_config.listen_port) < 0) {
 		LogError("main server listen port %d failed", s_conn_config.listen_port);
 		return -1;
 	}
 
-	LogInfo("start listening port %d", s_conn_config.listen_port);
+	LogInfo("start listening ip(%s) port(%d)", s_conn_config.listen_ip, s_conn_config.listen_port);
 
 	while (main_server.run() >= 0) {
 		service.poll();

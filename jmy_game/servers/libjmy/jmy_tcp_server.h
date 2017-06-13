@@ -21,12 +21,13 @@ class JmyTcpServer
 {
 public:
 	JmyTcpServer(io_service& service);
-	JmyTcpServer(io_service& service, short port);
+	JmyTcpServer(io_service& service, unsigned short port);
 	~JmyTcpServer();
 
 	bool loadConfig(const JmyServerConfig& conf);
 	void close();
-	int listenStart(short port);
+	int listenStart(const std::string& ip, unsigned short port);
+	int listenStart(const char* ip, unsigned short short_port);
 	int start();
 	int run();
 

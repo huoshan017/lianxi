@@ -28,6 +28,8 @@ public:
 	int send(int msg_id, const char* data, unsigned int len);
 	int send(int user_id, int msg_id, const char* data, unsigned short len);
 	int run();
+	// start coroutine function
+	void go();
 
 	// geter and seter
 	void setId(int id) { id_ = id; }
@@ -66,6 +68,7 @@ protected:
 
 protected:
 	int id_;
+	io_service::strand strand_;		
 	ip::tcp::socket sock_;
 	ip::tcp::endpoint ep_;
 	JmyTcpConnectionMgr& mgr_;
