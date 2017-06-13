@@ -28,8 +28,10 @@ public:
 	int send(int msg_id, const char* data, unsigned int len);
 	int send(int user_id, int msg_id, const char* data, unsigned short len);
 	int run();
+#if USE_COROUTINE
 	// start coroutine function
-	void go();
+	int go();
+#endif
 
 	// geter and seter
 	void setId(int id) { id_ = id; }
@@ -69,6 +71,9 @@ protected:
 protected:
 	int id_;
 	io_service::strand strand_;		
+#if USE_COROUTINE
+	bool coroutine_running_;
+#endif
 	ip::tcp::socket sock_;
 	ip::tcp::endpoint ep_;
 	JmyTcpConnectionMgr& mgr_;
@@ -94,7 +99,9 @@ public:
 	JmyTcpConnection* getFree(int id);
 	JmyTcpConnection* get(int id);
 	bool free(JmyTcpConnection* conn);
+#if 0
 	int usedRun();
+#endif
 
 	const JmyConnectionConfig& getConf() const { return conf_; }
 

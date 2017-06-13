@@ -1,7 +1,7 @@
 {
 	"name" : "db_server",
 	"id" : 50001,
-	"ip" : "192.168.3.250",
+	"ip" : "127.0.0.1",
 	"port" : 50000,
 	"max_conn" : 100,
 	"enable_reconnect" : false,

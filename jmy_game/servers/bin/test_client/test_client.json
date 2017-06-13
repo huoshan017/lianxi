@@ -1,5 +1,5 @@
 {
-	"connect_ip" : "192.168.3.250",
+	"connect_ip" : "127.0.0.1",
 	"connect_port" : 10000,
 	"enable_reconnect" : true,
 	"log_conf_path" : "./log.conf",

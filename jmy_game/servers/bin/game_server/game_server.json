@@ -1,16 +1,16 @@
 {
 	"name" : "game_server",
 	"id" : 40001,
-	"ip" : "192.168.3.250",
+	"ip" : "127.0.0.1",
 	"port" : 40000,
 	"max_conn" : 100,
 	"enable_reconnect" : true,
 
-	"connect_gate_ip" : "192.168.3.250",
+	"connect_gate_ip" : "127.0.0.1",
 	"connect_gate_port" : 24001,
 	"connect_gate_enable_reconnect" : true,
 
-	"connect_db_ip" : "192.168.3.250",
+	"connect_db_ip" : "127.0.0.1",
 	"connect_db_port" : 50000,
 	"connect_db_enable_reconnect" : true,
 

@@ -5,7 +5,11 @@
 #include <boost/asio/spawn.hpp>
 
 JmyTcpConnection::JmyTcpConnection(io_service& service, JmyTcpConnectionMgr& mgr, JmyConnType conn_type)
-	: id_(0), strand_(service), sock_(service), mgr_(mgr), conn_type_(conn_type), state_(JMY_CONN_STATE_NOT_USE), sending_data_(false)//, unused_data_(nullptr)
+	: id_(0), strand_(service), 
+#if USE_COROUTINE
+	coroutine_running_(false),
+#endif
+	sock_(service), mgr_(mgr), conn_type_(conn_type), state_(JMY_CONN_STATE_NOT_USE), sending_data_(false)//, unused_data_(nullptr)
 {
 }
 
@@ -22,7 +26,6 @@ void JmyTcpConnection::close()
 	if (sendDisconnect() < 0) return;
 	active_close_start_ = std::chrono::system_clock::now();
 	state_ = JMY_CONN_STATE_DISCONNECTING;
-	sending_data_ = false;
 }
 
 void JmyTcpConnection::force_close()
@@ -35,6 +38,7 @@ void JmyTcpConnection::force_close()
 		buffer_->clear();
 	state_ = JMY_CONN_STATE_DISCONNECTED;
 	sending_data_ = false;
+	coroutine_running_ = false;
 	handle_event(JMY_EVENT_DISCONNECT, 0);
 }
 
@@ -427,21 +431,33 @@ int JmyTcpConnection::run()
 	}
 
 	if (state_ != JMY_CONN_STATE_CONNECTED)
-		return -1;
+		return 0;
 
+#if USE_COROUTINE
+	int res = 0;
+	if (!coroutine_running_) {
+		if (go()) {
+			coroutine_running_ = true;
+			res = 1;
+		}
+	}
+	return res;
+#else
 	return start_send();
+#endif
 }
 
-void JmyTcpConnection::go()
+#if USE_COROUTINE
+int JmyTcpConnection::go()
 {
+	if (conn_type_ == JMY_CONN_TYPE_ACTIVE && state_ != JMY_CONN_STATE_CONNECTED) {
+		LibJmyLogWarn("active connection's state is not connected");
+		return -1;
+	}
+
 	// read coroutine
 	boost::asio::spawn(strand_,
 		[this](boost::asio::yield_context yield) {
-			if (conn_type_ == JMY_CONN_TYPE_ACTIVE && state_ != JMY_CONN_STATE_CONNECTED) {
-				LibJmyLogWarn("active connection's state is not connected");
-				return;
-			}
-
 			if (!data_handler_.get() || !buffer_.get()) {
 				LibJmyLogError("handler(0x%x) or buffer(0x%x) not set", data_handler_.get(), buffer_.get());
 				return;
@@ -479,9 +495,40 @@ void JmyTcpConnection::go()
 	// write coroutine
 	boost::asio::spawn(strand_,
 		[this](boost::asio::yield_context yield) {
+			while (true) {
+				unsigned int read_len = buffer_->use_send_list ? buffer_->send_buff_list.getReadLen() : buffer_->send_buff.getReadLen();
+				boost::system::error_code ec;
+				if (buffer_->use_send_list) {
+					sock_.async_send(boost::asio::buffer(buffer_->send_buff_list.getReadBuff(), read_len), yield[ec]);
+				} else {
+					sock_.async_send(boost::asio::buffer(buffer_->send_buff.getReadBuff(), read_len), yield[ec]);
+				}
+				if (!ec) {
+					if (buffer_->use_send_list) {
+						if (!buffer_->send_buff_list.readLen(read_len)) {
+							force_close();
+							LibJmyLogError("send buff list read len %d failed", read_len);
+							return;
+						}
+					} else {
+						if (!buffer_->send_buff.readLen(read_len)) {
+							force_close();
+							LibJmyLogError("send buff read len %d failed", read_len);
+							return;
+						}
+					}
+				} else {
+					force_close();
+					LibJmyLogError("connection(%d) async_write_some error(%d), error_string(%s)", id_, ec.value(), ec.message().c_str());
+					return;
+				}
+			}
 		}
 	);
+
+	return 1;
 }
+#endif
 
 /**
  * JmyTcpConnectionMgr
@@ -577,6 +624,7 @@ bool JmyTcpConnectionMgr::free(JmyTcpConnection* conn)
 	return true;
 }
 
+#if 0
 int JmyTcpConnectionMgr::usedRun()
 {
 	int n = 0;
@@ -600,3 +648,4 @@ int JmyTcpConnectionMgr::usedRun()
 	}
 	return n;
 }
+#endif

@@ -155,8 +155,14 @@ int JmyTcpServer::do_accept()
 					curr_conn_.getSock().close();
 					LibJmyLogWarn("already max connections: %d", s);
 				} else {
-					if (accept_new() < 0)
+					ip::tcp::endpoint ep = curr_conn_.getSock().remote_endpoint();
+					const char* remote_ip = ep.address().to_string().c_str();
+					unsigned short remote_port = ep.port();
+					int id = accept_new();
+					if (id < 0)
 						return;
+					
+					LibJmyLogInfo("new connection(%d, %s:%d) start", id, remote_ip, remote_port);
 				}
 			}
 			do_accept();
@@ -171,7 +177,7 @@ int JmyTcpServer::accept_new()
 	JmyTcpSession* session = session_mgr_->getOneSession(session_buff_pool_, handler_, conf_.session_conf.use_send_list);
 	if (!session) {
 		LibJmyLogError("get free MyTcpSession failed");
-		return;
+		return -1;
 	}
 
 	session->getSock() = std::move(curr_session_.getSock());
@@ -208,10 +214,8 @@ int JmyTcpServer::accept_new()
 	evt.param = (void*)&conn_mgr_;
 	evt.param_l = 0;
 	event_handler_->onConnect(&evt);
-	ip::tcp::endpoint ep = conn->getSock().remote_endpoint();
-	LibJmyLogInfo("new connection(%d, %s:%d) start", conn->getId(), ep.address().to_string().c_str(), ep.port());
 #endif
-	return 0;
+	return id;
 }
 
 #if USE_THREAD
@@ -228,17 +232,10 @@ int JmyTcpServer::run()
 	if (session_mgr_->run() < 0)
 		return -1;
 #else
-	/*if (conn_mgr_.usedRun() < 0) {
-		LibJmyLogError("connection manager run failed");
-		return -1;
-	}*/
 	if (run_conns() < 0) {
 		LibJmyLogError("run conns failed");
 		return -1;
 	}
-#endif
-
-#if !USE_THREAD
 #endif
 	return 0;
 }

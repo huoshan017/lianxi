@@ -1,17 +1,17 @@
 {
 	"server_name" : "login_server",
 	"server_id" : 10001,
-	"server_ip" : "192.168.3.250",
+	"server_ip" : "127.0.0.1",
 	"server_port" : 10000,
 	"max_conn" : 1000,
 	"enable_reconnect" : false,
 
-	"listen_gate_ip" : "192.168.3.250",
+	"listen_gate_ip" : "127.0.0.1",
 	"listen_gate_port" : 12001,
 	"listen_gate_max_conn" : 100,
 	"listen_gate_enable_reconnect" : false,
 
-	"connect_config_ip" : "192.168.3.250",
+	"connect_config_ip" : "127.0.0.1",
 	"connect_config_port" : 30000,
 	"connect_config_enable_reconnect" : false,
 
