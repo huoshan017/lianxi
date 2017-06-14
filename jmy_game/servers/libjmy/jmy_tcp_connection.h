@@ -2,6 +2,9 @@
 
 #include <chrono>
 #include <boost/asio.hpp>
+#if USE_COROUTINE
+#include <boost/asio/yield.hpp>
+#endif
 #include "jmy_const.h"
 #include "jmy_datatype.h"
 #include "jmy_data_handler.h"
@@ -31,6 +34,26 @@ public:
 #if USE_COROUTINE
 	// start coroutine function
 	int go();
+
+	class recv_coro : public boost::asio::coroutine {
+	public:
+		recv_coro(JmyTcpConnection* conn);
+		~recv_coro();
+		void operator()(const boost::system::error_code ec, std::size_t bytes_transferred);
+	private:
+		JmyTcpConnection* conn_;
+	};
+	friend class recv_coro;
+
+	class send_coro : public boost::asio::coroutine {
+	public:
+		send_coro(JmyTcpConnection* conn);
+		~send_coro();
+		void operator()(const boost::system::error_code ec, std::size_t bytes_transferred);
+	private:
+		JmyTcpConnection* conn_;
+	};
+	friend class send_coro;
 #endif
 
 	// geter and seter
@@ -73,6 +96,8 @@ protected:
 	io_service::strand strand_;		
 #if USE_COROUTINE
 	bool coroutine_running_;
+	boost::asio::coroutine recv_coro_;
+	boost::asio::coroutine send_coro_;
 #endif
 	ip::tcp::socket sock_;
 	ip::tcp::endpoint ep_;

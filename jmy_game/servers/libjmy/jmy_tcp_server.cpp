@@ -183,8 +183,6 @@ int JmyTcpServer::accept_new()
 	session->getSock() = std::move(curr_session_.getSock());
 	session->getSock().set_option(ip::tcp::no_delay(true));
 	session->start();
-	ip::tcp::endpoint ep = session->getSock().remote_endpoint();
-	LibJmyLogInfo("new session %d(%s:%d) start", session->getId(), ep.address().to_string().c_str(), ep.port());
 #else
 	int id = id_gene_.get();
 	if (id == 0) {
@@ -205,7 +203,9 @@ int JmyTcpServer::accept_new()
 	}
 	buffer->init(conf_.conn_conf.buff_conf, buff_pool_);
 	conn->setBuffer(buffer);
+#if !USE_COROUTINE
 	conn->start();
+#endif
 	conns_.push_back(conn);
 	// handle accept event
 	JmyEventInfo evt;

@@ -5,7 +5,7 @@
 #include <cstring>
 #include "jmy_const.h"
 
-#define USE_COROUTINE 1
+#define USE_COROUTINE 0
 #define USE_CONNECTOR_AND_SESSION 0
 #define USE_ACK 0
 
