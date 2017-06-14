@@ -78,7 +78,7 @@ int LoginHandler::processLogin(JmyMsgInfo* info)
 	}
 
 	MsgC2S_EchoRequest echo_req;
-	for (i=0; i<20000; ++i) {
+	for (i=0; i<2000000; ++i) {
 		echo_req.set_echo_str(std::to_string(i));
 		if (!echo_req.SerializeToArray(tmp_, sizeof(tmp_))) {
 			LogError("serialize MsgS2C_EchoResponse failed");

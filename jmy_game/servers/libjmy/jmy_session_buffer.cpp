@@ -427,6 +427,8 @@ bool JmySessionBufferList::writeData(const char* data, unsigned int len)
 	if (max_bytes_ > 0)
 		curr_used_bytes_ += len;
 
+	LibJmyLogInfo("buff list size: %d", using_list_.size());
+
 	return true;
 }
 
@@ -468,6 +470,8 @@ bool JmySessionBufferList::writeData(JmyData* datas, int count)
 	if (max_bytes_ > 0)
 		curr_used_bytes_ += total_len;
 
+	LibJmyLogInfo("buff list size: %d", using_list_.size());
+
 	return true;
 }
 
@@ -502,6 +506,7 @@ int JmySessionBufferList::readLen(unsigned int len)
 		if (pt == JMY_PACKET_USER_DATA)
 			used_list_.push_back(std::move(b));
 		using_list_.pop_front();
+		LibJmyLogInfo("after pop front, buff list size: %d", using_list_.size());
 		return (int)pt;
 	}
 	//LibJmyLogInfo("using_list size(%u), used_list size(%u)", using_list_.size(), used_list_.size());

@@ -222,7 +222,7 @@ private:
 			return true;
 		}
 		bool is_read_out() {
-			if (roffset_ < len_) return false;
+			if (roffset_ < woffset_) return false;
 			return true;
 		}
 		void destroy() {

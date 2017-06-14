@@ -105,6 +105,7 @@ protected:
 	JmyConnType conn_type_;										// connection type
 	JmyConnState state_;										// connection state
 	bool sending_data_;											// is sending data
+	short buff_send_count_;
 	std::chrono::system_clock::time_point active_close_start_;	// active close time start
 	std::shared_ptr<JmyDataHandler> data_handler_;				// data handler
 	std::shared_ptr<JmyEventHandlerManager> event_handler_;		// event handler

@@ -162,10 +162,12 @@ int ClientHandler::processEcho(JmyMsgInfo* info)
 		return -1;
 	}
 
+#if 0
 	if (conn->send(MSGID_S2C_ECHO_RESPONSE, tmp_, response.ByteSize()) < 0) {
 		LogError("send MsgS2C_EchoResponse failed");
 		return -1;
 	}
+#endif
 
 	static int count = 0;
 	LogInfo("process echo str(%s) count(%d)", response.echo_str().c_str(), ++count);

@@ -11,7 +11,7 @@ JmyTcpConnection::JmyTcpConnection(io_service& service, JmyTcpConnectionMgr& mgr
 #if USE_COROUTINE
 	coroutine_running_(false),
 #endif
-	sock_(service), mgr_(mgr), conn_type_(conn_type), state_(JMY_CONN_STATE_NOT_USE), sending_data_(false)//, unused_data_(nullptr)
+	sock_(service), mgr_(mgr), conn_type_(conn_type), state_(JMY_CONN_STATE_NOT_USE), sending_data_(false), buff_send_count_(0)
 {
 }
 
@@ -334,10 +334,6 @@ int JmyTcpConnection::handle_recv()
 
 void JmyTcpConnection::buffer_send()
 {
-	if (sending_data_) {
-		LibJmyLogInfo("sending data");
-		return;
-	}
 	sock_.async_send(
 			boost::asio::buffer(buffer_->send_buff.getReadBuff(), buffer_->send_buff.getReadLen()),
 			[this](const boost::system::error_code& err, size_t bytes_transferred) {
@@ -355,16 +351,10 @@ void JmyTcpConnection::buffer_send()
 		}
 		sending_data_ = false;
 	});
-
-	sending_data_ = true;
 }
 
 void JmyTcpConnection::buffer_list_send()
 {
-	if (sending_data_) {
-		LibJmyLogInfo("sending data");
-		return;
-	}
 	sock_.async_send(
 			boost::asio::buffer(buffer_->send_buff_list.getReadBuff(), buffer_->send_buff_list.getReadLen()),
 			[this](const boost::system::error_code& err, size_t bytes_transferred) {
@@ -375,21 +365,27 @@ void JmyTcpConnection::buffer_list_send()
 		}
 
 		buffer_->send_buff_list.readLen(bytes_transferred);
-		if (buffer_->send_buff_list.getUsingSize()) {
-			// continue send
-			buffer_list_send();
-		} else {
+		buff_send_count_ += 1;
+		if (buff_send_count_ >= 100 || !buffer_->send_buff_list.getUsingSize()) {
+			buff_send_count_ = 0;
 			sending_data_ = false;
-			LibJmyLogInfo("%d bytes transferred, set sending false", bytes_transferred);
+			LibJmyLogInfo("!!!!!!!!! end send buff list");
+			return;
 		}
+		buffer_list_send();
+		LibJmyLogInfo("%d bytes transferred, set sending false", bytes_transferred);
 	});
-	sending_data_ = true;
 }
 
 int JmyTcpConnection::start_send()
 {
 	if (state_ != JMY_CONN_STATE_CONNECTED)
 		return -1;
+
+	if (sending_data_) {
+		LibJmyLogInfo("sending data");
+		return 0;
+	}
 
 	unsigned int read_len = buffer_->use_send_list ? buffer_->send_buff_list.getReadLen() : buffer_->send_buff.getReadLen();
 	if (read_len == 0) {
@@ -400,6 +396,7 @@ int JmyTcpConnection::start_send()
 	} else {
 		buffer_list_send();
 	}
+	sending_data_ = true;
 	return 1;
 }
 
