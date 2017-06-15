@@ -32,7 +32,6 @@ public:
 	int send(int msg_id, const char* data, unsigned int len);
 	int sendAck(JmyAckInfo*);
 	int sendHeartbeat();
-	void checkAck(JmyAckInfo& info);
 #if USE_CONN_PROTO
 	int sendConnRes(JmyConnResInfo*);
 	int sendReconnRes(JmyConnResInfo*);

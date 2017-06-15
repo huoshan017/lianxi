@@ -129,17 +129,13 @@ void JmyTcpConnection::start_recv()
 			boost::asio::buffer(buffer_->recv_buff.getWriteBuff(), buffer_->recv_buff.getWriteLen()),
 			[this](const boost::system::error_code& err, size_t bytes_transferred) {
 		if (!err) {
-			if (bytes_transferred > 0) {
-				buffer_->recv_buff.writeLen(bytes_transferred);
-				if (handle_recv() < 0) {
-					force_close();
-					return;
-				}	
+			buffer_->recv_buff.writeLen(bytes_transferred);
+#if 0
+			if (handle_recv() < 0) {
+				force_close();
+				return;
 			}
-			else if (bytes_transferred == 0) {
-				std::this_thread::sleep_for(std::chrono::milliseconds(10));
-			}
-			//LibJmyLogDebug("received %d data", bytes_transferred);
+#endif
 			start_recv();
 		} else {
 			int ev = err.value();
@@ -157,6 +153,61 @@ void JmyTcpConnection::start_recv()
 
 	if (conn_type_ == JMY_CONN_TYPE_PASSIVE && state_ != JMY_CONN_STATE_CONNECTED) {
 		state_ = JMY_CONN_STATE_CONNECTED;
+	}
+}
+
+void JmyTcpConnection::start_list_recv()
+{
+	if (conn_type_ == JMY_CONN_TYPE_ACTIVE && state_ != JMY_CONN_STATE_CONNECTED) {
+		LibJmyLogWarn("active connection's state is not connected");
+		return;
+	}
+
+	if (!data_handler_.get() || !buffer_.get()) {
+		LibJmyLogError("handler(0x%x) or buffer(0x%x) not set", data_handler_.get(), buffer_.get());
+		return;
+	}
+
+	char packet_type;
+	sock_.async_receive(
+			boost::asio::buffer(&packet_type, 1),
+			[this, packet_type](const boost::system::error_code& err, size_t bytes_transferred) {
+		if (!err) {
+			if (bytes_transferred != 1) {
+				force_close();
+				LibJmyLogError("receive packet type failed");
+				return;
+			}
+			handle_packet((JmyPacketType)packet_type);
+		} else {
+			int ev = err.value();
+			if (ev == boost::system::errc::no_such_file_or_directory) {
+				LibJmyLogInfo("peer(%s:%d) is closed", sock_.remote_endpoint().address().to_string().c_str(), sock_.remote_endpoint().port());
+			} else if (ev == boost::system::errc::operation_canceled) {
+				LibJmyLogInfo("operation was canceled");
+				return;
+			} else {
+				LibJmyLogError("read some data failed, err_code(%d), err_str(%s)", ev, err.message().c_str());
+			}
+			force_close();
+		}
+	});
+
+	if (conn_type_ == JMY_CONN_TYPE_PASSIVE && state_ != JMY_CONN_STATE_CONNECTED) {
+		state_ = JMY_CONN_STATE_CONNECTED;
+	}
+}
+
+void JmyTcpConnection::handle_packet(JmyPacketType packet_type)
+{
+	if (packet_type == JMY_PACKET_DISCONNECT) {
+		handleDisconnect();
+	} else if (packet_type == JMY_PACKET_DISCONNECT_ACK) {
+		handleDisconnectAck();
+	} else if (packet_type == JMY_PACKET_HEARTBEAT) {
+		handleHeartbeat();
+	} else if (packet_type == JMY_PACKET_USER_DATA) {
+	} else if (packet_type == JMY_PACKET_USER_ID_DATA) {
 	}
 }
 
@@ -449,6 +500,12 @@ int JmyTcpConnection::run()
 	}
 	return res;
 #else
+	if (buffer_->recv_buff.getReadLen() > 0) {
+		if (handle_recv() < 0) {
+			force_close();
+			return -1;
+		}
+	}
 	return start_send();
 #endif
 }
@@ -721,29 +778,3 @@ bool JmyTcpConnectionMgr::free(JmyTcpConnection* conn)
 	LibJmyLogInfo("free connection(%d)", conn->getId());
 	return true;
 }
-
-#if 0
-int JmyTcpConnectionMgr::usedRun()
-{
-	int n = 0;
-	std::unordered_map<int, JmyTcpConnection*>::iterator it, tmp_it;
-	it = used_map_.begin();
-	for (; it!=used_map_.end(); ) {
-		tmp_it = it;
-		tmp_it++;
-		bool del = false;
-		if (!it->second || it->second->isDisconnect()) {
-			del = true;
-		}
-		if (del && it->second) {
-			free(it->second);
-			it = tmp_it;
-			continue;
-		}
-		if (it->second->run() >= 0)
-			n += 1;
-		it = tmp_it;
-	}
-	return n;
-}
-#endif

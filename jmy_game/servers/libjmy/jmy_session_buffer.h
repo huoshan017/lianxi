@@ -7,7 +7,6 @@
 #include <atomic>
 #include "jmy_session_buffer_pool.h"
 #include "jmy_datatype.h"
-#include "jmy_net_proto.h"
 #include "jmy_mem.h"
 #include "jmy_log.h"
 
@@ -15,32 +14,6 @@ enum SessionBufferType {
 	SESSION_BUFFER_TYPE_NONE,
 	SESSION_BUFFER_TYPE_RECV,
 	SESSION_BUFFER_TYPE_SEND,
-};
-
-class JmySimpleBuffer {
-public:
-	JmySimpleBuffer(): write_offset_(0) {
-	}
-	~JmySimpleBuffer() { }
-	void reset() { write_offset_ = 0; }
-	char* getReadBuff() { return buff_; }
-	unsigned int getReadLen() { return write_offset_; }
-	bool writeData(const char* data, unsigned int len) {
-		if (write_offset_ > 0) {
-			LibJmyLogError("not write data because of not reset");
-			return false;
-		}
-		if (len > sizeof(buff_)) {
-			LibJmyLogError("data len %d too long", len);
-			return false;
-		}
-		std::memcpy(buff_, data, len);
-		return true;
-	}
-	
-private:
-	char buff_[64];
-	unsigned char write_offset_;
 };
 
 struct JmyData;
@@ -139,25 +112,14 @@ public:
 	const char* getReadBuff();
 	unsigned int getReadLen();
 	int readLen(unsigned int len);
-	void dropUsed(unsigned int len = 0);
 	unsigned int getUsingSize() const { return using_list_.size(); }
-	unsigned int getUsedSize() const { return used_list_.size(); }
 	unsigned int getUsedBytes() const { return curr_used_bytes_; }
-	JmyPacketType getCurrPacketType() {
-		if (using_list_.size() == 0)
-			return JMY_PACKET_NONE;
-		buffer& b = using_list_.front();
-		return (JmyPacketType)b.getPacketType();
-	}
 
-private:
 	struct buffer {
 		const char* data_;
-		unsigned int len_;
-		unsigned int roffset_;
-		unsigned int woffset_;
-		static std::atomic<uint64_t> init_count_;
-		static std::atomic<uint64_t> uninit_count_;
+		unsigned short len_;
+		unsigned short roffset_;
+		unsigned short woffset_;
 		buffer() : data_(NULL), len_(0), roffset_(0), woffset_(0) {}
 		buffer(buffer&& b) : data_(b.data_), len_(b.len_), roffset_(b.roffset_), woffset_(b.woffset_) {
 			b.data_ = NULL;
@@ -171,35 +133,30 @@ private:
 			return *this;
 		}
 		~buffer() { destroy(); }
-		JmyPacketType getPacketType() const { return jmy_net_proto_pack_type(data_); }
-		bool init(const char* data, unsigned int len) {
+		bool init(const char* data, unsigned short len) {
 			if (!data || !len) return false;
 			if (data_ && len_!=len) {
-				jmy_mem_free((void*)data_); //delete [] data_;
-				uninit_count_ += 1;
+				jmy_mem_free((void*)data_); 
 			}
-			data_ = (const char*)jmy_mem_malloc(len);//new char[len];
-			init_count_ += 1;
+			data_ = (const char*)jmy_mem_malloc(len);
 			std::memcpy((void*)data_, (void*)data, len);
 			len_ = len;
 			roffset_ = 0;
 			woffset_ = len;
 			return true;
 		}
-		bool init(unsigned int len) {
+		bool init(unsigned short len) {
 			if (!len) return false;
 			if (data_ && len_!=len) {
 				jmy_mem_free((void*)data_); //delete [] data_;
-				uninit_count_ += 1;
 			}
 			data_ = (const char*)jmy_mem_malloc(len); //data_ = new char[len];
-			init_count_ += 1;
 			len_ = len;
 			roffset_ = 0;
 			woffset_ = 0;
 			return true;
 		}
-		bool write(const char* data, unsigned int len) {
+		bool write(const char* data, unsigned short len) {
 			if (!data || !len) return false;
 			int left = len_ - woffset_;
 			if (left < (int)len)
@@ -212,11 +169,11 @@ private:
 		const char* read_buff() {
 			return data_ + roffset_;
 		}
-		unsigned int read_len() {
+		unsigned short read_len() {
 			if (woffset_ < roffset_) return 0;
 			return woffset_ - roffset_;
 		}
-		bool read(unsigned int len) {
+		bool read(unsigned short len) {
 			if (len > woffset_-roffset_) return false;
 			roffset_ += len;
 			return true;
@@ -228,25 +185,17 @@ private:
 		void destroy() {
 			if (data_) {
 				jmy_mem_free((void*)data_); 
-				uninit_count_ += 1;
 				data_ = NULL;
 			}
 			len_ = 0;
 			roffset_ = woffset_ = 0;
-			//output_malloc_and_free_count();
-		}
-		void output_malloc_and_free_count() {
-			static std::chrono::system_clock::time_point last_tick = std::chrono::system_clock::now();
-			std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-			if (std::chrono::duration_cast<std::chrono::milliseconds>(now - last_tick).count() >= 1000) {
-				last_tick = now;
-				LibJmyLogInfo("init count(%llu)  uninit count(%llu)", init_count_.operator unsigned long(), uninit_count_.operator unsigned long());
-			}
 		}
 	};
 
+	std::list<buffer>& getBufferList() { return using_list_; }
+
+private:
 	std::list<buffer> using_list_;
-	std::list<buffer> used_list_;
 	unsigned int max_bytes_;
 	unsigned int curr_used_bytes_;
 	unsigned int max_count_;

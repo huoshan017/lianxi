@@ -80,6 +80,8 @@ public:
 
 protected:
 	void start_recv();
+	void start_list_recv();
+	void handle_packet(JmyPacketType packet_type);
 	int start_send();
 	void buffer_send();
 	void buffer_list_send();
@@ -125,10 +127,6 @@ public:
 	JmyTcpConnection* getFree(int id);
 	JmyTcpConnection* get(int id);
 	bool free(JmyTcpConnection* conn);
-#if 0
-	int usedRun();
-#endif
-
 	const JmyConnectionConfig& getConf() const { return conf_; }
 
 private:

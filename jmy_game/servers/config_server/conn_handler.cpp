@@ -268,7 +268,6 @@ int ConnHandler::processLoginConnect(JmyMsgInfo* info)
 	if (broadcast_new_login_to_gate(login_id, login_data.ip.c_str(), login_data.port) < 0)
 		return -1;
 
-	LogInfo("login_server(id:%d, ip:%s, port:%d) connected", 
-			login_id, login_data.ip.c_str(), login_data.port);
+	LogInfo("login_server(id:%d, ip:%s, port:%d) connected", login_id, login_data.ip.c_str(), login_data.port);
 	return 0;
 }

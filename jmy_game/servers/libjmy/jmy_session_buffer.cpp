@@ -495,22 +495,19 @@ unsigned int JmySessionBufferList::getReadLen()
 int JmySessionBufferList::readLen(unsigned int len)
 {
 	if (using_list_.size() == 0)
-		return (int)JMY_PACKET_NONE;
+		return 0;
 
 	buffer& b = using_list_.front();
 	if (!b.read(len))
-		return (int)JMY_PACKET_NONE;
+		return 0;
 
-	JmyPacketType pt = b.getPacketType();
 	if (b.is_read_out()) {
-		if (pt == JMY_PACKET_USER_DATA)
-			used_list_.push_back(std::move(b));
 		using_list_.pop_front();
 		LibJmyLogInfo("after pop front, buff list size: %d", using_list_.size());
-		return (int)pt;
+		return len;
 	}
 	//LibJmyLogInfo("using_list size(%u), used_list size(%u)", using_list_.size(), used_list_.size());
-	return (int)JMY_PACKET_NONE;
+	return len;
 }
 
 void JmySessionBufferList::dropUsed(unsigned int len)

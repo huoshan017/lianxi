@@ -216,15 +216,6 @@ int JmyTcpSession::handle_send()
 	return 1;
 }
 
-void JmyTcpSession::checkAck(JmyAckInfo& info)
-{
-	if (!use_send_list_) return;
-	if (total_reconn_info_.send_info.ack_count - info.ack_count == 0) {
-		send_buff_list_.dropUsed(info.ack_count);
-		return;
-	}
-}
-
 int JmyTcpSession::run()
 {
 	int res = handle_send();
