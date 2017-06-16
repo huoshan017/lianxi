@@ -140,7 +140,9 @@ int LoginHandler::processSelectedServer(JmyMsgInfo* info)
 	}
 
 	client->setEnterSession(response.session_code());
+#if 1
 	client->postConnectGameEvent(response.server_ip().c_str(), response.port());
+#endif
 	LogInfo("processSelectedServer: session_code(%s), gate_ip(%s), gate_port(%d)",
 			response.session_code().c_str(), response.server_ip().c_str(), response.port());
 	return info->len;
