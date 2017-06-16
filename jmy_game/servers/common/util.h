@@ -2,27 +2,28 @@
 
 #include "../libjmy/jmy_util.h"
 #include "defines.h"
+#include <ctime>
 
 #define s_libjmy_log_cate "libjmy_log"
-#define s_server_log_cate "server_log"
+#define s_app_log_cate "app_log"
 
-#define ServerLogDebug(...) \
-	JmyLogDebug(s_server_log_cate, __VA_ARGS__)
+#define LogDebug(...) \
+	JmyLogDebug(s_app_log_cate, __VA_ARGS__)
 
-#define ServerLogInfo(...) \
-	JmyLogInfo(s_server_log_cate, __VA_ARGS__)
+#define LogInfo(...) \
+	JmyLogInfo(s_app_log_cate, __VA_ARGS__)
 
-#define ServerLogNotice(...) \
-	JmyLogNotice(s_server_log_cate, __VA_ARGS__)
+#define LogNotice(...) \
+	JmyLogNotice(s_app_log_cate, __VA_ARGS__)
 
-#define ServerLogWarn(...) \
-	JmyLogWarn(s_server_log_cate, __VA_ARGS__)
+#define LogWarn(...) \
+	JmyLogWarn(s_app_log_cate, __VA_ARGS__)
 
-#define ServerLogError(...) \
-	JmyLogError(s_server_log_cate, __VA_ARGS__)
+#define LogError(...) \
+	JmyLogError(s_app_log_cate, __VA_ARGS__)
 
-#define ServerLogFatal(...) \
-	JmyLogFatal(s_server_log_cate, __VA_ARGS__)
+#define LogFatal(...) \
+	JmyLogFatal(s_app_log_cate, __VA_ARGS__)
 
 bool global_log_init(const char* logconfpath);
 

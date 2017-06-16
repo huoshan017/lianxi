@@ -2,40 +2,48 @@
 #include "../libjmy/jmy.h"
 #include "../common/util.h"
 #include "../../proto/src/server.pb.h"
+#include "../../proto/src/common.pb.h"
+#include <random>
 #include "config_loader.h"
 #include "user.h"
-#include <random>
+#include "gate_server_list.h"
+#include "client_manager.h"
 
 char ClientHandler::tmp_[JMY_MAX_MSG_SIZE];
-ClientAgentManager ClientHandler::client_mgr_;
+
+int ClientHandler::send_error(JmyMsgInfo* info, ProtoErrorType error) {
+	JmyTcpConnection* conn = get_connection(info);
+	if (!conn) return -1;
+	MsgError response;
+	response.set_error_code(error);
+	return conn->send(MSGID_S2C_LOGIN_RESPONSE, tmp_, response.ByteSize());
+}
 
 int ClientHandler::onConnect(JmyEventInfo* info)
 {
-	(void)info;
-	int curr_conn = (int)client_mgr_.getAgentSize();
-	if (curr_conn < SERVER_CONFIG_FILE.max_conn) {
-		return 0;
-	}
 	JmyTcpConnection* conn = get_connection(info);
 	if (!conn) {
-		ServerLogError("cant get connection by event info(conn_id:%d)", info->conn_id);
+		LogError("cant get connection by event info(conn_id:%d)", info->conn_id);
 		return -1;
 	}
+	if (!CLIENT_MANAGER->isFull()) {
+		LogInfo("client(conn_id:%d) onConnect", info->conn_id);
+		return 0;
+	}
 	conn->force_close();
-	ServerLogWarn("client connection count(%d) is max", curr_conn);
+	LogWarn("client connection count is max(%d)", SERVER_CONFIG.max_conn);
 	return 0;
 }
 
 int ClientHandler::onDisconnect(JmyEventInfo* info)
 {
-	(void)info;
-	ClientAgent* agent = client_mgr_.getAgentByConnId(info->conn_id);
+	ClientAgent* agent = CLIENT_MANAGER->getAgentByConnId(info->conn_id);
 	if (!agent) {
-		ServerLogError("cant get client agent with conn_id(%d)", info->conn_id);
+		LogError("cant get client agent with conn_id(%d)", info->conn_id);
 		return -1;
 	}
-	client_mgr_.deleteAgentByConnId(info->conn_id);
-	ServerLogInfo("connection %d ondisconnect", info->conn_id);
+	CLIENT_MANAGER->deleteAgentByConnId(info->conn_id);
+	LogInfo("connection %d onDisconnect", info->conn_id);
 	return 0;
 }
 
@@ -45,46 +53,45 @@ int ClientHandler::onTick(JmyEventInfo* info)
 	return 0;
 }
 
-int ClientHandler::onTimer(JmyEventInfo* info)
-{
-	(void)info;
-	return 0;
-}
-
-void ClientHandler::send_error(JmyMsgInfo* info, ProtoErrorType error) {
-	JmyTcpConnection* conn = get_connection(info);
-	if (!conn) return;
-	MsgError response;
-	response.set_error_code(error);
-	conn->send(MSGID_S2C_LOGIN_RESPONSE, tmp_, response.ByteSize());
-}
-
 int ClientHandler::processLogin(JmyMsgInfo* info)
 {
 	MsgC2S_LoginRequest request;
 	if (!request.ParseFromArray(info->data, info->len)) {
 		send_error(info, PROTO_ERROR_LOGIN_DATA_INVALID);
-		ServerLogError("parse MsgC2LLoginRequest failed");
+		LogError("parse MsgC2LLoginRequest failed");
 		return -1;
 	}
 
-	request.account();
-	request.password();
+	// check account
 
-	ClientAgent* user = client_mgr_.newAgent(request.account(), (JmyTcpConnectionMgr*)info->param, info->session_id);
-	if (!user) {
+	ClientAgent* agent = CLIENT_MANAGER->newAgent(request.account(), info);
+	if (!agent) {
 		send_error(info, PROTO_ERROR_LOGIN_REPEATED);
-		ServerLogError("create user by account(%s) failed", request.account().c_str());
+		LogError("create user by account(%s) failed", request.account().c_str());
 		return -1;
 	}
-
-	user->setState(AGENT_STATE_VERIFIED);
+	agent->setState(AGENT_STATE_VERIFIED);
 
 	MsgS2C_LoginResponse response;
-	response.SerializeToArray(tmp_, sizeof(tmp_));
-	user->sendMsg(MSGID_S2C_LOGIN_RESPONSE, tmp_, response.ByteSize());
-	ServerLogInfo("account(%d) login", request.account().c_str());
-	return 0;
+	GateServerList::Iterator it = GATE_SERVER_LIST->begin();
+	for (; it!=GATE_SERVER_LIST->end(); ++it) {
+		MsgServerInfo* si = response.add_servers();
+		si->set_name((*it).name());
+		si->set_id((*it).id());
+		si->set_is_busy((*it).is_busy());
+		si->set_is_maintenance((*it).is_maintenance());
+	}
+	if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
+		LogError("serialize MsgS2C_LoginResponse failed");
+		return -1;
+	}
+	if (agent->sendMsg(MSGID_S2C_LOGIN_RESPONSE, tmp_, response.ByteSize()) < 0) {
+		LogError("send MsgS2C_LoginResponse failed");
+		return -1;
+	}
+
+	LogInfo("account(%s) login", request.account().c_str());
+	return info->len;
 }
 
 int ClientHandler::processSelectServer(JmyMsgInfo* info)
@@ -92,33 +99,78 @@ int ClientHandler::processSelectServer(JmyMsgInfo* info)
 	MsgC2S_SelectServerRequest request;
 	if (!request.ParseFromArray(info->data, info->len)) {
 		send_error(info, PROTO_ERROR_LOGIN_DATA_INVALID);
-		ServerLogError("parse MsgC2LSelectServerRequest failed");
+		LogError("parse MsgC2LSelectServerRequest failed");
 		return -1;
 	}
 
-	ClientAgent* user = client_mgr_.getAgentByConnId(info->session_id);
-	if (!user) {
-		send_error(info, PROTO_ERROR_LOGIN_ACCOUNT_OR_PASSWORD_INVALID);
-		ServerLogError("cant find user by id(%d)", info->session_id);
+	int gate_id = request.sel_id();
+	GateAgent* gate = GATE_SERVER_LIST->getGateAgent(gate_id);
+	if (!gate) {
+		send_error(info, PROTO_ERROR_LOGIN_GAME_SERVER_MAINTENANCE);
+		LogError("cant get gate agent with gate_id(%d)", gate_id);
 		return -1;
 	}
 
 	std::string account;
-	if (!client_mgr_.getKeyByConnId(info->session_id, account)) {
-		ServerLogError("cant get account by conn_id(%d)", info->session_id);
+	if (!CLIENT_MANAGER->getAccountByConnId(info->conn_id, account)) {
+		send_error(info, PROTO_ERROR_LOGIN_DATA_INVALID);
+		LogError("cant get account by conn_id(%d)", info->conn_id);
 		return -1;
 	}
 
+	// send selected messge to gate server
 	MsgLS2GT_SelectedServerNotify notify;
 	notify.set_account(account);
-	notify.SerializeToArray(tmp_, sizeof(tmp_));
-	user->sendMsg(MSGID_S2C_SELECT_SERVER_RESPONSE, tmp_, notify.ByteSize());
-	ServerLogInfo("user(%d) select server", user->getId());
+	if (!notify.SerializeToArray(tmp_, sizeof(tmp_))) {
+		LogError("serialize MsgLS2GT_SelectedServerNotify failed");
+		return -1;
+	}
 
-	return 0;
+	if (gate->sendMsg(MSGID_LS2GT_SELECTED_SERVER_NOTIFY, tmp_, notify.ByteSize()) < 0) {
+		LogError("send MsgLS2GT_SelectedServerNotify to gate_server(%d) failed", gate_id);
+		return -1;
+	}
+
+	ClientAgent* client_agent = CLIENT_MANAGER->getAgent(account);
+	if (client_agent) {
+		client_agent->getData().gate_id = gate_id;
+	}
+	
+	LogInfo("account(%s) conn_id(%d) select server(%d)", account.c_str(), info->conn_id, gate_id);
+
+	return info->len;
 }
 
-ClientAgent* ClientHandler::getClientAgent(const std::string& account)
+int ClientHandler::processEcho(JmyMsgInfo* info)
 {
-	return client_mgr_.getAgent(account);
+	JmyTcpConnection* conn = get_connection(info);
+	if (!conn) {
+		LogError("get connection failed");
+		return -1;
+	}
+
+	MsgC2S_EchoRequest request;
+	if (!request.ParseFromArray(info->data, info->len)) {
+		LogError("parse MsgC2S_EchoRequest failed");
+		return -1;
+	}
+
+	MsgS2C_EchoResponse response;
+	response.set_echo_str(request.echo_str());
+	if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
+		LogError("serialize MsgS2C_EchoResponse failed");
+		return -1;
+	}
+
+#if 0
+	if (conn->send(MSGID_S2C_ECHO_RESPONSE, tmp_, response.ByteSize()) < 0) {
+		LogError("send MsgS2C_EchoResponse failed");
+		return -1;
+	}
+#endif
+
+	static int count = 0;
+	LogInfo("process echo str(%s) count(%d)", response.echo_str().c_str(), ++count);
+
+	return info->len;
 }

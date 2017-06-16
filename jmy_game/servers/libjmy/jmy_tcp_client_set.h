@@ -2,6 +2,7 @@
 
 #include "jmy_datatype.h"
 #include <unordered_map>
+#include <chrono>
 
 class JmyTcpClient;
 class JmyTcpClientSet
@@ -18,6 +19,12 @@ public:
 	void run();
 
 private:
-	typedef  std::unordered_map<JmyTcpClient*, const JmyClientConfig*> client2config_type;
-	client2config_type client2config_map_;
+	struct ClientData {
+		JmyClientConfig* conf;
+		std::chrono::system_clock::time_point last_point;
+		ClientData() : conf(nullptr) {}
+		ClientData(JmyClientConfig* c) : conf(c) {}
+	};
+	typedef std::unordered_map<JmyTcpClient*, ClientData> client2data_type;
+	client2data_type client2data_map_;
 };

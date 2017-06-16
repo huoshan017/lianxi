@@ -2,12 +2,12 @@
 	"server_name" : "gate_server",
 	"server_id" : 20001,
 	"server_ip" : "127.0.0.1",
-	"server_port" : 11001,
-	"max_conn" : 5000,
+	"server_port" : 20000,
+	"max_conn" : 50000,
 	"enable_reconnect" : true,
 
 	"listen_game_ip" : "127.0.0.1",
-	"listen_game_port" : 20001,
+	"listen_game_port" : 24001,
 	"listen_game_max_conn" : 100,
 	"listen_game_enable_reconnect" : false,
 

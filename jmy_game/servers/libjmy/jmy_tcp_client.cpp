@@ -43,11 +43,16 @@ bool JmyTcpClient::connect(const char* ip, unsigned short port, bool non_blockin
 
 bool JmyTcpClient::start(const JmyClientConfig& conf, bool non_blocking)
 {
+#if USE_NET_PROTO2
+	std::shared_ptr<JmyDataHandler2> data_handler = std::make_shared<JmyDataHandler2>();
+#else
 	std::shared_ptr<JmyDataHandler> data_handler = std::make_shared<JmyDataHandler>();
+#endif
 	if (conf.conn_conf.handlers && conf.conn_conf.nhandlers) {
 		if (!data_handler->loadMsgHandle(conf.conn_conf.handlers, conf.conn_conf.nhandlers)) {
 			return false;
 		}
+		data_handler->setDefaultMsgHandler(conf.conn_conf.default_msg_handler);
 		conn_->setDataHandler(data_handler);
 	}
 
@@ -62,15 +67,16 @@ bool JmyTcpClient::start(const JmyClientConfig& conf, bool non_blocking)
 	buffer->init(conf.conn_conf.buff_conf);
 	conn_->setBuffer(buffer);
 
-	return connect(conf.conn_ip, conf.conn_port, non_blocking);
+	return connect(ep_.address().to_string().c_str(), ep_.port(), non_blocking);
 }
 
 bool JmyTcpClient::reconnect(const JmyClientConfig& conf, bool non_blocking)
 {
+	(void)conf;
 	if (conn_->getConnState() != JMY_CONN_STATE_NOT_CONNECT) {
 		return false;
 	}
-	return connect(conf.conn_ip, conf.conn_port, non_blocking);
+	return connect(ep_.address().to_string().c_str(), ep_.port(), non_blocking);
 }
 
 int JmyTcpClient::send(int msg_id, const char* data, unsigned int len)

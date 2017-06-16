@@ -1,4 +1,4 @@
-CC = g++
+CC = clang++
 AR = ar
 CCFLAGS = -g -Wall -O0 -std=c++11 -DJEMALLOC_NO_DEMANGLE -fPIC
 

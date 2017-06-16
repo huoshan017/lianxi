@@ -27,6 +27,10 @@ public:
 		unsigned short connect_gate_port;
 		bool connect_gate_enable_reconnect;
 
+		std::string connect_db_ip;
+		unsigned short connect_db_port;
+		bool connect_db_enable_reconnect;
+
 		std::string log_conf_path;
 	};
 

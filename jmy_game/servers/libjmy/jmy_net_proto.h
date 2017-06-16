@@ -24,7 +24,7 @@ enum JmyPacketType {
 	JMY_PACKET_DISCONNECT		= 8,
 	JMY_PACKET_DISCONNECT_ACK	= 9,
 	JMY_PACKET_USER_ID_DATA		= 10,
-	// user defined type 100 -- 254
+	// user defined type 100-254
 	JMY_PACKET_TYPE_USER		= 100,
 	JMY_PACKET_TYPE_MAX 		= 255
 };
@@ -42,21 +42,12 @@ enum JmyUnpackResultType {
 };
 
 enum { JMY_PACKET_LEN_TYPE 				= 1, };
-#if USE_CONN_PROTO
-enum { JMY_PACKET_LEN_CONN				= 1, };
-enum { JMY_PACKET_LEN_CONN_RES			= 1 + JMY_CONN_LEN_RES_ID + JMY_CONN_LEN_RES_SESSION, };
-enum { JMY_PACKET_LEN_RECONN			= 1 + JMY_CONN_LEN_RES_ID + JMY_CONN_LEN_RES_SESSION, };
-enum { JMY_PACKET_LEN_RECONN_RES		= 1 + JMY_CONN_LEN_RES_ID + JMY_CONN_LEN_RES_SESSION, };
-#endif
 enum { JMY_PACKET_LEN_DISCONNECT		= 1, };
 enum { JMY_PACKET_LEN_DISCONNECT_ACK	= 1, };
 enum { JMY_PACKET_LEN_USER_DATA_HEAD	= 1+2+2, };
 enum { JMY_PACKET_LEN_USER_ID_DATA_HEAD = 1+4+2+2, };
 enum { JMY_PACKET_LEN_ACK				= 1+2+2, };
 enum { JMY_PACKET_LEN_HEARTBEAT			= 1+4, };
-
-// active close default timeout
-enum { JMY_ACTIVE_CLOSE_CONNECTION_TIMEOUT = 30, };
 
 struct JmyPacketUnpackData {
 	JmyPacketType type;
@@ -159,18 +150,6 @@ int jmy_net_proto_pack_defined_type_head<short>(char* buf, unsigned short len, u
  */
 template <>
 int jmy_net_proto_pack_defined_type_head<char>(char* buf, unsigned short len, unsigned char defined_pack_type, const char& char_pack_param);
-
-/**
- * sessoin info 
- */
-bool jmy_id_to_session_info(int session_id, JmySessionInfo& info);
-int jmy_session_info_to_id(const JmySessionInfo& info);
-
-/**
- * ack id
- */
-unsigned short jmy_ack_id_add(unsigned short curr_id, unsigned short increment);
-unsigned short jmy_ack_id_diff(unsigned short self_id, unsigned short ack_id);
 
 #if USE_CONN_PROTO
 /**

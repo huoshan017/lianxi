@@ -53,3 +53,6 @@ enum JmyBufferDropCondition {
 	JMY_DROP_CONDITION_MANUAL				= 0x0010,
 	JMY_DROP_CONDITION_COUNT,
 };
+
+// active close default timeout
+enum { JMY_ACTIVE_CLOSE_CONNECTION_TIMEOUT = 30, };

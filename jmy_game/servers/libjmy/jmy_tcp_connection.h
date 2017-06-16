@@ -4,7 +4,13 @@
 #include <boost/asio.hpp>
 #include "jmy_const.h"
 #include "jmy_datatype.h"
+
+#if USE_NET_PROTO2
+#include "jmy_data_handler2.h"
+#else
 #include "jmy_data_handler.h"
+#endif
+
 #include "jmy_connection_buffer.h"
 #include "jmy_event_handler.h"
 
@@ -38,44 +44,60 @@ public:
 	bool isDisconnect() const { return state_ == JMY_CONN_STATE_DISCONNECTED; } 
 	bool isConnected() const { return state_ == JMY_CONN_STATE_DISCONNECTED; }
 	// set data handler
+#if USE_NET_PROTO2
+	void setDataHandler(std::shared_ptr<JmyDataHandler2> handler) { data_handler_ = handler; }
+#else
 	void setDataHandler(std::shared_ptr<JmyDataHandler> handler) { data_handler_ = handler; }
+#endif
 	// set event handler
 	void setEventHandler(std::shared_ptr<JmyEventHandlerManager> handler) { event_handler_ = handler; }
 	std::shared_ptr<JmyConnectionBuffer> getBuffer() const { return buffer_; }
 	// set buffer
 	void setBuffer(std::shared_ptr<JmyConnectionBuffer> buffer) { buffer_ = buffer; }
-	void* getUnusedData() const { return unused_data_; }
-	void setUnusedData(void* data) { unused_data_ = data; }
 	JmyTcpConnectionMgr& getConnectionMgr() { return mgr_; }
 
-	int handleAck(JmyAckInfo*);
 	int handleHeartbeat();
 	int handleDisconnect();
 	int handleDisconnectAck();
 
 protected:
-	int sendAck(JmyAckInfo*);
+	void start_recv();
+#if USE_NET_PROTO2
+	void recv_packet(JmyPacketType2 type, unsigned short pack_len);
+#endif
+	int start_send();
+	void buffer_send();
+	void buffer_list_send();
 	int sendHeartbeat();
 	int sendDisconnect();
 	int sendDisconnectAck();
 	int handle_recv();
 	int handle_send();
 	int handle_event(int event_id, long param);
+	int handle_packet(JmyPacketType2 packet_type);
+	int handle_recv_error(const boost::system::error_code& err);
 
 protected:
 	int id_;
+	io_service::strand strand_;		
 	ip::tcp::socket sock_;
 	ip::tcp::endpoint ep_;
 	JmyTcpConnectionMgr& mgr_;
 	JmyConnType conn_type_;										// connection type
 	JmyConnState state_;										// connection state
 	bool sending_data_;											// is sending data
+	short buff_send_count_;
 	std::chrono::system_clock::time_point active_close_start_;	// active close time start
+#if USE_NET_PROTO2
+	std::shared_ptr<JmyDataHandler2> data_handler_;
+#else
 	std::shared_ptr<JmyDataHandler> data_handler_;				// data handler
+#endif
 	std::shared_ptr<JmyEventHandlerManager> event_handler_;		// event handler
 	std::shared_ptr<JmyConnectionBuffer> buffer_;				// recv and send buffer
+	JmyEventInfo event_info_;
 	std::chrono::system_clock::time_point last_run_tick_;
-	void* unused_data_;											// extra data when need to use
+	char tmp_[JMY_PACKET2_LEN_HEAD+JMY_PACKET2_LEN_TYPE];
 };
 
 class JmyTcpConnectionMgr
@@ -89,16 +111,12 @@ public:
 	JmyTcpConnection* getFree(int id);
 	JmyTcpConnection* get(int id);
 	bool free(JmyTcpConnection* conn);
-	int usedRun();
-
 	const JmyConnectionConfig& getConf() const { return conf_; }
 
 private:
 	io_service& service_;
 	JmyConnectionConfig conf_;
-	//JmyConnectionBufferMgr buffer_mgr_;
 	std::unordered_map<int, JmyTcpConnection*> used_map_;
 	std::list<JmyTcpConnection*> free_list_;
 	int size_;
 };
-

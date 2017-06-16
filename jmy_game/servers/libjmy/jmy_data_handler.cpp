@@ -115,7 +115,7 @@ int JmyDataHandler::processData(JmySessionBuffer& recv_buffer, int session_id, v
 		}
 		nhandled += res;
 		// must user data packet
-		if (unpack_data_.type == JMY_PACKET_USER_DATA) {
+		if (unpack_data_.type == JMY_PACKET_USER_DATA || unpack_data_.type == JMY_PACKET_USER_ID_DATA) {
 			count += 1;
 		}
 		if (len - nhandled == 0) {
@@ -157,11 +157,14 @@ int JmyDataHandler::processData(JmyDoubleSessionBuffer& recv_buffer, int session
 					return -1;
 				}
 				if (unpack_data_.data > (int)recv_buffer.getTotalLen()) {
-					LibJmyLogDebug("next message data size(%d) is too large than max buffer size(%d)", unpack_data_.data, recv_buffer.getTotalLen()-2);
+					LibJmyLogError("next message data size(%d) is too large than max buffer size(%d)", unpack_data_.data, recv_buffer.getTotalLen()-2);
 					return -1;
 				}
+				LibJmyLogInfo("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! unpack_data_.data(%d) > recv_buffer.getTotalLen()",
+						unpack_data_.data, recv_buffer.getTotalLen());
 			}
 			buff.readLen(nhandled);
+			LibJmyLogInfo("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ addr=0x%x  nhandled=%d", buff.getReadBuff(), nhandled);
 			break;
 		}
 		
@@ -173,7 +176,7 @@ int JmyDataHandler::processData(JmyDoubleSessionBuffer& recv_buffer, int session
 			}
 		}
 		nhandled += res;
-		if (unpack_data_.type == JMY_PACKET_USER_DATA) {
+		if (unpack_data_.type == JMY_PACKET_USER_DATA || unpack_data_.type == JMY_PACKET_USER_ID_DATA) {
 			count += 1;
 		}
 		if (len - nhandled == 0) {
@@ -182,6 +185,11 @@ int JmyDataHandler::processData(JmyDoubleSessionBuffer& recv_buffer, int session
 		}
 	}
 	return count;
+}
+
+int JmyDataHandler::processData(JmySessionBufferList* buffer_list, int conn_id, JmyTcpConnectorMgr* mgr)
+{
+	return 0;
 }
 
 int JmyDataHandler::writeUserData(JmySessionBuffer& send_buffer, int msg_id, const char* data, unsigned int len)
@@ -294,7 +302,7 @@ int JmyDataHandler::handleMsg(JmyMsgInfo* info)
 		if (default_msg_handler_) {
 			int res = default_msg_handler_(info);
 			if (res == 0) {
-				LibJmyLogWarn("not found msg(%d) handler, session_id(%d)", info->msg_id, info->session_id);
+				//LibJmyLogWarn("not found msg(%d) handler, conn_id(%d)", info->msg_id, info->conn_id);
 				return 0;
 			} else if (res < 0) {
 				return -1;
@@ -302,7 +310,7 @@ int JmyDataHandler::handleMsg(JmyMsgInfo* info)
 				return info->len;
 			}
 		} else {
-			LibJmyLogWarn("not found default message handler to handle message(%d), session_id(%d)", info->msg_id, info->session_id);
+			LibJmyLogWarn("not found default message handler to handle message(%d), conn_id(%d)", info->msg_id, info->conn_id);
 			return 0;
 		}
 	}
@@ -313,6 +321,7 @@ int JmyDataHandler::handleMsg(JmyMsgInfo* info)
 	return info->len;
 }
 
+#if 0
 int JmyDataHandler::handleAck(JmyAckMsgInfo* info)
 {
 	if (!info) return -1;
@@ -355,6 +364,7 @@ int JmyDataHandler::handleAck(JmyAckMsgInfo* info)
 #endif
 	return 0;
 }
+#endif
 
 int JmyDataHandler::handleHeartbeat(JmyHeartbeatMsgInfo* info)
 {
@@ -396,11 +406,11 @@ int JmyDataHandler::handleOne(
 		JmySessionBuffer& session_buffer,
 		unsigned int offset,
 		JmyPacketUnpackData& data,
-		int session_id, void* param)
+		int conn_id, void* param)
 {
 	const char* buff = session_buffer.getReadBuff();
 	unsigned int read_len = session_buffer.getReadLen();
-	int r = jmy_net_proto_unpack_data_head(buff+offset, read_len-offset, data, session_id, param);
+	int r = jmy_net_proto_unpack_data_head(buff+offset, read_len-offset, data, conn_id, param);
 	if (r < 0) {
 		if ((data.type == JMY_PACKET_USER_DATA || data.type == JMY_PACKET_USER_ID_DATA) &&
 			data.result == JMY_UNPACK_RESULT_MSG_LEN_INVALID) {
@@ -432,32 +442,34 @@ int JmyDataHandler::handleOne(
 			return -1;
 		}
 	}
+#if 0
 	// ack
 	else if (data.type == JMY_PACKET_ACK) {
-		ack_info_.session_id = session_id;
+		ack_info_.session_id = conn_id;
 		ack_info_.session_param = param;
 		ack_info_.ack_info.ack_count = (unsigned short)data.data;
 		ack_info_.ack_info.curr_id = (unsigned short)(int)(long)data.param;
 		if (handleAck(&ack_info_) < 0)
 			return -1;
 	}
+#endif
 	// heart beat
 	else if (data.type == JMY_PACKET_HEARTBEAT) {
-		heartbeat_info_.session_id = session_id;
+		heartbeat_info_.session_id = conn_id;
 		heartbeat_info_.session_param = param;
 		if (handleHeartbeat(&heartbeat_info_) < 0)
 			return -1;
 	}
 	// disconnect
 	else if (data.type == JMY_PACKET_DISCONNECT) {
-		disconn_info_.session_id = session_id;
+		disconn_info_.session_id = conn_id;
 		disconn_info_.session_param = param;
 		if (handleDisconnect(&disconn_info_) < 0)
 			return -1;
 	}
 	// disconnect ack
 	else if (data.type == JMY_PACKET_DISCONNECT_ACK) {
-		disconn_ack_info_.session_id = session_id;
+		disconn_ack_info_.session_id = conn_id;
 		disconn_ack_info_.session_param = param;
 		if (handleDisconnectAck(&disconn_ack_info_) < 0)
 			return -1;

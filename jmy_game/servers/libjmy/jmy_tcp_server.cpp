@@ -15,7 +15,11 @@ JmyTcpServer::JmyTcpServer(io_service& service) :
 	inited_(false)
 {
 	acceptor_ = std::make_shared<ip::tcp::acceptor>(service_);
+#if USE_NET_PROTO2
+	handler_ = std::make_shared<JmyDataHandler2>();
+#else
 	handler_ = std::make_shared<JmyDataHandler>();
+#endif
 	event_handler_ = std::make_shared<JmyEventHandlerManager>();
 #if USE_CONNECTOR_AND_SESSION
 	session_mgr_ = std::make_shared<JmyTcpSessionMgr>();
@@ -23,7 +27,7 @@ JmyTcpServer::JmyTcpServer(io_service& service) :
 	buff_pool_ = std::make_shared<JmySessionBufferPool>();
 }
 
-JmyTcpServer::JmyTcpServer(io_service& service, short port) :
+JmyTcpServer::JmyTcpServer(io_service& service, unsigned short port) :
 	service_(service),
 	sock_(service_),
 #if USE_CONNECTOR_AND_SESSION
@@ -35,7 +39,11 @@ JmyTcpServer::JmyTcpServer(io_service& service, short port) :
 	inited_(false)
 {
 	acceptor_ = std::make_shared<ip::tcp::acceptor>(service_, ip::tcp::endpoint(ip::tcp::v4(), port));
+#if USE_NET_PROTO2
+	handler_ = std::make_shared<JmyDataHandler2>();
+#else
 	handler_ = std::make_shared<JmyDataHandler>();
+#endif
 	event_handler_ = std::make_shared<JmyEventHandlerManager>();
 #if USE_CONNECTOR_AND_SESSION
 	session_mgr_ = std::make_shared<JmyTcpSessionMgr>();
@@ -53,6 +61,7 @@ bool JmyTcpServer::loadConfig(const JmyServerConfig& conf)
 	conf_ = conf;
 	bool res = handler_->loadMsgHandle(conf.conn_conf.handlers, conf.conn_conf.nhandlers);
 	if (!res) return false;
+	handler_->setDefaultMsgHandler(conf.conn_conf.default_msg_handler);
 	event_handler_->setBaseHandlers(conf.conn_conf.base_event_handlers);
 	if (conf.conn_conf.other_event_handlers && conf.conn_conf.other_event_nhandlers) {
 		event_handler_->init(conf.conn_conf.other_event_handlers, conf.conn_conf.other_event_nhandlers);
@@ -114,10 +123,11 @@ int JmyTcpServer::start()
 	return res;
 }
 
-int JmyTcpServer::listenStart(short port)
+int JmyTcpServer::listenStart(const std::string& ip, unsigned short port)
 {
 	if (!inited_) return -1;
-	ip::tcp::endpoint ep(ip::tcp::v4(), port);
+	//ip::tcp::endpoint ep(ip::tcp::v4(), port);
+	ip::tcp::endpoint ep(ip::address::from_string(ip), port);
 	acceptor_->open(ep.protocol());
 	acceptor_->set_option(socket_base::reuse_address(true));
 	acceptor_->bind(ep);
@@ -125,15 +135,21 @@ int JmyTcpServer::listenStart(short port)
 	return start();
 }
 
+int JmyTcpServer::listenStart(const char* ip, unsigned short port)
+{
+	return listenStart(std::string(ip), port);
+}
+
 int JmyTcpServer::do_accept()
 {
 	if (!inited_) return -1;
+
 #if USE_CONNECTOR_AND_SESSION
 	acceptor_->async_accept(curr_session_.getSock(),
 #else
 	acceptor_->async_accept(curr_conn_.getSock(),
 #endif
-		[this](boost::system::error_code ec){
+		[this](boost::system::error_code ec) {
 			if (ec) {
 				if (ec.value()==boost::system::errc::operation_canceled || ec.value()==boost::system::errc::operation_in_progress) {
 					LibJmyLogError("error code(%d)", ec.value());
@@ -142,11 +158,24 @@ int JmyTcpServer::do_accept()
 					return;	
 				}
 			} else {
-				if (accept_new() < 0)
-					return;
+				size_t s = conns_.size();
+				if (conf_.max_conn <= s) {
+					curr_conn_.getSock().close();
+					LibJmyLogWarn("already max connections: %d", s);
+				} else {
+					ip::tcp::endpoint ep = curr_conn_.getSock().remote_endpoint();
+					const char* remote_ip = ep.address().to_string().c_str();
+					unsigned short remote_port = ep.port();
+					int id = accept_new();
+					if (id < 0)
+						return;
+					
+					LibJmyLogInfo("new connection(%d, %s:%d) start", id, remote_ip, remote_port);
+				}
 			}
 			do_accept();
-	});
+		}
+	);
 	return 1;
 }
 
@@ -156,14 +185,12 @@ int JmyTcpServer::accept_new()
 	JmyTcpSession* session = session_mgr_->getOneSession(session_buff_pool_, handler_, conf_.session_conf.use_send_list);
 	if (!session) {
 		LibJmyLogError("get free MyTcpSession failed");
-		return;
+		return -1;
 	}
 
 	session->getSock() = std::move(curr_session_.getSock());
 	session->getSock().set_option(ip::tcp::no_delay(true));
 	session->start();
-	ip::tcp::endpoint ep = session->getSock().remote_endpoint();
-	LibJmyLogInfo("new session %d(%s:%d) start", session->getId(), ep.address().to_string().c_str(), ep.port());
 #else
 	int id = id_gene_.get();
 	if (id == 0) {
@@ -172,7 +199,9 @@ int JmyTcpServer::accept_new()
 	}
 	JmyTcpConnection* conn = conn_mgr_.getFree(id);
 	conn->getSock() = std::move(curr_conn_.getSock());
-	conn->getSock().set_option(ip::tcp::no_delay(true));
+	//conn->getSock().set_option(ip::tcp::no_delay(true));
+	boost::asio::socket_base::linger option(true, 0);
+	conn->getSock().set_option(option);
 	conn->setDataHandler(handler_);
 	conn->setEventHandler(event_handler_);
 	std::shared_ptr<JmyConnectionBuffer> buffer;
@@ -182,7 +211,9 @@ int JmyTcpServer::accept_new()
 	}
 	buffer->init(conf_.conn_conf.buff_conf, buff_pool_);
 	conn->setBuffer(buffer);
+#if !USE_COROUTINE
 	conn->start();
+#endif
 	conns_.push_back(conn);
 	// handle accept event
 	JmyEventInfo evt;
@@ -191,10 +222,8 @@ int JmyTcpServer::accept_new()
 	evt.param = (void*)&conn_mgr_;
 	evt.param_l = 0;
 	event_handler_->onConnect(&evt);
-	ip::tcp::endpoint ep = conn->getSock().remote_endpoint();
-	LibJmyLogInfo("new connection(%d, %s:%d) start", conn->getId(), ep.address().to_string().c_str(), ep.port());
 #endif
-	return 0;
+	return id;
 }
 
 #if USE_THREAD
@@ -211,18 +240,10 @@ int JmyTcpServer::run()
 	if (session_mgr_->run() < 0)
 		return -1;
 #else
-	/*if (conn_mgr_.usedRun() < 0) {
-		LibJmyLogError("connection manager run failed");
-		return -1;
-	}*/
 	if (run_conns() < 0) {
 		LibJmyLogError("run conns failed");
 		return -1;
 	}
-#endif
-
-#if !USE_THREAD
-	service_.poll();
 #endif
 	return 0;
 }
@@ -248,7 +269,8 @@ int JmyTcpServer::run_conns()
 		if (del) {
 			if (conn) {
 				conn_mgr_.free(conn);
-				buffer_mgr_.suspendBuffer(conn->getBuffer());
+				conn->getBuffer()->clear();
+				buffer_mgr_.freeBuffer(conn->getBuffer()->id);
 			}
 			conns_.erase(it);
 		}

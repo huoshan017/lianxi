@@ -1,36 +1,30 @@
 #include "game_handler.h"
 #include "../common/util.h"
 #include "../../proto/src/server.pb.h"
+#include "../../proto/src/common.pb.h"
 #include "client_handler.h"
+#include "config_loader.h"
+#include "global_data.h"
+#include "client_manager.h"
 
 char GameHandler::tmp_[JMY_MAX_MSG_SIZE];
-GameAgentManager GameHandler::game_mgr_;
-int GameHandler::the_game_id_ = 0;
+char GameHandler::session_buf_[RECONN_SESSION_CODE_BUF_LENGTH+1];
 
 int GameHandler::onConnect(JmyEventInfo* info)
 {
 	JmyTcpConnection* conn = get_connection(info);
 	if (!conn) return -1;
-	ServerLogInfo("game server onconnect, conn_id(%d)", info->conn_id);
+	LogInfo("game server onConnect, conn_id(%d)", info->conn_id);
 	return 0;
 }
 
 int GameHandler::onDisconnect(JmyEventInfo* info)
 {
-	GameAgent* agent = game_mgr_.getAgentByConnId(info->conn_id);
-	if (!agent) {
-		return 0;
-	}
-
-	if (agent->getId() != the_game_id_) {
-		ServerLogError("game agent id not equal to the game id ondisconnect");
+	if (!GLOBAL_DATA->removeGameAgentByConnId(info->conn_id)) {
+		LogError("cant remove game agent by conn_id(%d)", info->conn_id);
 		return -1;
 	}
-
-	game_mgr_.deleteAgent(the_game_id_);
-	the_game_id_ = 0;
-
-	ServerLogInfo("game server ondisconnect, conn_id(%d)", info->conn_id);
+	LogInfo("game server onDisconnect, conn_id(%d)", info->conn_id);
 	return 0;
 }
 
@@ -40,88 +34,147 @@ int GameHandler::onTick(JmyEventInfo* info)
 	return 0;
 }
 
-int GameHandler::onTimer(JmyEventInfo* info)
-{
-	(void)info;
-	return 0;
-}
-
 int GameHandler::processConnectGateRequest(JmyMsgInfo* info)
 {
-	GameAgent* agent = game_mgr_.getAgentByConnId(info->session_id);
-	if (agent) {
-		ServerLogWarn("already exist game_server connection(conn_id: %d)", info->session_id);
-		return 0;
-	}
-
-	if (the_game_id_ > 0) {
-		ServerLogError("to game agent(%d) connection is normal, can not allow to other game agent connect", the_game_id_);
-		return -1;
-	}
-
 	MsgGS2GT_ConnectGateRequest request;
+	if (!request.ParseFromArray(info->data, info->len)) {
+		LogError("parse message MsgGS2GT_ConnectGateRequest failed");
+		return -1;
+	}
 	int game_id = request.game_id();
-	agent = game_mgr_.newAgent(game_id, (JmyTcpConnectionMgr*)info->param, info->session_id);
+
+	GameAgent* agent = GLOBAL_DATA->newGameAgent(game_id, (JmyTcpConnectionMgr*)info->param, info->conn_id);
 	if (!agent) {
-		return 0;
+		LogError("create new agent with game_id(%d), conn_id(%d) failed", game_id, info->conn_id);
+		return -1;
 	}
 
-	the_game_id_ = game_id;
+	// return message to game server
+	MsgGT2GS_ConnectGateResponse response;
+	response.set_max_user_count(CONFIG_FILE.max_conn);
+	response.set_start_user_id(CLIENT_MANAGER->getClientStartId());
+	if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
+		LogError("serialize msg MsgGT2GS_ConnectGateResponse failed");
+		return -1;
+	}
+	if (agent->sendMsg(MSGID_GT2GS_CONNECT_GATE_RESPONSE, tmp_, response.ByteSize()) < 0) {
+		LogError("send msg MsgGT2GS_ConnectGateResponse failed");
+		return -1;
+	}
 	
-	ServerLogInfo("game_server(id: %d) connected", game_id);
+	LogInfo("game_server(id: %d) connected", game_id);
 	return info->len;
 }
 
-int GameHandler::processEnterGameResponse(JmyMsgInfo* info)
+int GameHandler::processGetRoleResponse(JmyMsgInfo* info)
 {
-	ClientInfo* client_info = GET_CLIENT_INFO(info->receiver_id);
-	if (!client_info) {
-		SEND_CLIENT_ERROR(client_info->conn, PROTO_ERROR_ENTER_GAME_INVALID_ACCOUNT);
-		ServerLogError("cant get ClientInfo by id(%d)", info->receiver_id);
-		return -1;
-	}
-	if (ClientHandler::sendEnterGameResponse2Client(info->receiver_id) < 0) {
-		ServerLogError("send enter game response to client failed");
-		return -1;
-	}
-
-	MsgGS2GT_EnterGameResponse response;
+	MsgGS2GT_GetRoleResponse response;
 	if (!response.ParseFromArray(info->data, info->len)) {
-		ServerLogError("parse MsgGS2GT_EnterGameResponse failed");
+		LogError("parse MsgGS2GT_GetRoleResponse failed");
 		return -1;
 	}
-	ServerLogInfo("player %s enter game success", response.account().c_str());
+
+	ClientInfo* ci = CLIENT_MANAGER->getClientInfoByAccount(response.account());
+	if (!ci) {
+		LogError("get ClientInfo by account %s failed", response.account().c_str());
+		return -1;
+	}
+
+	uint64_t role_id = response.role_data().role_id();
+	if (role_id == 0) {
+		MsgError error;
+		error.set_error_code(PROTO_ERROR_GET_ROLE_NONE);
+		if (!error.SerializeToArray(tmp_, sizeof(tmp_))) {
+			LogError("serialize MsgError failed");
+			return -1;
+		}
+		if (ci->send(MSGID_ERROR, tmp_, error.ByteSize()) < 0) {
+			LogError("send MsgError failed");
+			return -1;
+		}
+		static int count = 0;
+		LogInfo("get account(%s) not found, send error: PROTO_ERROR_GET_ROLE_NONE, count(%d)", response.account().c_str(), ++count);
+	} else {
+		MsgS2C_GetRoleResponse get_resp;
+		char* reconn_session = get_session_code(session_buf_, RECONN_SESSION_CODE_BUF_LENGTH);
+		ci->reconn_session = reconn_session;
+		get_resp.set_reconnect_session(reconn_session);
+		get_resp.mutable_role_data()->set_sex(response.role_data().sex());
+		get_resp.mutable_role_data()->set_race(response.role_data().race());
+		get_resp.mutable_role_data()->set_role_id(response.role_data().role_id());
+		get_resp.mutable_role_data()->set_nick_name(response.role_data().nick_name());
+		if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
+			LogError("serialize MsgS2C_GetRoleResponse failed");
+			return -1;
+		}
+		if (ci->send(MSGID_S2C_GET_ROLE_RESPONSE, tmp_, response.ByteSize()) < 0) {
+			LogError("send MsgS2C_GetRoleResponse failed");
+			return -1;
+		}
+		ci->add_role_id(role_id);
+		ci->curr_role_id = role_id;
+		LogInfo("get role: %llu(account:%s) response", role_id, response.account().c_str());
+	}
+
 	return info->len;
 }
 
-int GameHandler::processLeaveGameResponse(JmyMsgInfo* info)
+int GameHandler::processCreateRoleResponse(JmyMsgInfo* info)
 {
-	ClientInfo* client_info = GET_CLIENT_INFO(info->receiver_id);
-	if (!client_info) {
-		ServerLogError("cant get ClientInfo by id(%d)", info->receiver_id);
+	MsgGS2GT_CreateRoleResponse response;
+	if (!response.ParseFromArray(info->data, info->len)) {
+		LogError("parse MsgGS2GT_CreateRoleResponse failed");
 		return -1;
 	}
-	client_info->close();
-	ServerLogInfo("player %s leave game");
+
+	ClientInfo* ci = CLIENT_MANAGER->getClientInfoByAccount(response.account());
+	if (!ci) {
+		LogError("get ClientInfo by account %s failed", response.account().c_str());
+		return -1;
+	}
+
+	uint64_t role_id = response.role_data().role_id();
+	ci->add_role_id(role_id);
+	ci->curr_role_id = role_id;
+
+	MsgS2C_CreateRoleResponse create_resp;
+	create_resp.mutable_role_data()->set_sex(response.role_data().sex());
+	create_resp.mutable_role_data()->set_race(response.role_data().race());
+	create_resp.mutable_role_data()->set_role_id(response.role_data().role_id());
+	create_resp.mutable_role_data()->set_nick_name(response.role_data().nick_name());
+	if (!create_resp.SerializeToArray(tmp_, sizeof(tmp_))) {
+		LogError("serialize MsgS2C_CreateRoleResponse failed");
+		return -1;
+	}
+	if (ci->send(MSGID_S2C_CREATE_ROLE_RESPONSE, tmp_, create_resp.ByteSize()) < 0) {
+		LogError("send MsgS2C_CreateRoleResponse failed");
+		return -1;
+	}
+
+	LogInfo("create role(account:%s, role_id:%llu) response", response.account().c_str(), role_id);
 	return info->len;
 }
 
 int GameHandler::processDefault(JmyMsgInfo* info)
 {
+	switch (info->msg_id) {
+	default:
+		{
+			JmyTcpConnection* conn = get_connection(info);
+			if (!conn) return -1;
+			if (!info->user_id) return -1;
+			ClientInfo* ci = CLIENT_MANAGER->getClientInfo(info->user_id);
+			if (!ci) {
+				LogError("get ClientInfo by user_id(%d) failed", info->user_id);
+				return -1;
+			}
+			if (ci->send(info->msg_id, info->data, info->len) < 0) {
+				LogError("send message: %d with default failed", info->msg_id);
+				return -1;
+			}
+			LogInfo("process default msg(%d)", info->msg_id);
+		}
+		break;
+	}
 	return info->len;
-}
-
-int GameHandler::sendMsg(int user_id, int msg_id, const char* data, unsigned short len)
-{
-	GameAgent* agent = game_mgr_.getAgent(the_game_id_);
-	if (!agent) {
-		ServerLogError("cant found game agent(%d) connection", the_game_id_);
-		return -1;
-	}
-
-	if (agent->sendMsg(user_id, msg_id, data, len) < 0) {
-		ServerLogError("send user(%d) message(%d) failed", user_id, msg_id);
-		return -1;
-	}
-	return len;
 }

@@ -6,6 +6,7 @@
 #include "jmy_const.h"
 
 #define USE_CONNECTOR_AND_SESSION 0
+#define USE_NET_PROTO2 1
 
 struct JmyData {
 	const char* data;
@@ -14,20 +15,15 @@ struct JmyData {
 	JmyData(const char* d, unsigned int l) : data(d), len(l) {}
 };
 
-struct JmySessionInfo {
-	JmyConnType type;
-	int session_id;
-};
-
 struct JmyMsgInfo {
-	int receiver_id;
+	int user_id;
 	int msg_id;
 	char* data;
 	unsigned int len;
-	int session_id;
+	int conn_id;
 	void* param;
-	JmyMsgInfo() : receiver_id(0), msg_id(0), data(nullptr), len(0), session_id(0), param(nullptr) {}
-	JmyMsgInfo(int rid, int mid, char* d, unsigned int l, int sid, void* p) : receiver_id(rid), msg_id(mid), data(d), len(l), session_id(sid), param(p) {}
+	JmyMsgInfo() : user_id(0), msg_id(0), data(nullptr), len(0), conn_id(0), param(nullptr) {}
+	JmyMsgInfo(int rid, int mid, char* d, unsigned int l, int sid, void* p) : user_id(rid), msg_id(mid), data(d), len(l), conn_id(sid), param(p) {}
 };
 
 typedef int (*jmy_msg_handler)(JmyMsgInfo*);
@@ -87,40 +83,6 @@ struct JmyDisconnectAckMsgInfo {
 	void* session_param;
 };
 
-#if USE_CONN_PROTO
-// connect result to hold conn_id and session_str
-struct JmyConnResInfo {
-	unsigned int conn_id;
-	char* session_str;
-	unsigned char session_str_len;
-};
-
-struct JmyConnMsgInfo {
-	int session_id;
-	void* session_param;
-};
-
-struct JmyConnResMsgInfo {
-	int session_id;
-	void* session_param;
-	JmyConnResInfo info;
-};
-
-// reconn info
-struct JmyReconnMsgInfo {
-	int session_id;
-	void* session_param;
-	JmyConnResInfo info;
-};
-
-// ack reconn info
-struct JmyReconnResMsgInfo {
-	int session_id;
-	void* session_param;
-	JmyConnResInfo new_info;
-};
-#endif
-
 // buffer config
 struct JmyBufferConfig {
 	unsigned int recv_buff_size;
@@ -131,16 +93,9 @@ struct JmyBufferConfig {
 	bool use_send_buff_list;
 };
 
-// configure for retransmission
-struct JmyRetransmissionConfig {
-	unsigned short max_cached_send_count;	// if the size of send messages great to the value, that is meant network has problem
-	unsigned short ack_recv_count;			// acknowlege the count of receiving messages
-};
-
 // connection configure
 struct JmyConnectionConfig {
 	JmyBufferConfig buff_conf;
-	JmyRetransmissionConfig* retran_conf;
 	JmyId2MsgHandler* handlers;
 	int nhandlers;
 	jmy_msg_handler default_msg_handler;
@@ -191,9 +146,8 @@ struct JmyConnectorConfig {
 // configure for client
 struct JmyClientConfig {
 	JmyConnectionConfig conn_conf;
-	char* conn_ip;
-	unsigned short conn_port;
 	bool is_reconnect;
+	int reconnect_interval;
 };
 
 // configure for clients
@@ -218,8 +172,5 @@ struct JmyServerConfig {
 };
 
 struct JmyTotalReconnInfo {
-#if USE_CONN_PROTO
-	JmyConnResInfo conn_info;		// connect need info
-#endif
 	unsigned short send_count, recv_count;
 };

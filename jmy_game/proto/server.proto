@@ -1,4 +1,6 @@
 syntax="proto3";
+import "common.proto";
+//import "db_field_struct.proto";
 
 enum MsgIdTypeServer {
 	MSGID_SERVER_NONE					= 0;
@@ -25,10 +27,33 @@ enum MsgIdTypeServer {
 	MSGID_GS2GT_CONNECT_GATE_REQUEST		= 20200;
 	MSGID_GT2GS_CONNECT_GATE_RESPONSE		= 20201;
 
-	MSGID_GT2GS_ENTER_GAME_REQUEST			= 20210;
-	MSGID_GS2GT_ENTER_GAME_RESPONSE			= 20211;
-	MSGID_GT2GS_LEAVE_GAME_REQUEST			= 20212;
-	MSGID_GS2GT_LEAVE_GAME_RESPONSE			= 20213;
+	MSGID_GT2GS_GET_ROLE_REQUEST			= 20202; // get role request
+	MSGID_GS2GT_GET_ROLE_RESPONSE			= 20203; // get role response
+	MSGID_GT2GS_CREATE_ROLE_REQUEST			= 20204; // create role request
+	MSGID_GS2GT_CREATE_ROLE_RESPONSE		= 20205; // create role response
+	//MSGID_GT2GS_DELETE_ROLE_REQUEST		= 20206; // delete role request
+	//MSGID_GS2GT_DELETE_ROLE_RESPOSNE		= 20207; // delete role response
+	MSGID_GT2GS_ENTER_GAME_REQUEST			= 20210; // enter game request
+	MSGID_GS2GT_ENTER_GAME_RESPONSE			= 20211; // enter game response
+	MSGID_GT2GS_LEAVE_GAME_REQUEST			= 20212; // leave game request
+	MSGID_GS2GT_LEAVE_GAME_RESPONSE			= 20213; // leave game response
+
+	/* GameServer <-> DBServer */
+	MSGID_GS2DS_CONNECT_DB_REQUEST			= 25000;
+	MSGID_DS2GS_CONNECT_DB_RESPONSE			= 25001;
+	MSGID_GS2DS_GET_ROLE_REQUEST			= 25010; // get role request
+	MSGID_DS2GS_GET_ROLE_RESPONSE			= 25011; // get role response
+	MSGID_GS2DS_CREATE_ROLE_REQUEST			= 25012; // create role request
+	MSGID_DS2GS_CREATE_ROLE_RESPONSE		= 25013; // create role response
+	//MSGID_GS2DS_DELETE_ROLE_REQUEST		= 25014; // delete role request
+	//MSGID_DS2GS_DELETE_ROLE_RESPONSE		= 25015; // delete role response
+
+	MSGID_GS2DS_SET_ROLE_DATA_REQUEST		= 25100; // set role data request
+	MSGID_DS2GS_SET_ROLE_DATA_RESPONSE		= 25101; // set role data response
+	MSGID_GS2DS_ADD_ITEM_REQUEST			= 25102; // add item request
+	MSGID_DS2GS_ADD_ITEM_RESPONSE			= 25103; // add item response
+	MSGID_GS2DS_RM_ITEM_REQUEST				= 25104; // remove item request
+	MSGID_DS2GS_RM_ITEM_RESPONSE			= 25105; // remove item response
 }
 
 /*** LoginServer <-> GateServer ***/
@@ -46,13 +71,13 @@ message MsgLS2GT_ConnectLoginResponse {
 
 // login -> gate  [MSGID_LS2GT_SELECTED_SERVER_NOTIFY]  selected server
 message MsgLS2GT_SelectedServerNotify {
-	bytes account = 1;
+	string account = 1;
 	//bytes session_code = 2;
 }
 
 // gate -> login  [MSGID_GT2LS_SELECTED_SERVER_RESPONSE]  response for selected server
 message MsgGT2LS_SelectedServerResponse {
-	bytes account = 1;
+	string account = 1;
 	string session_code = 2;
 }
 
@@ -100,6 +125,8 @@ message MsgGateConfData {
 	int32 port = 4;
 	string platform = 5;
 	string channel_code = 6;
+	bool is_busy = 7;
+	bool is_maintenance = 8;
 }
 
 // config -> login  [MSGID_CS2LS_CONNECT_RESPONSE]
@@ -120,22 +147,138 @@ message MsgGS2GT_ConnectGateRequest {
 
 // gate -> game  [MSGID_GT2GS_CONNECT_GATE_RESPONSE]
 message MsgGT2GS_ConnectGateResponse {
+	int32 max_user_count = 1;
+	int32 start_user_id = 2;
 }
+
+// gate -> game  [MSGID_GT2GS_GET_ROLE_REQUEST]
+message MsgGT2GS_GetRoleRequest {
+	string account = 1;
+}
+
+// game -> gate  [MSGID_GS2GT_GET_ROLE_RESPONSE]
+message MsgGS2GT_GetRoleResponse {
+	string account = 1;
+	MsgBaseRoleData role_data = 2;
+}
+
+// gate -> game  [MSGID_GT2GS_CREATE_ROLE_REQUEST]
+message MsgGT2GS_CreateRoleRequest {
+	string account = 1;
+	bytes nick_name = 2;
+	int32 sex = 3;
+	int32 race = 4;
+}
+
+// game -> gate  [MSGID_GS2GT_CREATE_ROLE_RESPONSE]
+message MsgGS2GT_CreateRoleResponse {
+	string account = 1;
+	MsgBaseRoleData role_data = 2;
+}
+
+// gate -> game  [MSGID_GT2GS_DELETE_ROLE_REQUEST]
+//message MsgGT2GS_DeleteRoleRequest {
+//	bytes account = 1;
+//	uint64 role_id = 2;
+//}
+
+// game -> gate  [MSGID_GS2GT_DELETE_ROLE_RESPONSE]
+//message MsgGS2GT_DeleteRoleResponse {
+//	bytes account = 1;
+//	uint64 role_id = 2;
+//}
 
 // gate -> game  [MSGID_GT2GS_ENTER_GAME_REQUEST]
 message MsgGT2GS_EnterGameRequest {
-	string account = 1;
+	uint64 role_id = 1;
 }
 
 // game -> gate  [MSGID_GS2GT_ENTER_GAME_RESPONSE]
 message MsgGS2GT_EnterGameResponse {
-	string account = 1;
+	uint64 role_id = 1;
 }
 
 // gate -> game  [MSGID_GT2GS_LEAVE_GAME_REQUEST]
 message MsgGT2GS_LeaveGameRequest {
+	uint64 role_id = 1;
 }
 
 // game -> gate  [MSGID_GS2GT_LEAVE_GAME_RESPONSE]
 message MsgGS2GT_LeaveGameResponse {
+	uint64 role_id = 1;
+}
+
+/* DBServer <-> GameServer */
+// game -> db  [MSGID_GS2DS_CONNECT_DB_REQUEST]
+message MsgGS2DS_ConnectDBRequest {
+	int32 game_id = 1;
+}
+
+// db -> game  [MSGID_DS2GS_CONNECT_DB_RESPONSE]
+message MsgDS2GS_ConnectDBResponse {
+}
+
+// game -> db  [MSGID_GS2DS_GET_ROLE_REQUEST]
+message MsgGS2DS_GetRoleRequest {
+	string account = 1;
+}
+
+// db -> game  [MSGID_DS2GS_GET_ROLE_RESPONSE]
+message MsgDS2GS_GetRoleResponse {
+	string account = 1;
+	MsgBaseRoleData role_data = 2;
+}
+
+// game -> db  [MSGID_GS2DS_CREATE_ROLE_REQUEST]
+message MsgGS2DS_CreateRoleRequest {
+	string account = 1;
+	bytes nick_name = 2;
+	int32 sex = 3;
+	int32 race = 4;
+}
+
+// db -> game  [MSGID_DS2GS_CREATE_ROLE_RESPONSE]
+message MsgDS2GS_CreateRoleResponse {
+	string account = 1;
+	MsgBaseRoleData role_data = 2;
+}
+
+// game -> db  [MSGID_GS2DS_SET_ROLE_DATA_REQUEST]
+message MsgGS2DS_SetRoleDataRequest {
+	uint64 role_id = 1;
+	MsgBaseRoleData role_data = 2;
+}
+
+// db -> game  [MSGID_DS2GS_SET_ROLE_DATA_RESPONSE]
+message MsgDS2GS_SetRoleDataResponse {
+	uint64 role_id = 1;
+	MsgBaseRoleData role_data = 2;
+}
+
+// game -> db  [MSGID_GS2DS_ADD_ITEM_REQUEST]
+message MsgGS2DS_AddItemRequest {
+	uint64 role_id = 1;
+	uint32 type_id = 2;
+	uint32 item_num = 3;
+}
+
+// db -> game  [MSGID_DS2GS_ADD_ITEM_RESPOSNE]
+message MsgDS2GS_AddItemResponse {
+	uint64 role_id = 1;
+	uint32 type_id = 2;
+	uint32 item_num = 3;
+}
+
+// game -> db  [MSGID_GS2DS_RM_ITEM_REQUEST]
+message MsgGS2DS_RmItemRequest {
+	uint64 role_id = 1;
+	uint32 type_id = 2;
+	uint32 item_num = 3;
+}
+
+// game -> db  [MSGID_DS2GS_RM_ITEM_RESPONSE]
+message MsgDS2GS_RmItemResponse {
+	uint64 role_id = 1;
+	uint32 type_id = 2;
+	uint32 item_num = 3;
 }

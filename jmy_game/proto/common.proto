@@ -10,6 +10,14 @@ enum MsgIdType {
 	MSGID_C2S_SELECT_SERVER_REQUEST			= 10002; // select server
 	MSGID_S2C_SELECT_SERVER_RESPONSE		= 10003; // select server response
 	/* Client <-> GateServer */
+	MSGID_C2S_GET_ROLE_REQUEST				= 10010; // get role request
+	MSGID_S2C_GET_ROLE_RESPONSE				= 10011; // get role response
+	//MSGID_C2S_ROLELIST_REQUEST				= 10012; // role list request
+	//MSGID_C2S_ROLELIST_RESPONSE				= 10013; // role list response
+	MSGID_C2S_CREATE_ROLE_REQUEST			= 10014; // create role request
+	MSGID_S2C_CREATE_ROLE_RESPONSE			= 10015; // create role response
+	MSGID_C2S_DELETE_ROLE_REQUEST			= 10016; // delete role request
+	MSGID_S2C_DELETE_ROLE_RESPONSE			= 10017; // delete role response
 	MSGID_C2S_ENTER_GAME_REQUEST			= 10020; // enter game request
 	MSGID_S2C_ENTER_GAME_RESPONSE			= 10021; // enter game response
 	MSGID_S2C_ENTER_GAME_COMPLETE_NOTIFY	= 10022; // enter game complete notify
@@ -17,12 +25,23 @@ enum MsgIdType {
 	MSGID_S2C_LEAVE_GAME_RESPONSE			= 10024; // leave game response
 	MSGID_C2S_RECONNECT_REQUEST				= 10025; // reconnect gate server
 	MSGID_S2C_RECONNECT_RESPONSE			= 10026; // reconnect response
+
+	MSGID_C2S_CHAT_REQUEST					= 10100; // chat request
+	MSGID_S2C_CHAT_RESPONSE					= 10101; // chat response
+	MSGID_S2C_CHAT_NOTIFY					= 10102; // chat notify
+
+	// test msg
+	MSGID_C2S_SET_ROLE_DATA_REQUEST			= 19001; // set role data request
+	MSGID_S2C_SET_ROLE_DATA_RESPONSE		= 19002; // set role data response
+	MSGID_C2S_ECHO_REQUEST					= 19003; // echo request
+	MSGID_S2C_ECHO_RESPONSE					= 19004; // echo response
 }
 
 message MsgError {
 	ProtoErrorType error_code = 1;
 }
 
+/******************** client <-> login *******************/
 // client -> login  [MSGID_C2S_LOGIN_REQUEST]  login request, send to login server
 message MsgC2S_LoginRequest {
 	bytes account = 1;
@@ -53,15 +72,78 @@ message MsgS2C_SelectServerResponse {
 	int32 port = 3;
 }
 
+// client -> login  [MSGID_C2S_ECHO_REQUEST]
+message MsgC2S_EchoRequest {
+	bytes echo_str = 1;
+}
+
+// login -> client  [MSGID_S2C_ECHO_RESPONSE]
+message MsgS2C_EchoResponse {
+	bytes echo_str = 1;
+}
+
+/**************************** client <-> gate *************************/
+// client -> gate  [MSGID_C2S_GET_ROLE_REQUEST]
+message MsgC2S_GetRoleRequest {
+	bytes account = 1;
+	bytes enter_session = 2;
+}
+
+// role list data
+message MsgBaseRoleData {
+	uint64 role_id = 1;
+	bytes nick_name = 2;
+	int32 race = 3;
+	int32 sex = 4;
+	int32 hp = 5;
+	int32 level = 6;
+}
+
+// gate -> client  [MSGID_S2C_GET_ROLE_RESPONSE]
+message MsgS2C_GetRoleResponse {
+	bytes reconnect_session = 1;
+	MsgBaseRoleData role_data = 2;
+}
+
+// client -> gate  [MSGID_C2S_ROLELIST_REQUEST]
+//message MsgC2S_RoleListRequest {
+//}
+
+// gate -> client  [MSGID_S2C_ROLELIST_RESPONSE]
+//message MsgS2C_RoleListResponse {
+//	repeated MsgRoleData role_list = 1;
+//}
+
+// client -> gate  [MSGID_C2S_CREATE_ROLE_REQUEST]
+message MsgC2S_CreateRoleRequest {
+	bytes nick_name = 1;
+	int32 race = 2;
+	int32 sex = 3;
+}
+
+// gate -> client  [MSGID_S2C_CREATE_ROLE_RESPONSE]
+message MsgS2C_CreateRoleResponse {
+	MsgBaseRoleData role_data = 1;
+}
+
+// client -> gate  [MSGID_C2S_DELETE_ROLE_REQUEST]
+message MsgC2S_DeleteRoleRequest {
+	uint64 role_id = 1;
+}
+
+// gate -> client  [MSGID_S2C_DELETE_ROLE_RESPONSE]
+message MsgS2C_DeleteRoleResponse {
+	uint64 role_id = 1;
+}
+
 // client -> gate  [MSGID_C2S_ENTER_GAME_REQUEST]  request enter game, send to gate server
 message MsgC2S_EnterGameRequest {
-	bytes account = 1;
-	bytes session_code = 2;
+	//uint64 role_id = 1;
 }
 
 // gate -> client  [MSGID_S2C_ENTER_GAME_RESPONSE]  response for enter game request
 message MsgS2C_EnterGameResponse {
-	bytes reconnect_session = 1;
+	//uint64 role_id = 1;
 }
 
 // gate -> client  [MSGID_S2C_ENTER_GAME_COMPLETE_NOTIFY]  enter game complete
@@ -85,4 +167,39 @@ message MsgC2S_ReconnectRequest {
 // gate -> client  [MSGID_S2C_RECONNECT_RESPONSE]  response for reconnect request
 message MsgS2C_ReconnectResponse {
 	bytes reconnect_session = 1;
+}
+
+// client -> gate  [MSGID_C2S_CHAT_REQUEST]  chat request
+message MsgC2S_ChatRequest {
+	bytes content = 1;
+	uint32 chat_type = 2;
+	uint32 channel = 3;
+	uint64 role_id = 4;
+}
+
+// gate -> client  [MSGID_S2C_CHAT_RESPONSE]  chat response
+message MsgS2C_ChatResponse {
+	bytes content = 1;
+	uint32 chat_type = 2;
+	uint32 channel = 3;
+	uint64 role_id = 4;
+}
+
+// gate -> client  [MSGID_S2C_CHAT_NOTIFY]  chat notify
+message MsgS2C_ChatNotify {
+	bytes content = 1;
+	uint32 chat_type = 2;
+	uint32 channel = 3;
+	uint64 from_role_id = 4;
+	bytes from_nick_name = 5;
+}
+
+// client -> gate  [MSGID_C2S_SET_ROLE_DATA_REQUEST]
+message MsgC2S_SetRoleDataRequest {
+	MsgBaseRoleData role_data = 1;
+}
+
+// gate -> client  [MSGID_S2C_SET_ROLE_DATA_RESPONSE]
+message MsgS2C_SetRoleDataResponse {
+	MsgBaseRoleData role_data = 1;
 }

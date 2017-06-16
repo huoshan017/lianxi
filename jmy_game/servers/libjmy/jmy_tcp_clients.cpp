@@ -3,14 +3,22 @@
 JmyTcpClients::JmyTcpClients(io_service& service, int max_count)
 	: max_count_(max_count), mgr_(service)
 {
+#if USE_NET_PROTO2
+	handler_ = std::make_shared<JmyDataHandler2>();
+#else
 	handler_ = std::make_shared<JmyDataHandler>();
+#endif
 	buff_pool_ = std::make_shared<JmySessionBufferPool>();
 }
 
 JmyTcpClients::JmyTcpClients(io_service& service, const ip::tcp::endpoint& ep, int max_count)
 	: max_count_(max_count), ep_(ep), mgr_(service)
 {
+#if USE_NET_PROTO2
+	handler_ = std::make_shared<JmyDataHandler2>();
+#else
 	handler_ = std::make_shared<JmyDataHandler>();
+#endif
 	buff_pool_ = std::make_shared<JmySessionBufferPool>();
 }
 

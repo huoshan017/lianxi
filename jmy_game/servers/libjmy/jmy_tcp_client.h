@@ -16,11 +16,15 @@ public:
 	void destroy();
 	void reset();
 
+	void setIP(const char* ip, unsigned short port) { ep_.address(ip::address::from_string(ip)); ep_.port(port); }
+	void setEndPoint(const ip::tcp::endpoint& ep) { ep_ = ep; }
+	const ip::tcp::endpoint& getEndPoint() const { return ep_; }
 	bool start(const JmyClientConfig& conf, bool non_blocking = true);
 	bool reconnect(const JmyClientConfig& conf, bool no_blocking = true);
 	int send(int msg_id, const char* data, unsigned int len);
 	int run();
 
+	int getId() const { return conn_->getId(); }
 	JmyConnState getState() const { return conn_->getConnState(); }
 	bool isNotConnect() const { return conn_->getConnState() == JMY_CONN_STATE_NOT_CONNECT; }
 	bool isConnected() const { return conn_->isConnected(); }

@@ -2,33 +2,20 @@
 #include "../libjmy/jmy.h"
 #include "../common/util.h"
 #include "../../proto/src/common.pb.h"
+#include "../../proto/src/server.pb.h"
 #include "gate_server.h"
 #include "game_handler.h"
+#include "global_data.h"
+#include "client_manager.h"
 
 char ClientHandler::tmp_[JMY_MAX_MSG_SIZE];
 char ClientHandler::session_buf_[RECONN_SESSION_CODE_BUF_LENGTH+1];
-BiMap<std::string, int> ClientHandler::account_id_map_;
-BiMap<int, int> ClientHandler::connid_id_map_;
-ClientArray ClientHandler::client_array_;
-
-bool ClientHandler::init()
-{
-	if (!client_array_.init(CONFIG_FILE.max_conn)) {
-		return false;
-	}
-	return true;
-}
-
-void ClientHandler::clear()
-{
-	client_array_.clear();
-}
 
 int ClientHandler::onConnect(JmyEventInfo* info)
 {
 	JmyTcpConnection* conn = get_connection(info);
 	if (!conn) return -1;
-	ServerLogInfo("new client connection(%d)", info->conn_id);
+	LogInfo("new client connection(%d)", info->conn_id);
 	return 0;
 }
 
@@ -36,8 +23,9 @@ int ClientHandler::onDisconnect(JmyEventInfo* info)
 {
 	JmyTcpConnection* conn = get_connection(info);
 	if (!conn) return -1;
-	connid_id_map_.remove_1(info->conn_id);
-	ServerLogInfo("client connection(%d) disconnect", info->conn_id);
+	if (!CLIENT_MANAGER->removeByConnId(info->conn_id))
+		return -1;
+	LogInfo("client connection(%d) disconnect", info->conn_id);
 	return 0;
 }
 
@@ -47,151 +35,180 @@ int ClientHandler::onTick(JmyEventInfo* info)
 	return 0;
 }
 
-int ClientHandler::onTimer(JmyEventInfo* info)
-{
-	(void)info;
-	return 0;
-}
-
-bool ClientHandler::newClientSession(const std::string& account, const std::string& session_code)
-{
-	int id = 0;
-	bool b = account_id_map_.find_1(account, id);
-	if (b) {
-		ClientInfo* info = client_array_.get(id);
-		if (!info) {
-			ServerLogError("cant found ClientInfo by account:%s id:%d", account.c_str(), id);
-			return false;
-		}
-		info->account = account;
-		info->enter_session = session_code;
-	} else {
-		ClientInfo* info = client_array_.getFree();
-		if (!info) {
-			ServerLogError("cant get free ClientInfo for account(%s) to hold enter_session(%s)", account.c_str(), session_code.c_str());
-			return false;
-		}
-		account_id_map_.insert(account, info->id);
-	}
-	return true;
-}
-
-void ClientHandler::send_error(JmyTcpConnection* conn, ProtoErrorType error)
-{
-	if (!conn) return;
-	MsgError response;
-	response.set_error_code(error);
-	response.SerializeToArray(tmp_, sizeof(tmp_));
-	conn->send(MSGID_ERROR, tmp_, response.ByteSize());
-}
-
-ClientInfo* ClientHandler::getClientInfo(int user_id)
-{
-	return client_array_.get(user_id);
-}
-
-ClientInfo* ClientHandler::getClientInfoByAccount(const std::string& account)
-{
-	int id = 0;
-	bool b = account_id_map_.find_1(account, id);
-	if (!b) {
-		ServerLogError("account(%s) not found in account_id_map_", account.c_str());
-		return nullptr;
-	}
-	return client_array_.get(id);
-}
-
-ClientInfo* ClientHandler::getClientInfoByConnId(int conn_id)
-{
-	int id = 0;
-	bool b = connid_id_map_.find_1(conn_id, id);
-	if (!b) {
-		ServerLogError("conn_id(%d) not found in connid_id_map_", conn_id);
-		return nullptr;
-	}
-
-	return client_array_.get(id);
-}
-
-int ClientHandler::processEnterGame(JmyMsgInfo* info)
+int ClientHandler::processGetRoleRequest(JmyMsgInfo* info)
 {
 	JmyTcpConnection* conn = get_connection(info);
 	if (!conn) {
-		ServerLogError("get connection by info(conn_id:%d) failed", info->session_id);
-		return -1;
-	}
-	MsgC2S_EnterGameRequest request;
-	if (!request.ParseFromArray(info->data, info->len)) {
-		send_error(conn, PROTO_ERROR_LOGIN_DATA_INVALID);
-		ServerLogError("parse MsgC2S_EnterGameRequest failed");
+		LogInfo("get connection failed");
 		return -1;
 	}
 
-	ClientInfo* ci = getClientInfoByAccount(request.account());
+	MsgC2S_GetRoleRequest request;
+	if (!request.ParseFromArray(info->data, info->len)) {
+		LogError("parse MsgC2S_GetRoleRequest failed");
+		return -1;
+	}
+
+	ClientInfo* ci = CLIENT_MANAGER->getClientInfoByAccount(request.account());
 	if (!ci) {
 		send_error(conn, PROTO_ERROR_ENTER_GAME_INVALID_ACCOUNT);
-		ServerLogError("cant get ClientInfo by account(%s)", request.account().c_str());
+		LogError("cant get ClientInfo by account(%s)", request.account().c_str());
 		return -1;
 	}
 
 	// check enter session
-	if (ci->enter_session != request.session_code()) {
+	if (ci->enter_session != request.enter_session()) {
 		send_error(conn, PROTO_ERROR_LOGIN_ACCOUNT_OR_PASSWORD_INVALID);
-		ServerLogError("account %s enter session %s invalid, valid session: %s",
-				request.account().c_str(), request.session_code().c_str(), ci->enter_session.c_str());
+		LogError("account %s enter session %s invalid, valid session: %s",
+				request.account().c_str(), request.enter_session().c_str(), ci->enter_session.c_str());
 		return -1;
 	}
 
 	// check max connection
-	if (GATE_SERVER->checkClientMaxCount(client_array_.getUsedSize())) {
+	int used_size = CLIENT_MANAGER->getUsedSize();
+	if (GATE_SERVER->checkClientMaxCount(used_size)) {
 		send_error(conn, PROTO_ERROR_ENTER_GAME_PLAYER_COUNT_MAXIMUM);
+		// close this client
 		ci->close();
-		ServerLogError("account %s enter game failed, player count(%d) is maximumu", client_array_.getUsedSize());
+		LogError("account %s enter game failed, player count(%d) is maximumu", request.account().c_str(), used_size);
 		return -1;
 	}
 
-	char* reconn_session = get_session_code(session_buf_, RECONN_SESSION_CODE_BUF_LENGTH);
-	ci->reconn_session = reconn_session;
-	ci->conn = get_connection(info);
-	connid_id_map_.insert(info->session_id, ci->id);
+	// insert mapping: conn_id <-> id
+	CLIENT_MANAGER->insertConnIdId(info->conn_id, ci->id);
+	ci->conn_id = info->conn_id;
+	ci->conn_mgr = (JmyTcpConnectionMgr*)info->param;
 
-	SEND_GAME_MSG(ci->id, MSGID_C2S_ENTER_GAME_REQUEST, info->data, info->len);
+	MsgGT2GS_GetRoleRequest get_req;
+	get_req.set_account(ci->account);
+	if (!get_req.SerializeToArray(tmp_, sizeof(tmp_))) {
+		LogError("serialize MsgGT2GS_GetRoleRequest failed");
+		return -1;
+	}
+	if (SEND_GAME_MSG(MSGID_GT2GS_GET_ROLE_REQUEST, info->data, info->len) < 0) {
+		LogError("send MsgGT2GS_GetRoleRequest failed");
+		return -1;
+	}
+
+	LogInfo("process get role request: account(%s)", ci->account.c_str());
 
 	return info->len;
 }
 
-int ClientHandler::processLeaveGame(JmyMsgInfo* info)
+int ClientHandler::processCreateRoleRequest(JmyMsgInfo* info)
 {
-	connid_id_map_.remove_1(info->session_id);
+	JmyTcpConnection* conn = get_connection(info);
+	if (!conn) return -1;
+
+	ClientInfo* ci = CLIENT_MANAGER->getClientInfoByConnId(info->conn_id);
+	if (!ci) {
+		LogError("cant get ClientInfo by conn_id(%d)", info->conn_id);
+		return -1;
+	}
+
+	MsgC2S_CreateRoleRequest request;
+	if (!request.ParseFromArray(info->data, info->len)) {
+		LogError("parse MsgC2S_CreateRoleRequest failed");
+		return -1;
+	}
+
+	MsgGT2GS_CreateRoleRequest create_req;
+	create_req.set_account(ci->account);
+	create_req.set_sex(request.sex());
+	create_req.set_race(request.race());
+	create_req.set_nick_name(request.nick_name());
+	if (!create_req.SerializeToArray(tmp_, sizeof(tmp_))) {
+		LogError("serialize MsgGT2GS_CreateRoleRequest failed");
+		return -1;
+	}
+
+	SEND_GAME_MSG(MSGID_GT2GS_CREATE_ROLE_REQUEST, tmp_, create_req.ByteSize());
+
+	LogInfo("process create role request: account(%s)", ci->account.c_str());
+
 	return info->len;
 }
 
-int ClientHandler::processReconnect(JmyMsgInfo* info)
+int ClientHandler::processEnterGameRequest(JmyMsgInfo* info)
+{
+	JmyTcpConnection* conn = get_connection(info);
+	if (!conn) {
+		LogError("get connection by info(conn_id:%d) failed", info->conn_id);
+		return -1;
+	}
+
+	// check role id is valid
+	ClientInfo* ci = CLIENT_MANAGER->getClientInfoByConnId(info->conn_id);
+	if (!ci) {
+		LogError("not found ClientInfo by conn_id(%d)", info->conn_id);
+		return -1;
+	}
+
+	if (ci->curr_role_id == 0) {
+		send_error(conn, PROTO_ERROR_ENTER_GAME_INVALID_ACCOUNT);
+		LogError("current role_id not found");
+		return -1;
+	}
+
+	MsgGT2GS_EnterGameRequest request;
+	request.set_role_id(ci->curr_role_id);
+	if (!request.SerializeToArray(tmp_, sizeof(tmp_))) {
+		LogError("serialize MsgGT2GS_EnterGameRequest failed");
+		return -1;
+	}
+
+	SEND_GAME_USER_MSG(ci->id, MSGID_GT2GS_ENTER_GAME_REQUEST, tmp_, request.ByteSize());
+	LogInfo("process enter game request, role_id(%llu)", ci->curr_role_id);
+
+	return info->len;
+}
+
+int ClientHandler::processLeaveGameRequest(JmyMsgInfo* info)
+{
+	ClientInfo* ci = CLIENT_MANAGER->getClientInfoByConnId(info->conn_id);
+	if (!ci) return -1;
+	ci->close();
+
+	MsgGT2GS_LeaveGameRequest request;
+	if (!request.SerializeToArray(tmp_, sizeof(tmp_))) {
+		LogError("serialize MsgGT2GS_LeaveGameRequest failed");
+		return -1;
+	}
+
+	if (SEND_GAME_USER_MSG(ci->id, MSGID_GT2GS_LEAVE_GAME_REQUEST, tmp_, request.ByteSize()) < 0) {
+		LogError("send MsgGT2GS_LeaveGameRequest failed");
+		return -1;
+	}
+
+	LogInfo("process leave game request, role_id(%llu)", ci->curr_role_id);
+	return info->len;
+}
+
+int ClientHandler::processReconnectRequest(JmyMsgInfo* info)
 {
 	MsgC2S_ReconnectRequest request;
 	if (!request.ParseFromArray(info->data, info->len)) {
-		ServerLogError("parse MsgCL2GT_ReconnectRequest failed");
+		LogError("parse MsgCL2GT_ReconnectRequest failed");
 		return -1;
 	}
 
 	JmyTcpConnection* conn = get_connection(info);
 	if (!conn) {
-		ServerLogError("cant get connection by info(conn_id:%d)", info->session_id);
+		LogError("cant get connection by info(conn_id:%d)", info->conn_id);
 		return -1;
 	}
 
-	ClientInfo* client_info = getClientInfoByAccount(request.account());
+	ClientInfo* client_info = CLIENT_MANAGER->getClientInfoByAccount(request.account());
 	if (!client_info) {
 		send_error(conn, PROTO_ERROR_RECONN_ACCOUNT_NOT_FOUND);
-		ServerLogError("account(%s) reconnect must has ClientInfo, but not found", request.account().c_str());
+		LogError("account(%s) reconnect must has ClientInfo, but not found", request.account().c_str());
 		return -1;
 	}
 
 	// check connection is the same
 	if (!client_info->check_conn(conn)) {
 		client_info->force_close();
-		client_info->conn = conn;
-		ServerLogInfo("exist account %s, kick it", request.account().c_str());
+		LogInfo("exist account %s, kick it", request.account().c_str());
 	}
 
 	// resend data
@@ -201,10 +218,15 @@ int ClientHandler::processReconnect(JmyMsgInfo* info)
 	response.set_reconnect_session(client_info->reconn_session);
 	if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
 		send_error(conn, PROTO_ERROR_RECONN_FAILED);
-		ServerLogError("serialize MsgS2C_ReconnectResponse failed");
+		LogError("serialize MsgS2C_ReconnectResponse failed");
 		return -1;
 	}
-	conn->send(MSGID_S2C_RECONNECT_RESPONSE, tmp_, response.ByteSize());
+	if (conn->send(MSGID_S2C_RECONNECT_RESPONSE, tmp_, response.ByteSize()) < 0) {
+		LogError("send MsgS2C_ReconnectResponse failed");
+		return -1;
+	}
+
+	LogInfo("process reconnect request: account(%s)", request.account().c_str());
 	return info->len;
 }
 
@@ -212,38 +234,16 @@ int ClientHandler::processDefault(JmyMsgInfo* info)
 {
 	JmyTcpConnection* conn = get_connection(info);
 	if (!conn) return -1;
-	int id = 0;
-	if (!connid_id_map_.find_1(info->session_id, id)) {
+	int id = CLIENT_MANAGER->getIdByConnId(info->conn_id);
+	if (!id) {
 		send_error(conn, PROTO_ERROR_SERVER_INTERNAL_ERROR);
-		ServerLogError("not found id by conn_id(%d)", info->session_id);
+		LogError("not found id by conn_id(%d)", info->conn_id);
 		return -1;
 	}
-	if (SEND_GAME_MSG(id, info->msg_id, info->data, info->len) < 0) {
+	if (SEND_GAME_USER_MSG(id, info->msg_id, info->data, info->len) < 0) {
 		send_error(conn, PROTO_ERROR_SERVER_INTERNAL_ERROR);
-		ServerLogError("send user(%d) message(%d) to game_server(%d) failed", id, info->msg_id, GAME_SERVER_ID);
+		LogError("send user(%d) message(%d) to game_server(%d) failed", id, info->msg_id, GAME_SERVER_ID);
 	}
-	ServerLogInfo("send user(%d) message(%d) to game_server(%d)", id, info->msg_id, GAME_SERVER_ID);
+	LogInfo("send user(%d) message(%d) to game_server(%d)", id, info->msg_id, GAME_SERVER_ID);
 	return info->len;
-}
-
-int ClientHandler::sendEnterGameResponse2Client(int id)
-{
-	ClientInfo* ci = client_array_.get(id);
-	if (!ci) {
-		ServerLogError("get ClientInfo by id(%d) failed", id);
-		return -1;
-	}
-	MsgS2C_EnterGameResponse response;
-	response.set_reconnect_session(ci->reconn_session.c_str());
-	if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
-		ServerLogError("serialize MsgS2C_EnterGameResponse failed");
-		return -1;
-	}
-	int res = ci->send(MSGID_S2C_ENTER_GAME_RESPONSE, tmp_, response.ByteSize());
-	if (res < 0) {
-		ServerLogError("send message MsgS2C_EnterGameResponse failed to client(%d) failed", id);
-		return -1;
-	}
-	ServerLogInfo("send message MsgS2C_EnterGameResponse to client(%d)", id);
-	return res;
 }

@@ -130,3 +130,12 @@ MsgGateConfData* ConfGateList::get(int index)
 		return nullptr;
 	return gate_array_[index];
 }
+
+MsgGateConfData* ConfGateList::getById(int id)
+{
+	std::unordered_map<int, MsgGateConfData*>::iterator it =id2gate_map_.find(id);
+	if (it == id2gate_map_.end())
+		return nullptr;
+
+	return it->second;
+}

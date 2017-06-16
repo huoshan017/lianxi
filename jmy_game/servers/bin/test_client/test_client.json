@@ -1,0 +1,9 @@
+{
+	"connect_ip" : "127.0.0.1",
+	"connect_port" : 10000,
+	"enable_reconnect" : true,
+	"log_conf_path" : "./log.conf",
+	"account_prefix" : "test_",
+	"account_start_index" : 1,
+	"account_num" : 5000
+}

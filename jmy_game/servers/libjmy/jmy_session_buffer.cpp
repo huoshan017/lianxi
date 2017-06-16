@@ -5,6 +5,7 @@
 #include "jmy_log.h"
 #include <cassert>
 #include <memory.h>
+#include <cassert>
 
 JmySessionBuffer::JmySessionBuffer()
 	: proxy_(false), buff_(NULL), len_(0), type_(SESSION_BUFFER_TYPE_NONE), write_offset_(0), read_offset_(0)
@@ -204,6 +205,7 @@ bool JmyDoubleSessionBuffer::init(std::shared_ptr<JmySessionBufferPool> pool, Se
 		p = pool->mallocSendBuffer(s);
 	if (!p) {
 		LibJmyLogError("failed to init because cant malloc buffer(%d)", type);
+		assert(0);
 		return false;
 	}
 	assert(s > 0);
@@ -222,8 +224,25 @@ void JmyDoubleSessionBuffer::destroy()
 
 void JmyDoubleSessionBuffer::clear()
 {
-	buff_.clear();
-	large_buff_.clear();
+	if (buff_pool_.get()) {
+		if (buff_.getBuff()) {
+			if (buff_.getType() == SESSION_BUFFER_TYPE_RECV) {
+				buff_pool_->freeRecvBuffer(buff_.getBuff());
+			} else {
+				buff_pool_->freeSendBuffer(buff_.getBuff());
+			}
+		}
+		if (large_buff_.getBuff()) {
+			if (large_buff_.getType() == SESSION_BUFFER_TYPE_RECV) {
+				buff_pool_->freeLargeRecvBuffer(large_buff_.getBuff());
+			} else {
+				buff_pool_->freeLargeSendBuffer(large_buff_.getBuff());
+			}
+		}
+	} else {
+		buff_.clear();
+		large_buff_.clear();
+	}
 }
 
 unsigned int JmyDoubleSessionBuffer::getNormalLen() const
@@ -357,8 +376,6 @@ bool JmyDoubleSessionBuffer::backToNormal()
 /**
  * JmySessionBufferList
  */
-std::atomic<uint64_t> JmySessionBufferList::buffer::init_count_;
-std::atomic<uint64_t> JmySessionBufferList::buffer::uninit_count_;
 
 JmySessionBufferList::JmySessionBufferList() :
 	max_bytes_(0), curr_used_bytes_(0), max_count_(0), curr_count_(0)
@@ -376,20 +393,14 @@ bool JmySessionBufferList::init(unsigned int max_bytes, unsigned int max_count)
 	return true;
 }
 
-void JmySessionBufferList::reset()
+void JmySessionBufferList::clear()
 {
 	using_list_.clear();
-	used_list_.clear();
 	curr_used_bytes_ = 0;
 	curr_count_ = 0;
 }
 
-void JmySessionBufferList::addDropCondition(JmyBufferDropCondition cond, uint32_t param)
-{
-	drop_cond_.setCond(cond, param);
-}
-
-bool JmySessionBufferList::writeData(const char* data, unsigned int len)
+bool JmySessionBufferList::writeData(const char* data, unsigned short len)
 {
 	if (max_count_>0 && curr_count_+1>max_count_) {
 		LibJmyLogError("buffer list used data count(%d) is max", max_count_);
@@ -457,6 +468,20 @@ bool JmySessionBufferList::writeData(JmyData* datas, int count)
 	return true;
 }
 
+bool JmySessionBufferList::writeData(unsigned short param, const char* data, unsigned short len)
+{
+	buffer b;
+	if (!b.init(data, len)) {
+		LibJmyLogError("buffer init failed");
+		return false;
+	}
+
+	b.woffset_ = param;
+	using_list_.push_back(std::move(b));
+
+	return true;
+}
+
 const char* JmySessionBufferList::getReadBuff()
 {
 	if (using_list_.size() == 0)
@@ -477,37 +502,16 @@ unsigned int JmySessionBufferList::getReadLen()
 int JmySessionBufferList::readLen(unsigned int len)
 {
 	if (using_list_.size() == 0)
-		return (int)JMY_PACKET_NONE;
+		return 0;
 
 	buffer& b = using_list_.front();
 	if (!b.read(len))
-		return (int)JMY_PACKET_NONE;
+		return 0;
 
-	JmyPacketType pt = b.getPacketType();
 	if (b.is_read_out()) {
-		if (pt == JMY_PACKET_USER_DATA)
-			used_list_.push_back(std::move(b));
 		using_list_.pop_front();
-		return (int)pt;
+		//LibJmyLogInfo("after pop front, buff list size: %d", using_list_.size());
+		return len;
 	}
-	//LibJmyLogInfo("using_list size(%u), used_list size(%u)", using_list_.size(), used_list_.size());
-	return (int)JMY_PACKET_NONE;
-}
-
-void JmySessionBufferList::dropUsed(unsigned int len)
-{
-	// drop all
-	if (len == 0) {
-		used_list_.clear();
-	}
-	unsigned int i = 0;
-	for (; i<len; i++) {
-		if (used_list_.size() == 0)
-			break;
-
-		buffer& b = used_list_.front();
-		b.destroy();
-		used_list_.pop_front();
-	}
-	//LibJmyLogInfo("droped %u data", len);
+	return len;
 }

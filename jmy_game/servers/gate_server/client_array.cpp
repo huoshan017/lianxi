@@ -60,6 +60,7 @@ ClientInfo* ClientArray::getFree()
 	int id = free_ids_.front();
 	free_ids_.pop_front();
 	ClientInfo* info = info_array_[id-start_id_];
+	info->id = id;
 	info->used = true;
 	used_ids_.insert(id);
 	return info;
@@ -70,7 +71,7 @@ ClientInfo* ClientArray::get(int id)
 	if (!inited_) return nullptr;
 	if (id<start_id_ || id>start_id_+info_size_)
 		return nullptr;
-	if (used_ids_.find(id) != used_ids_.end())
+	if (used_ids_.find(id) == used_ids_.end())
 		return nullptr;
 
 	return info_array_[id-start_id_];
@@ -86,4 +87,11 @@ bool ClientArray::free(ClientInfo* info)
 	used_ids_.erase(info->id);
 	info->used = false;
 	return true;
+}
+
+bool ClientArray::free(int id)
+{
+	ClientInfo* ci = get(id);
+	if (!ci) return false;
+	return free(ci);
 }
