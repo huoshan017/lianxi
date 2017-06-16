@@ -35,27 +35,25 @@ bool JmyDataHandler2::loadMsgHandle(const JmyId2MsgHandler id2handlers[], int si
 	return true;
 }
 
-int JmyDataHandler2::processData(JmySessionBufferList* buffer_list, int conn_id, JmyTcpConnectorMgr* mgr)
+int JmyDataHandler2::processData(JmySessionBufferList* buffer_list, int conn_id, JmyTcpConnectionMgr* mgr)
 {
-	JmySessionBuffer& buff = buffer_list->getReadBuff();
-	unsigned int len = recv_buffer.getReadLen();
+	std::list<JmySessionBufferList::buffer>& buff_list = buffer_list->getBufferList();
 	int nhandled = 0;
 	int count = 0;
-	while (true) {
-		int res = handleOne(buff, nhandled, unpack_data_, session_id, param);
+	std::list<JmySessionBufferList::buffer>::iterator it = buff_list.begin();
+	for (; it!=buff_list.end(); ++it) {
+		JmySessionBufferList::buffer& buff = *it;
+		int res = handleOne(buff, unpack_data_, conn_id, mgr);
 		if (res < 0) {
 			return -1;
 		}
 		// not enough data to read
 		nhandled += res;
-		if (unpack_data_.type == JMY_PACKET_USER_DATA || unpack_data_.type == JMY_PACKET_USER_ID_DATA) {
+		if (unpack_data_.type == JMY_PACKET2_USER_DATA || unpack_data_.type == JMY_PACKET2_USER_ID_DATA) {
 			count += 1;
 		}
-		if (len - nhandled == 0) {
-			buff.readLen(nhandled);
-			break;
-		}
 	}
+	buffer_list->clear();
 	return count;
 }
 
@@ -139,38 +137,24 @@ int JmyDataHandler2::handleDisconnectAck(JmyDisconnectAckMsgInfo* info)
 }
 
 int JmyDataHandler2::handleOne(
-		JmySessionBuffer& session_buffer,
-		unsigned int offset,
-		JmyPacketUnpackData& data,
+		JmySessionBufferList::buffer& buff, 
+		JmyPacketUnpackData2& data,
 		int conn_id, void* param)
 {
-	const char* buff = session_buffer.getReadBuff();
-	unsigned int read_len = session_buffer.getReadLen();
-	int r = jmy_net_proto_unpack_data_head(buff+offset, read_len-offset, data, conn_id, param);
+	JmyPacketType2 type = (JmyPacketType2)buff.woffset_;
+	int r = jmy_net_proto2_unpack_data(type, buff.data_, buff.len_, data, conn_id, param);
 	if (r < 0) {
-		if ((data.type == JMY_PACKET_USER_DATA || data.type == JMY_PACKET_USER_ID_DATA) &&
-			data.result == JMY_UNPACK_RESULT_MSG_LEN_INVALID) {
+		if ((type == JMY_PACKET2_USER_DATA || type == JMY_PACKET2_USER_ID_DATA) &&
+			data.result == JMY_UNPACK2_RESULT_MSG_LEN_INVALID) {
 			LibJmyLogError("data len(%d) is invalid", data.data);
 		}
 		return -1;
-	} else if (r == 0 && (data.type != JMY_PACKET_USER_DATA && data.type != JMY_PACKET_USER_ID_DATA)) {
+	} else if (r == 0 && (type != JMY_PACKET2_USER_DATA && type != JMY_PACKET2_USER_ID_DATA)) {
 		return 0;
 	}
 
 	// user data
-	if (data.type == JMY_PACKET_USER_DATA || data.type == JMY_PACKET_USER_ID_DATA) {
-		if (data.result == JMY_UNPACK_RESULT_DATA_NOT_ENOUGH) {
-			session_buffer.moveDataToFront();
-			return 0;
-		} else if (data.result == JMY_UNPACK_RESULT_USER_DATA_NOT_ENOUGH) {
-			unsigned int write_len = session_buffer.getWriteLen();
-			int can_read_len = (int)(write_len + read_len - offset); 
-			if (can_read_len < unpack_data_.data) {
-				session_buffer.moveDataToFront();
-			}
-			return 0;
-		}
-
+	if (type == JMY_PACKET2_USER_DATA || type == JMY_PACKET2_USER_ID_DATA) {
 		int res = handleMsg(&data.msg_info);
 		if (res < 0) {
 			LibJmyLogError("handle msg(%d) failed", data.msg_info.msg_id);
@@ -178,21 +162,21 @@ int JmyDataHandler2::handleOne(
 		}
 	}
 	// heart beat
-	else if (data.type == JMY_PACKET_HEARTBEAT) {
+	else if (type == JMY_PACKET2_HEARTBEAT) {
 		heartbeat_info_.session_id = conn_id;
 		heartbeat_info_.session_param = param;
 		if (handleHeartbeat(&heartbeat_info_) < 0)
 			return -1;
 	}
 	// disconnect
-	else if (data.type == JMY_PACKET_DISCONNECT) {
+	else if (type == JMY_PACKET2_DISCONNECT) {
 		disconn_info_.session_id = conn_id;
 		disconn_info_.session_param = param;
 		if (handleDisconnect(&disconn_info_) < 0)
 			return -1;
 	}
 	// disconnect ack
-	else if (data.type == JMY_PACKET_DISCONNECT_ACK) {
+	else if (type == JMY_PACKET2_DISCONNECT_ACK) {
 		disconn_ack_info_.session_id = conn_id;
 		disconn_ack_info_.session_param = param;
 		if (handleDisconnectAck(&disconn_ack_info_) < 0)

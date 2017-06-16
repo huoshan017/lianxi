@@ -49,9 +49,6 @@ enum { JMY_PACKET_LEN_USER_ID_DATA_HEAD = 1+4+2+2, };
 enum { JMY_PACKET_LEN_ACK				= 1+2+2, };
 enum { JMY_PACKET_LEN_HEARTBEAT			= 1+4, };
 
-// active close default timeout
-enum { JMY_ACTIVE_CLOSE_CONNECTION_TIMEOUT = 30, };
-
 struct JmyPacketUnpackData {
 	JmyPacketType type;
 	void* param;
@@ -153,18 +150,6 @@ int jmy_net_proto_pack_defined_type_head<short>(char* buf, unsigned short len, u
  */
 template <>
 int jmy_net_proto_pack_defined_type_head<char>(char* buf, unsigned short len, unsigned char defined_pack_type, const char& char_pack_param);
-
-/**
- * sessoin info 
- */
-bool jmy_id_to_session_info(int session_id, JmySessionInfo& info);
-int jmy_session_info_to_id(const JmySessionInfo& info);
-
-/**
- * ack id
- */
-unsigned short jmy_ack_id_add(unsigned short curr_id, unsigned short increment);
-unsigned short jmy_ack_id_diff(unsigned short self_id, unsigned short ack_id);
 
 #if USE_CONN_PROTO
 /**

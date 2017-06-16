@@ -7,10 +7,6 @@
 #include "conn_db_handler.h"
 
 /* connect config handler config */
-static JmyResendConfig s_retran_config = {
-	RESEND_MAX_CACHED_SEND_BUFFER_COUNT,
-	RESEND_ACK_RECV_COUNT
-};
 static JmyId2MsgHandler s_conn_gate_handlers[] = {
 	{ MSGID_GT2GS_CONNECT_GATE_RESPONSE, ConnGateHandler::processConnectGateResponse },
 	{ MSGID_GT2GS_GET_ROLE_REQUEST,	  ConnGateHandler::processGetRole },
@@ -27,7 +23,6 @@ static JmyBaseEventHandlers s_conn_gate_base_event_handlers = {
 static jmy_msg_handler s_conn_gate_default_msg_handler = ConnGateHandler::processDefault;
 static JmyConnectionConfig s_conn_gate_config = {
 	{ 1024*64, 1024*64, 0, 0, false, true },
-	&s_retran_config,
 	s_conn_gate_handlers,
 	sizeof(s_conn_gate_handlers)/sizeof(s_conn_gate_handlers[0]),
 	s_conn_gate_default_msg_handler,
@@ -57,7 +52,6 @@ static JmyBaseEventHandlers s_conn_db_base_event_handlers = {
 static jmy_msg_handler s_conn_db_default_msg_handler = ConnDBHandler::processDefault;
 static JmyConnectionConfig s_conn_db_config = {
 	{ 1024*128, 1024*128, 0, 0, false, true },
-	&s_retran_config,
 	s_conn_db_handlers,
 	sizeof(s_conn_db_handlers)/sizeof(s_conn_db_handlers[0]),
 	s_conn_db_default_msg_handler,

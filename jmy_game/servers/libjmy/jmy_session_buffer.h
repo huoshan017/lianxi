@@ -107,8 +107,9 @@ public:
 	bool init(unsigned int max_bytes = 0, unsigned int max_count = 0);
 	void clear();
 
-	bool writeData(const char* data, unsigned int len);
+	bool writeData(const char* data, unsigned short len);
 	bool writeData(JmyData* datas, int count);
+	bool writeData(unsigned short param, const char* data, unsigned short len);
 	const char* getReadBuff();
 	unsigned int getReadLen();
 	int readLen(unsigned int len);

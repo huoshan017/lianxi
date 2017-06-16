@@ -70,7 +70,7 @@ int ClientHandler::processGetRoleRequest(JmyMsgInfo* info)
 		send_error(conn, PROTO_ERROR_ENTER_GAME_PLAYER_COUNT_MAXIMUM);
 		// close this client
 		ci->close();
-		LogError("account %s enter game failed, player count(%d) is maximumu", used_size);
+		LogError("account %s enter game failed, player count(%d) is maximumu", request.account().c_str(), used_size);
 		return -1;
 	}
 

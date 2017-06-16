@@ -6,10 +6,6 @@
 #include "../common/defines.h"
 #include "conn_handler.h"
 
-static JmyResendConfig s_retran_config = {
-	RESEND_MAX_CACHED_SEND_BUFFER_COUNT,
-	RESEND_ACK_RECV_COUNT
-};
 static JmyId2MsgHandler s_conn_handlers[] = {
 	{ MSGID_LS2CS_CONNECT_CONFIG_REQUEST, ConnHandler::processLoginConnect },
 	{ MSGID_GT2CS_CONNECT_CONFIG_REQUEST, ConnHandler::processGateConnect },
@@ -22,7 +18,6 @@ static JmyBaseEventHandlers s_conn_base_event_handlers = {
 };
 static JmyConnectionConfig s_conn_conn_config = {
 	{ 4096, 4096, 0, 0, false, true},	// JmyBufferConfig
-	&s_retran_config,					// JmyRetransmissionConfig
 	s_conn_handlers,					// JmyId2MsgHandler []
 	sizeof(s_conn_handlers)/sizeof(s_conn_handlers[0]), // int
 	(jmy_msg_handler)nullptr,			// jmy_msg_handler

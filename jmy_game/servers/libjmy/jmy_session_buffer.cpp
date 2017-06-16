@@ -376,8 +376,6 @@ bool JmyDoubleSessionBuffer::backToNormal()
 /**
  * JmySessionBufferList
  */
-std::atomic<uint64_t> JmySessionBufferList::buffer::init_count_;
-std::atomic<uint64_t> JmySessionBufferList::buffer::uninit_count_;
 
 JmySessionBufferList::JmySessionBufferList() :
 	max_bytes_(0), curr_used_bytes_(0), max_count_(0), curr_count_(0)
@@ -398,12 +396,11 @@ bool JmySessionBufferList::init(unsigned int max_bytes, unsigned int max_count)
 void JmySessionBufferList::clear()
 {
 	using_list_.clear();
-	used_list_.clear();
 	curr_used_bytes_ = 0;
 	curr_count_ = 0;
 }
 
-bool JmySessionBufferList::writeData(const char* data, unsigned int len)
+bool JmySessionBufferList::writeData(const char* data, unsigned short len)
 {
 	if (max_count_>0 && curr_count_+1>max_count_) {
 		LibJmyLogError("buffer list used data count(%d) is max", max_count_);
@@ -426,8 +423,6 @@ bool JmySessionBufferList::writeData(const char* data, unsigned int len)
 		curr_count_ += 1;
 	if (max_bytes_ > 0)
 		curr_used_bytes_ += len;
-
-	LibJmyLogInfo("buff list size: %d", using_list_.size());
 
 	return true;
 }
@@ -470,7 +465,19 @@ bool JmySessionBufferList::writeData(JmyData* datas, int count)
 	if (max_bytes_ > 0)
 		curr_used_bytes_ += total_len;
 
-	LibJmyLogInfo("buff list size: %d", using_list_.size());
+	return true;
+}
+
+bool JmySessionBufferList::writeData(unsigned short param, const char* data, unsigned short len)
+{
+	buffer b;
+	if (!b.init(data, len)) {
+		LibJmyLogError("buffer init failed");
+		return false;
+	}
+
+	b.woffset_ = param;
+	using_list_.push_back(std::move(b));
 
 	return true;
 }
@@ -503,27 +510,8 @@ int JmySessionBufferList::readLen(unsigned int len)
 
 	if (b.is_read_out()) {
 		using_list_.pop_front();
-		LibJmyLogInfo("after pop front, buff list size: %d", using_list_.size());
+		//LibJmyLogInfo("after pop front, buff list size: %d", using_list_.size());
 		return len;
 	}
-	//LibJmyLogInfo("using_list size(%u), used_list size(%u)", using_list_.size(), used_list_.size());
 	return len;
-}
-
-void JmySessionBufferList::dropUsed(unsigned int len)
-{
-	// drop all
-	if (len == 0) {
-		used_list_.clear();
-	}
-	unsigned int i = 0;
-	for (; i<len; i++) {
-		if (used_list_.size() == 0)
-			break;
-
-		buffer& b = used_list_.front();
-		b.destroy();
-		used_list_.pop_front();
-	}
-	//LibJmyLogInfo("droped %u data", len);
 }

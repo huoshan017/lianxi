@@ -6,7 +6,7 @@
 #include "jmy_net_proto2.h"
 #include "jmy_log.h"
 
-class JmyTcpConnectorMgr;
+class JmyTcpConnectionMgr;
 
 class JmyDataHandler2
 {
@@ -17,7 +17,7 @@ public:
 	bool loadMsgHandle(const JmyId2MsgHandler id2handlers[], int size);
 	void setDefaultMsgHandler(jmy_msg_handler handler) { default_msg_handler_ = handler; }
 	// return messages count
-	int processData(JmySessionBufferList* buffer_list, int conn_id, JmyTcpConnectorMgr* mgr);
+	int processData(JmySessionBufferList* buffer_list, int conn_id, JmyTcpConnectionMgr* mgr);
 	// return write bytes count
 	int writeUserData(JmySessionBufferList* buffer_list, int msg_id, const char* data, unsigned int len);
 	int writeUserIdAndData(JmySessionBufferList* buffer_list, int user_id, int msg_id, const char* data, unsigned short len);
@@ -34,7 +34,7 @@ public:
 	int writeDisconnectAck(Buffer* buffer);
 
 private:
-	int handleOne(JmySessionBuffer& session_buffer, unsigned int offset, JmyPacketUnpackData& data, int session_id, void* param);
+	int handleOne(JmySessionBufferList::buffer& buff, JmyPacketUnpackData2& data, int session_id, void* param);
 	int handleMsg(JmyMsgInfo*);
 	int handleHeartbeat(JmyHeartbeatMsgInfo*);
 	int handleDisconnect(JmyDisconnectMsgInfo*);
@@ -43,7 +43,7 @@ private:
 private:
 	std::unordered_map<int, jmy_msg_handler> msg_handler_map_;
 	jmy_msg_handler default_msg_handler_;
-	JmyPacketUnpackData unpack_data_;
+	JmyPacketUnpackData2 unpack_data_;
 	JmyHeartbeatMsgInfo heartbeat_info_;
 	JmyDisconnectMsgInfo disconn_info_;
 	JmyDisconnectAckMsgInfo disconn_ack_info_;

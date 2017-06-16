@@ -9,7 +9,11 @@
 #include "jmy_tcp_connection.h"
 #endif
 #include "jmy_session_buffer_pool.h"
+#if USE_NET_PROTO2
+#include "jmy_data_handler2.h"
+#else
 #include "jmy_data_handler.h"
+#endif
 #include "jmy_datatype.h"
 #include "jmy_util.h"
 
@@ -49,7 +53,11 @@ private:
 	std::shared_ptr<std::thread> thread_;
 #endif
 	std::shared_ptr<ip::tcp::acceptor> acceptor_;
+#if USE_NET_PROTO2
+	std::shared_ptr<JmyDataHandler2> handler_;
+#else
 	std::shared_ptr<JmyDataHandler> handler_;
+#endif
 	std::shared_ptr<JmyEventHandlerManager> event_handler_;
 #if USE_CONNECTOR_AND_SESSION
 	std::shared_ptr<JmyTcpSessionMgr> session_mgr_;

@@ -92,7 +92,8 @@ int GameHandler::processGetRoleResponse(JmyMsgInfo* info)
 			LogError("send MsgError failed");
 			return -1;
 		}
-		LogInfo("get account(%s) not found, send error: PROTO_ERROR_GET_ROLE_NONE", response.account().c_str());
+		static int count = 0;
+		LogInfo("get account(%s) not found, send error: PROTO_ERROR_GET_ROLE_NONE, count(%d)", response.account().c_str(), ++count);
 	} else {
 		MsgS2C_GetRoleResponse get_resp;
 		char* reconn_session = get_session_code(session_buf_, RECONN_SESSION_CODE_BUF_LENGTH);

@@ -15,7 +15,11 @@ JmyTcpServer::JmyTcpServer(io_service& service) :
 	inited_(false)
 {
 	acceptor_ = std::make_shared<ip::tcp::acceptor>(service_);
+#if USE_NET_PROTO2
+	handler_ = std::make_shared<JmyDataHandler2>();
+#else
 	handler_ = std::make_shared<JmyDataHandler>();
+#endif
 	event_handler_ = std::make_shared<JmyEventHandlerManager>();
 #if USE_CONNECTOR_AND_SESSION
 	session_mgr_ = std::make_shared<JmyTcpSessionMgr>();
@@ -35,7 +39,11 @@ JmyTcpServer::JmyTcpServer(io_service& service, unsigned short port) :
 	inited_(false)
 {
 	acceptor_ = std::make_shared<ip::tcp::acceptor>(service_, ip::tcp::endpoint(ip::tcp::v4(), port));
+#if USE_NET_PROTO2
+	handler_ = std::make_shared<JmyDataHandler2>();
+#else
 	handler_ = std::make_shared<JmyDataHandler>();
+#endif
 	event_handler_ = std::make_shared<JmyEventHandlerManager>();
 #if USE_CONNECTOR_AND_SESSION
 	session_mgr_ = std::make_shared<JmyTcpSessionMgr>();

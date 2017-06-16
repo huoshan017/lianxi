@@ -43,7 +43,11 @@ bool JmyTcpClient::connect(const char* ip, unsigned short port, bool non_blockin
 
 bool JmyTcpClient::start(const JmyClientConfig& conf, bool non_blocking)
 {
+#if USE_NET_PROTO2
+	std::shared_ptr<JmyDataHandler2> data_handler = std::make_shared<JmyDataHandler2>();
+#else
 	std::shared_ptr<JmyDataHandler> data_handler = std::make_shared<JmyDataHandler>();
+#endif
 	if (conf.conn_conf.handlers && conf.conn_conf.nhandlers) {
 		if (!data_handler->loadMsgHandle(conf.conn_conf.handlers, conf.conn_conf.nhandlers)) {
 			return false;

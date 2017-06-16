@@ -117,7 +117,8 @@ int GateHandler::processSelectedServerResponse(JmyMsgInfo* info)
 	}
 #endif
 
-	LogInfo("account(%s) selected server response with enter_session(%s) to back client", res.account().c_str(), res.session_code().c_str());
+	static int sel_count = 0;
+	LogInfo("account(%s) selected server response with enter_session(%s) to back client, sel_count(%d)", res.account().c_str(), res.session_code().c_str(), ++sel_count);
 
 	return info->len;
 }

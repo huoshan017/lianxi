@@ -346,28 +346,6 @@ int jmy_net_proto_unpack_data_head(const char* buf, unsigned int len, JmyPacketU
 	return handled;
 }
 
-bool jmy_id_to_session_info(int session_id, JmySessionInfo& info)
-{
-	info.type = (JmyConnType)((session_id>>24) & 0xff);
-	info.session_id = session_id & 0xffffff;
-	return true;
-}
-
-int jmy_session_info_to_id(const JmySessionInfo& info)
-{
-	return (int)(((info.type<<24)&0xff000000) + (info.session_id&0x00ffffff));
-}
-
-unsigned short jmy_ack_id_add(unsigned short curr_id, unsigned short increment)
-{
-	if (curr_id + increment > JMY_ACK_END_ID) {
-		curr_id = curr_id + increment - JMY_ACK_END_ID + JMY_ACK_START_ID;
-	} else {
-		curr_id += increment;
-	}
-	return curr_id;
-}
-
 #if USE_CONN_PROTO
 // JmyConnIdAndSessionMgr
 JmyConnIdAndSessionMgr::JmyConnIdAndSessionMgr() : curr_id_(0)

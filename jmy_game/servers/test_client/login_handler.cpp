@@ -77,8 +77,9 @@ int LoginHandler::processLogin(JmyMsgInfo* info)
 				i+1, si.name().c_str(), si.id(), si.is_maintenance(), si.is_busy());
 	}
 
+#if 0
 	MsgC2S_EchoRequest echo_req;
-	for (i=0; i<2000; ++i) {
+	for (i=0; i<100000; ++i) {
 		echo_req.set_echo_str(std::to_string(i));
 		if (!echo_req.SerializeToArray(tmp_, sizeof(tmp_))) {
 			LogError("serialize MsgS2C_EchoResponse failed");
@@ -89,8 +90,9 @@ int LoginHandler::processLogin(JmyMsgInfo* info)
 			return -1;
 		}
 	}
+#endif
 
-#if 0
+#if 1
 	if (s > 0) {
 		// select server
 		MsgC2S_SelectServerRequest request;

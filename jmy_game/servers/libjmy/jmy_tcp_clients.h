@@ -3,7 +3,11 @@
 #include "jmy_datatype.h"
 #include "jmy_tcp_connection.h"
 #include "jmy_connection_buffer.h"
+#if USE_NET_PROTO2
+#include "jmy_data_handler2.h"
+#else
 #include "jmy_data_handler.h"
+#endif
 #include "jmy_util.h"
 #include <set>
 #include <list>
@@ -41,6 +45,10 @@ private:
 	JmyTcpConnectionMgr mgr_;
 	JmyConnectionBufferMgr buffer_mgr_;
 	JmyIdGenerator<int> id_gen_;
+#if USE_NET_PROTO2
+	std::shared_ptr<JmyDataHandler2> handler_;
+#else
 	std::shared_ptr<JmyDataHandler> handler_;
+#endif
 	std::shared_ptr<JmySessionBufferPool> buff_pool_;
 };

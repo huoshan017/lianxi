@@ -8,10 +8,6 @@
 #include "conn_login_handler.h"
 #include "conn_config_handler.h"
 
-static JmyResendConfig s_retran_config = {
-	RESEND_MAX_CACHED_SEND_BUFFER_COUNT,
-	RESEND_ACK_RECV_COUNT
-};
 // handle client config
 static JmyId2MsgHandler s_client_handlers[] = {
 	{ MSGID_C2S_GET_ROLE_REQUEST,	ClientHandler::processGetRoleRequest },  // handle get role request
@@ -29,7 +25,6 @@ static JmyBaseEventHandlers s_client_base_event_handlers = {
 };
 static JmyConnectionConfig s_client_connection_config = {
 	{ 2048, 2048, 0, 0, false, true},
-	&s_retran_config,
 	s_client_handlers,
 	sizeof(s_client_handlers)/sizeof(s_client_handlers[0]),
 	s_default_client_handler,
@@ -59,7 +54,6 @@ static JmyBaseEventHandlers s_game_base_event_handlers = {
 };
 static JmyConnectionConfig s_game_connection_config = {
 	{ 2048*100, 2048*100, 0, 0, false, true },
-	&s_retran_config,
 	s_game_handlers,
 	sizeof(s_game_handlers)/sizeof(s_game_handlers[0]),
 	s_default_game_handler,
@@ -88,7 +82,6 @@ static JmyBaseEventHandlers s_config_base_event_handlers = {
 };
 static JmyConnectionConfig s_config_conn_config = {
 	{ 1024*64, 1024*64, 0, 0, false, true },
-	&s_retran_config,
 	s_config_handlers,
 	sizeof(s_config_handlers)/sizeof(s_config_handlers[0]),
 	(jmy_msg_handler)nullptr,
@@ -115,7 +108,6 @@ static JmyBaseEventHandlers s_login_base_event_handlers = {
 };
 static JmyConnectionConfig s_login_conn_config = {
 	{ 1024*64, 1024*64, 0, 0, false, true },
-	&s_retran_config,
 	s_login_handlers,
 	sizeof(s_login_handlers)/sizeof(s_login_handlers[0]),
 	(jmy_msg_handler)nullptr,

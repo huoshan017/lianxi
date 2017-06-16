@@ -50,6 +50,13 @@
 			(buff[7]&0xff); \
 		})
 
+bool jmy_net_proto2_get_packet_len_type(const char* buf, unsigned short buf_len, JmyPacketType2& type, int& len) {
+	if (buf_len < JMY_PACKET2_LEN_HEAD+JMY_PACKET2_LEN_TYPE)
+		return false;
+	len = UNPACK_INT16_FROM_BUFF(buf);
+	type = (JmyPacketType2)buf[2];
+	return true;
+}
 
 int jmy_net_proto2_pack_disconnect(char* buf, unsigned char len) {
 	int pack_len = jmy_net_proto2_disconnect_pack_len();
@@ -57,9 +64,9 @@ int jmy_net_proto2_pack_disconnect(char* buf, unsigned char len) {
 		return -1;
 
 	// head
-	PACK_INT16_TO_BUFF(JMY_PACKET_LEN_TYPE, buf);
+	PACK_INT16_TO_BUFF(JMY_PACKET2_LEN_TYPE, buf);
 	// type
-	buf[2] = (char)JMY_PACKET_DISCONNECT;
+	buf[2] = (char)JMY_PACKET2_DISCONNECT;
 	return pack_len;
 }
 
@@ -69,21 +76,21 @@ int jmy_net_proto2_pack_disconnect_ack(char* buf, unsigned char len) {
 		return -1;
 
 	// head
-	PACK_INT16_TO_BUFF(JMY_PACKET_LEN_TYPE, buf);
+	PACK_INT16_TO_BUFF(JMY_PACKET2_LEN_TYPE, buf);
 	// type
-	buf[2] = (char)JMY_PACKET_DISCONNECT_ACK;
+	buf[2] = (char)JMY_PACKET2_DISCONNECT_ACK;
 	return pack_len;
 }
 
 int jmy_net_proto2_pack_user_data_head(char* buf, unsigned char len, int msg_id, unsigned short data_len) {
 	int pack_len = jmy_net_proto2_user_data_pack_len(data_len);
-	if (!buf || len < pack_len)
+	if (!buf || len < pack_len-data_len)
 		return -1;
 
 	// head
-	PACK_INT16_TO_BUFF((pack_len-JMY_PACKET_LEN_HEAD), buf);
+	PACK_INT16_TO_BUFF((pack_len-JMY_PACKET2_LEN_HEAD), buf);
 	// type
-	buf[2] = (char)JMY_PACKET_USER_DATA;
+	buf[2] = (char)JMY_PACKET2_USER_DATA;
 	// msg_id
 	PACK_INT16_TO_BUFF((msg_id), (buf+3));
 	return jmy_net_proto2_user_data_pack_len();
@@ -92,35 +99,21 @@ int jmy_net_proto2_pack_user_data_head(char* buf, unsigned char len, int msg_id,
 int jmy_net_proto2_pack_user_id_data_head(char* buf, unsigned char len, int user_id, int msg_id, unsigned short data_len)
 {
 	int pack_len = jmy_net_proto2_user_id_data_pack_len(data_len);
-	if (!buf || len < pack_len)
+	if (!buf || len < pack_len-data_len)
 		return -1;
 
 	// head
-	PACK_INT16_TO_BUFF((pack_len-JMY_PACKET_LEN_HEAD), buf);
+	PACK_INT16_TO_BUFF((pack_len-JMY_PACKET2_LEN_HEAD), buf);
 	// type
-	buf[2] = (char)JMY_PACKET_USER_ID_DATA;
+	buf[2] = (char)JMY_PACKET2_USER_ID_DATA;
 	int offset = 3;
 	// user_id
 	int res = PACK_INT32_TO_BUFF(user_id, (buf+offset));
 	offset += res;
 	// msg_id
-	res = PACK_INT16_TO_BUFF((msg_id), (buf+offset));
+	PACK_INT16_TO_BUFF((msg_id), (buf+offset));
 	return jmy_net_proto2_user_id_data_pack_len();
 }
-
-#if 0
-int jmy_net_proto2_pack_ack(char* buf, unsigned char len, unsigned short msg_count, unsigned short curr_id) {
-	int pack_len = jmy_net_proto2_ack_pack_len();
-	if (!buf || len < pack_len)
-		return -1;
-
-	PACK_INT16_TO_BUFF((pack_len-JMY_PACKET_LEN_HEAD), buf);
-	buf[2] = (char)JMY_PACKET_ACK;
-	PACK_INT16_TO_BUFF(msg_count, (buf+3));
-	PACK_INT16_TO_BUFF(curr_id, (buf+5));
-	return pack_len;
-}
-#endif
 
 int jmy_net_proto2_pack_heartbeat(char* buf, unsigned char len) {
 	int pack_len = jmy_net_proto2_heartbeat_pack_len();
@@ -128,9 +121,9 @@ int jmy_net_proto2_pack_heartbeat(char* buf, unsigned char len) {
 		return -1;
 
 	// head
-	PACK_INT16_TO_BUFF((pack_len-JMY_PACKET_LEN_HEAD), buf);
+	PACK_INT16_TO_BUFF((pack_len-JMY_PACKET2_LEN_HEAD), buf);
 	// type
-	buf[2] = (char)JMY_PACKET_HEARTBEAT;
+	buf[2] = (char)JMY_PACKET2_HEARTBEAT;
 	// timestamp
 	std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
 	std::time_t t = std::chrono::system_clock::to_time_t(now);
@@ -138,21 +131,21 @@ int jmy_net_proto2_pack_heartbeat(char* buf, unsigned char len) {
 	return pack_len;
 }
 
-int jmy_net_proto_unpack_data(JmyPacketType packet_type, const char* buf, unsigned short len, JmyPacketUnpackData& data, int conn_id, void* param) {
+int jmy_net_proto2_unpack_data(JmyPacketType2 packet_type, const char* buf, unsigned short len, JmyPacketUnpackData2& data, int conn_id, void* param) {
 	if (!buf || !len)
 		return 0;
 
 	int handled = 0;
 	switch (packet_type) {
-	case JMY_PACKET_USER_DATA:
-	case JMY_PACKET_USER_ID_DATA:
+	case JMY_PACKET2_USER_DATA:
+	case JMY_PACKET2_USER_ID_DATA:
 		{
-			int offset = JMY_PACKET_LEN_TYPE;
+			int offset = 0;
 			int user_id = 0;
 			// get user_id
-			if (data.type == JMY_PACKET_USER_ID_DATA) {
+			if (data.type == JMY_PACKET2_USER_ID_DATA) {
 				if (len - offset < 4) {
-					data.result = JMY_UNPACK_RESULT_DATA_NOT_ENOUGH;
+					data.result = JMY_UNPACK2_RESULT_DATA_NOT_ENOUGH;
 					LibJmyLogDebug("user id %d length not enough", len-offset);
 					return 0;
 				}
@@ -173,19 +166,19 @@ int jmy_net_proto_unpack_data(JmyPacketType packet_type, const char* buf, unsign
 			handled = offset+msg_info->len;
 		}
 		break;
-	case JMY_PACKET_HEARTBEAT:
+	case JMY_PACKET2_HEARTBEAT:
 		{
-			if (len < JMY_PACKET_LEN_TIMESTAMP) {
-				data.result = JMY_UNPACK_RESULT_DATA_NOT_ENOUGH;
+			if (len < JMY_PACKET2_LEN_TIMESTAMP) {
+				data.result = JMY_UNPACK2_RESULT_DATA_NOT_ENOUGH;
 				return 0;
 			}
 			// time
 			data.param = (void*)(long)(UNPACK_INT32_FROM_BUFF(buf));
-			handled = JMY_PACKET_LEN_TIMESTAMP;
+			handled = JMY_PACKET2_LEN_TIMESTAMP;
 		}
 		break;
-	case JMY_PACKET_DISCONNECT:
-	case JMY_PACKET_DISCONNECT_ACK:
+	case JMY_PACKET2_DISCONNECT:
+	case JMY_PACKET2_DISCONNECT_ACK:
 		{
 			handled = 0;
 		}
@@ -194,6 +187,6 @@ int jmy_net_proto_unpack_data(JmyPacketType packet_type, const char* buf, unsign
 		LibJmyLogWarn("handle packet type(%d) invalid", (int)data.type);
 		return -1;
 	}
-	data.result = JMY_UNPACK_RESULT_NO_ERROR;
+	data.result = JMY_UNPACK2_RESULT_NO_ERROR;
 	return handled;
 }
