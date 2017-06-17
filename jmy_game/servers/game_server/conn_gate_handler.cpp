@@ -199,6 +199,12 @@ int ConnGateHandler::processDefault(JmyMsgInfo* info)
 
 int ConnGateHandler::processChat(JmyMsgInfo* info)
 {
+	JmyTcpConnection* conn = get_connection(info);
+	if (!conn) {
+		LogError("get connection failed");
+		return -1;
+	}
+
 	MsgC2S_ChatRequest request;
 	if (!request.ParseFromArray(info->data, info->len)) {
 		LogError("parse MsgC2S_ChatRequest failed");
@@ -214,6 +220,41 @@ int ConnGateHandler::processChat(JmyMsgInfo* info)
 		LogInfo("executed gm command");
 		return info->len;
 	}
+
+	// response
+	MsgS2C_ChatResponse response;
+	response.set_chat_type(request.chat_type());
+	response.set_channel(request.channel());
+	response.set_content(request.content());
+	response.set_role_id(request.role_id());
+	if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
+		LogError("serialize MsgS2C_ChatResponse failed");
+		return -1;
+	}
+	if (conn->send(info->user_id, MSGID_S2C_CHAT_RESPONSE, tmp_, response.ByteSize()) < 0) {
+		LogError("send MsgS2C_ChatResponse failed");
+		return -1;
+	}
+	LogInfo("chat response");
+
+	Player* p = PLAYER_MGR->getByRoleId(request.role_id());
+	if (!p) {
+		LogWarn("player by role_id(%llu) not found", request.role_id());
+		return 0;
+	}
+	// notify
+	MsgS2C_ChatNotify notify;
+	notify.set_chat_type(request.chat_type());
+	notify.set_channel(request.channel());
+	if (!notify.SerializeToArray(tmp_, sizeof(tmp_))) {
+		LogError("serialize MsgS2C_ChatNotify failed");
+		return -1;
+	}
+	if (p->send_gate(MSGID_S2C_CHAT_NOTIFY, tmp_, notify.ByteSize()) < 0) {
+		LogError("send MsgS2C_ChatNotify failed");
+		return -1;
+	}
+	LogInfo("chat notify to role(%llu) failed", request.role_id());
 
 	return info->len;
 }

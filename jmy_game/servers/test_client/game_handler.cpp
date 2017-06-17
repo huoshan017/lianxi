@@ -122,7 +122,7 @@ int GameHandler::processEnterGameComplete(JmyMsgInfo* info)
 	JmyTcpConnection* conn = get_connection(info);
 	if (!conn) return -1;
 
-#if 0
+#if 1
 	MsgC2S_SetRoleDataRequest request;
 	for (int i=0; i<1; ++i) {
 		MsgBaseRoleData* role_data = request.mutable_role_data();
@@ -173,7 +173,7 @@ int GameHandler::processError(JmyMsgInfo* info)
 	}
 
 	if (error.error_code() == PROTO_ERROR_GET_ROLE_NONE) {
-#if 0
+#if 1
 		MsgC2S_CreateRoleRequest request;
 		request.set_sex(0);
 		request.set_race(0);
