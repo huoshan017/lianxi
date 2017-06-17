@@ -48,6 +48,6 @@ bool GmManager::execute_command(uint64_t role_id, const std::vector<std::string>
 	if (it->second->func(role_id, results) < 0) {
 		LogError("gm command %s execute failed", it->second->cmd);
 		return false;
-	} 
+	}
 	return true;
 }
