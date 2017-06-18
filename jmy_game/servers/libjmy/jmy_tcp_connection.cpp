@@ -108,7 +108,9 @@ int JmyTcpConnection::handle_recv_error(const boost::system::error_code& err)
 {
 	int ev = err.value();
 	if (ev == boost::system::errc::no_such_file_or_directory) {
-		LibJmyLogInfo("peer(%s:%d) is closed", sock_.remote_endpoint().address().to_string().c_str(), sock_.remote_endpoint().port());
+		if (sock_.available()) {
+			LibJmyLogInfo("peer(%s:%d) is closed", sock_.remote_endpoint().address().to_string().c_str(), sock_.remote_endpoint().port());
+		}
 	} else if (ev == boost::system::errc::operation_canceled) {
 		LibJmyLogInfo("operation was canceled");
 	} else {
