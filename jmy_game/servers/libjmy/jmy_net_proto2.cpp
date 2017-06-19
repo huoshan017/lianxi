@@ -143,7 +143,7 @@ int jmy_net_proto2_unpack_data(JmyPacketType2 packet_type, const char* buf, unsi
 			int offset = 0;
 			int user_id = 0;
 			// get user_id
-			if (data.type == JMY_PACKET2_USER_ID_DATA) {
+			if (packet_type == JMY_PACKET2_USER_ID_DATA) {
 				if (len - offset < 4) {
 					data.result = JMY_UNPACK2_RESULT_DATA_NOT_ENOUGH;
 					LibJmyLogDebug("user id %d length not enough", len-offset);
