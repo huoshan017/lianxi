@@ -74,7 +74,7 @@ protected:
 	int handle_recv();
 	int handle_send();
 	int handle_event(int event_id, long param);
-	int handle_packet(JmyPacketType2 packet_type);
+	int handle_packet_type(JmyPacketType2 packet_type);
 	int handle_recv_error(const boost::system::error_code& err);
 
 protected:

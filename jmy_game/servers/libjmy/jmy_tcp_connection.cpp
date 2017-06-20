@@ -149,7 +149,7 @@ void JmyTcpConnection::start_recv()
 				LibJmyLogError("get packet type and len failed");
 				return;
 			}
-			if (handle_packet(type) == 0) {
+			if (handle_packet_type(type) == 0) {
 				start_recv();
 				return;
 			}
@@ -200,7 +200,7 @@ void JmyTcpConnection::recv_packet(JmyPacketType2 type, unsigned short pack_len)
 }
 #endif
 
-int JmyTcpConnection::handle_packet(JmyPacketType2 packet_type)
+int JmyTcpConnection::handle_packet_type(JmyPacketType2 packet_type)
 {
 	if (packet_type == JMY_PACKET2_DISCONNECT) {
 		handleDisconnect();
