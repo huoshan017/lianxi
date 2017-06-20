@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Windows.Forms;
 
 namespace network_test
 {
@@ -13,7 +14,9 @@ namespace network_test
     {
         static void Main(string[] args)
         {
-            AsynchronousClient.StartClient();
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+            Application.Run(new network_test.main_window());
         }
     }
 }
