@@ -58,7 +58,7 @@ int ClientHandler::processLogin(JmyMsgInfo* info)
 	MsgC2S_LoginRequest request;
 	if (!request.ParseFromArray(info->data, info->len)) {
 		send_error(info, PROTO_ERROR_LOGIN_DATA_INVALID);
-		LogError("parse MsgC2LLoginRequest failed");
+		LogError("parse MsgC2S_LoginRequest failed");
 		return -1;
 	}
 
