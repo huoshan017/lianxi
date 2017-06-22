@@ -10,11 +10,6 @@ namespace network_test
 {
     public class Request
     {
-        public Request()
-        {
-            
-        }
-
         public int send_login_request(AsynchronousClient client, string account, string password)
         {
             MsgC2S_LoginRequest req = new MsgC2S_LoginRequest();
@@ -27,7 +22,7 @@ namespace network_test
             return 0;
         }
 
-        public int send_select_server(AsynchronousClient client, int game_server_id)
+        public int send_select_server_request(AsynchronousClient client, int game_server_id)
         {
             MsgC2S_SelectServerRequest req = new MsgC2S_SelectServerRequest();
             req.SelId = game_server_id;
@@ -35,6 +30,29 @@ namespace network_test
             req.WriteTo(stream);
             byte[] out_bytes = stream.ToArray();
             client.SendMsg((int)MsgIdType.MsgidC2SSelectServerRequest, out_bytes, 0, (ushort)out_bytes.Length);
+            return 0;
+        }
+
+        public int send_get_role_request(AsynchronousClient client, string account, string session)
+        {
+            MsgC2S_GetRoleRequest req = new MsgC2S_GetRoleRequest();
+            req.Account = ByteString.CopyFrom(System.Text.Encoding.Default.GetBytes(account));
+            req.EnterSession = ByteString.CopyFrom(System.Text.Encoding.Default.GetBytes(session));
+            MemoryStream stream = new MemoryStream();
+            req.WriteTo(stream);
+            byte[] out_bytes = stream.ToArray();
+            client.SendMsg((int)MsgIdType.MsgidC2SGetRoleRequest, out_bytes, 0, (ushort)out_bytes.Length);
+            return 0;
+        }
+
+        public int send_gm_cmd_request(AsynchronousClient client, string cmd)
+        {
+            MsgC2S_ChatRequest req = new MsgC2S_ChatRequest();
+            req.Content = ByteString.CopyFrom(System.Text.Encoding.Default.GetBytes(cmd));
+            MemoryStream stream = new MemoryStream();
+            req.WriteTo(stream);
+            byte[] out_bytes = stream.ToArray();
+            client.SendMsg((int)MsgIdType.MsgidC2SChatRequest, out_bytes, 0, (ushort)out_bytes.Length);
             return 0;
         }
     }

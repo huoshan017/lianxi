@@ -175,8 +175,8 @@ namespace network_test
                         break;
                     }
                 }
+                receive_list_.Clear();
             }
-            receive_list_.Clear();
             return res;
         }
 
@@ -393,7 +393,10 @@ namespace network_test
 
                     send_list_.RemoveFirst();
                     if (send_list_.Count() <= 0)
+                    {
+                        is_sending_ = false;
                         return;
+                    }
 
                     n = send_list_.First();
                     if (n == null)
