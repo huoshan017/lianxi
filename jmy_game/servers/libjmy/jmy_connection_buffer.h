@@ -87,7 +87,7 @@ struct JmyConnectionBuffer {
 #endif
 		total_reconn_info.recv_count = 0;
 		total_reconn_info.send_count = 0;
-		LibJmyLogInfo("clear connection buffer(%d)", id);
+		LibJmyLogDebug("clear connection buffer(%d)", id);
 	}
 };
 

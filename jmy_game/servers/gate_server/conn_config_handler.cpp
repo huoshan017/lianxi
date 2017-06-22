@@ -15,8 +15,8 @@ int ConnConfigHandler::onConnect(JmyEventInfo* info)
 	if (!conn) return -1;
 	MsgGT2CS_ConnectConfigRequest request;
 	request.set_gate_id(CONFIG_FILE.id);
-	request.set_gate_ip(CONFIG_FILE.ip.c_str());
-	request.set_gate_port(CONFIG_FILE.port);
+	//request.set_gate_ip(CONFIG_FILE.ip.c_str());
+	//request.set_gate_port(CONFIG_FILE.port);
 	if (!request.SerializeToArray(tmp_, sizeof(tmp_))) {
 		LogError("serialize MsgGT2CS_ConnectConfigRequest failed");
 		return -1;
