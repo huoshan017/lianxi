@@ -27,11 +27,11 @@ namespace network_test
     public class AsynchronousClient
     {
         // socket
-        private Socket client;
-        private LinkedList<byte[]> receive_list;
-        private LinkedList<byte[]> send_list;
-        private Dictionary<int, msg_handler> handlers;
-        private Thread worker;
+        private Socket client_;
+        private LinkedList<byte[]> receive_list_;
+        private LinkedList<byte[]> send_list_;
+        private Dictionary<int, msg_handler> handlers_;
+        private Thread worker_;
 
         // ManualResetEvent instances signal completion.
         //private static ManualResetEvent connectDone = new ManualResetEvent(false);
@@ -39,21 +39,21 @@ namespace network_test
         //private static ManualResetEvent receiveDone = new ManualResetEvent(false);
         // The response from the remote device.
 
-        private static String response = String.Empty;
         enum NetState { NotConnected = 0, Connecting = 1, Connected = 2 };
-        private NetState state = NetState.NotConnected;
-        private bool is_receiving = false;
-        private bool is_sending = false;
+        private NetState state_ = NetState.NotConnected;
+        private bool is_receiving_ = false;
+        private bool is_sending_ = false;
         net_proto.PacketUnpackData d;
 
+        public AsynchronousClient()
+        {
+            handlers_ = new Dictionary<int, msg_handler>();
+            receive_list_ = new LinkedList<byte[]>();
+            send_list_ = new LinkedList<byte[]>();
+        }
+
         public bool RegisterHandler(int msg_id, msg_handler handler) {
-            if (handlers == null) {
-                handlers = new Dictionary<int, msg_handler>();
-            }
-            if (handlers[msg_id] != null) {
-                return false;
-            }
-            handlers[msg_id] = handler;
+            handlers_.Add(msg_id, handler);
             return true;
         }
 
@@ -67,13 +67,13 @@ namespace network_test
                 IPAddress ipAddress = IPAddress.Parse(ip);
                 IPEndPoint remoteEP = new IPEndPoint(ipAddress, port);
                 // Create a TCP/IP socket.     
-                client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                client_ = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                 // Connect to the remote endpoint.     
-                client.BeginConnect(remoteEP, new AsyncCallback(ConnectCallback), client);
-                state = NetState.Connecting;
+                client_.BeginConnect(remoteEP, new AsyncCallback(ConnectCallback), client_);
+                state_ = NetState.Connecting;
 
-                worker = new Thread(ThreadFunc);
-                worker.Start();
+                worker_ = new Thread(ThreadFunc);
+                worker_.Start();
             }
             catch (Exception e)
             {
@@ -89,19 +89,19 @@ namespace network_test
 
                 Thread.Sleep(100);
             }
-            client.Close();
+            client_.Close();
             Console.WriteLine("线程退出");
         }
 
         public int Run()
         {
-            if (state == NetState.Connected)
+            if (state_ == NetState.Connected)
             {
                 // Receive the response from the remote device.
-                if (!is_receiving)
+                if (!is_receiving_)
                 {
                     StartReceive();
-                    is_receiving = true;
+                    is_receiving_ = true;
                 }
 
                 if (HandleSend() < 0)
@@ -114,7 +114,7 @@ namespace network_test
                     return -1;
                 }
             }
-            else if (state == NetState.NotConnected)
+            else if (state_ == NetState.NotConnected)
                 return 0;
 
             return 1;
@@ -131,9 +131,9 @@ namespace network_test
             }
             byteData.CopyTo(msg, head_len);
 
-            lock ( send_list )
+            lock ( send_list_ )
             {
-                send_list.AddLast(msg);
+                send_list_.AddLast(msg);
             }
             return 1;
         }
@@ -145,59 +145,74 @@ namespace network_test
                 return -1;
             }
 
-            msg_handler handle = handlers[d.msg_info.msg_id];
+            if (!handlers_.ContainsKey(d.msg_info.msg_id))
+            {
+                Console.WriteLine("找不到消息{0}的处理函数", d.msg_info.msg_id);
+                return 0;
+            }
+
+            msg_handler handle = handlers_[d.msg_info.msg_id];
             if (handle != null) {
                 if (handle(d.msg_info) < 0)
+                {
+                    Console.WriteLine("处理消息{0}失败", d.msg_info.msg_id);
                     return -1;
+                }
             }
-            return 0;
+            return 1;
         }
 
         private int ProcessData()
         {
-            lock (receive_list)
+            int res = 0;
+            lock (receive_list_)
             {
-                foreach (byte[] n in receive_list)
+                foreach (byte[] n in receive_list_)
                 {
                     if (HandleOne(n) < 0)
                     {
-                        return -1;
+                        res = -1;
+                        break;
                     }
                 }
             }
-            return 0;
+            receive_list_.Clear();
+            return res;
         }
 
         private int HandleSend()
         {
-            if (is_sending)
+            if (is_sending_)
+                return 0;
+
+            if (send_list_.Count() <= 0)
                 return 0;
 
             byte[] n = null;
-            lock (send_list)
+            lock (send_list_)
             {
-                if (send_list.Count() <= 0)
+                if (send_list_.Count() <= 0)
                     return 0;
 
-                n = send_list.First();
+                n = send_list_.First();
                 if (n == null)
                     return 0;
             }
 
             Send(n);
 
-            is_sending = true;
+            is_sending_ = true;
             return 0;
         }
 
         public void Close()
         {
             // Release the socket.     
-            client.Shutdown(SocketShutdown.Both);
-            client.Close();
-            is_receiving = false;
-            state = NetState.NotConnected;
-            worker.Join();
+            client_.Shutdown(SocketShutdown.Both);
+            client_.Close();
+            is_receiving_ = false;
+            state_ = NetState.NotConnected;
+            worker_.Join();
         }
 
         private void ConnectCallback(IAsyncResult ar)
@@ -209,9 +224,9 @@ namespace network_test
                 // Complete the connection.     
                 client.EndConnect(ar);
                 Console.WriteLine("Socket connected to {0}", client.RemoteEndPoint.ToString());
-                state = NetState.Connected;
-                send_list = new LinkedList<byte[]>();
-                receive_list = new LinkedList<byte[]>();
+                state_ = NetState.Connected;
+                send_list_ = new LinkedList<byte[]>();
+                receive_list_ = new LinkedList<byte[]>();
             }
             catch (Exception e)
             {
@@ -224,12 +239,12 @@ namespace network_test
             {
                 // Create the state object.     
                 StateObject state = new StateObject();
-                state.workSocket = client;
+                state.workSocket = client_;
                 ushort buf_len = net_proto.PACKET_LEN_HEAD + net_proto.PACKET_LEN_TYPE;
                 state.buffer = new byte[buf_len];
                 state.buffer_size = buf_len;
                 // Begin receiving the data from the remote device.     
-                client.BeginReceive(state.buffer, 0, buf_len, 0, new AsyncCallback(ReceiveCallback), state);
+                client_.BeginReceive(state.buffer, 0, buf_len, 0, new AsyncCallback(ReceiveCallback), state);
             }
             catch (Exception e)
             {
@@ -278,21 +293,12 @@ namespace network_test
                         return;
                     }
 
-                    byte[] b = new byte[len];
-                    state.buffer = b;
-                    state.buffer_size = (ushort)len;
                     // Get the rest of the data.     
-                    client.BeginReceive(state.buffer, 0, state.buffer_size, 0, new AsyncCallback(ReceiveCallback), state);
+                    RecvPacket(type, (ushort)len);
                 }
                 else
                 {
-                    // All the data has arrived; put it in response.     
-                    if (state.sb.Length > 1)
-                    {
-                        response = state.sb.ToString();
-                        // Write the response to the console.     
-                        Console.WriteLine("Response received : {0}", response);
-                    }
+
                 }
             }
             catch (Exception e)
@@ -306,11 +312,11 @@ namespace network_test
             try
             {
                 StateObject state = new StateObject();
-                state.workSocket = client;
+                state.workSocket = client_;
                 state.buffer = new byte[byte_size];
                 state.buffer_size = byte_size;
                 // Begin receiving the data from the remote device.     
-                client.BeginReceive(state.buffer, 0, byte_size, 0, new AsyncCallback(ReceivePacketCallback), state);
+                client_.BeginReceive(state.buffer, 0, byte_size, 0, new AsyncCallback(ReceivePacketCallback), state);
             }
             catch (Exception e)
             {
@@ -330,9 +336,9 @@ namespace network_test
                 int bytesRead = client.EndReceive(ar);
                 if (bytesRead > 0)
                 {
-                    lock (receive_list)
+                    lock (receive_list_)
                     {
-                        receive_list.AddLast(state.buffer);
+                        receive_list_.AddLast(state.buffer);
                     }
                     StartReceive();
                 }
@@ -352,7 +358,7 @@ namespace network_test
             try
             {
                 // Begin sending the data to the remote device.     
-                client.BeginSend(byteData, 0, byteData.Length, 0, new AsyncCallback(SendCallback), client);
+                client_.BeginSend(byteData, 0, byteData.Length, 0, new AsyncCallback(SendCallback), client_);
             }
             catch (Exception e)
             {
@@ -377,18 +383,21 @@ namespace network_test
                 int bytesSent = client.EndSend(ar);
 
                 byte[] n = null;
-                lock (send_list)
+                lock (send_list_)
                 {
-                    if (send_list.First() == null)
+                    if (send_list_.First() == null)
                     {
                         Console.WriteLine("not found send list first node");
                         return;
                     }
 
-                    send_list.RemoveFirst();
-                    n = send_list.First();
+                    send_list_.RemoveFirst();
+                    if (send_list_.Count() <= 0)
+                        return;
+
+                    n = send_list_.First();
                     if (n == null)
-                        is_sending = false;
+                        is_sending_ = false;
                 }
 
                 Send(n);
