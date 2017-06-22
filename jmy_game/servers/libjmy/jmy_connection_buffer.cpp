@@ -58,6 +58,6 @@ bool JmyConnectionBufferMgr::freeBuffer(int id)
 	if (conn_buff_vec_[id-1]->state == JMY_CONN_BUFFER_STATE_IDLE)
 		return false;
 	free_queue_.push_front(conn_buff_vec_[id-1]);
-	LibJmyLogInfo("free buffer id(%d)", id);
+	LibJmyLogDebug("free buffer id(%d)", id);
 	return true;
 }

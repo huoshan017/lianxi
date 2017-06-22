@@ -398,7 +398,7 @@ int JmyTcpConnection::start_send()
 		return -1;
 
 	if (sending_data_) {
-		LibJmyLogInfo("sending data");
+		LibJmyLogDebug("sending data");
 		return 0;
 	}
 
@@ -551,6 +551,6 @@ bool JmyTcpConnectionMgr::free(JmyTcpConnection* conn)
 	used_map_.erase(conn->getId());
 	free_list_.push_front(conn);
 	conn->reset();
-	LibJmyLogInfo("free connection(%d)", conn->getId());
+	LibJmyLogDebug("free connection(%d)", conn->getId());
 	return true;
 }
