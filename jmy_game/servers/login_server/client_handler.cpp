@@ -63,8 +63,14 @@ int ClientHandler::processLogin(JmyMsgInfo* info)
 	}
 
 	// check account
+	ClientAgent* agent = CLIENT_MANAGER->getAgent(request.account());
+	if (agent) {
+		agent->force_close();
+		CLIENT_MANAGER->deleteAgent(request.account());
+		LogWarn("already exist account(%s), kick it", request.account().c_str());
+	}
 
-	ClientAgent* agent = CLIENT_MANAGER->newAgent(request.account(), info);
+	agent = CLIENT_MANAGER->newAgent(request.account(), info);
 	if (!agent) {
 		send_error(info, PROTO_ERROR_LOGIN_REPEATED);
 		LogError("create user by account(%s) failed", request.account().c_str());

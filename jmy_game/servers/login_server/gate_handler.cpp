@@ -95,10 +95,17 @@ int GateHandler::processSelectedServerResponse(JmyMsgInfo* info)
 		LogError("cant get gate agent with gate_id(%d)", gate_id);
 		return -1;
 	}
+
+	MsgGateConfData* d = GATE_SERVER_LIST->get(gate_id);
+	if (!d) {
+		LogError("not found gate_id(%d) is gate_conf_list", gate_id);
+		return -1;
+	}
+
 	MsgS2C_SelectServerResponse response;
 	response.set_session_code(res.session_code());
-	response.set_server_ip(gate_agent->getData().ip);
-	response.set_port(gate_agent->getData().port);
+	response.set_server_ip(d->ip());
+	response.set_port(d->port());
 	if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
 		LogError("serialize MsgS2C_SelectServerResponse failed");
 		return -1;

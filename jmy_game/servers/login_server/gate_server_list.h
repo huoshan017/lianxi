@@ -36,6 +36,15 @@ public:
 	Iterator end() {
 		return gate_conf_list_.end();
 	}
+	MsgGateConfData* get(int gate_id) {
+		std::list<MsgGateConfData>::iterator it = gate_conf_list_.begin();
+		for (; it!=gate_conf_list_.end(); ++it) {
+			if ((*it).id() == gate_id) {
+				return &(*it);
+			}
+		}
+		return nullptr;
+	}
 
 	GateAgent* newGateAgent(int gate_id, JmyMsgInfo* info);
 	GateAgent* getGateAgent(int gate_id);

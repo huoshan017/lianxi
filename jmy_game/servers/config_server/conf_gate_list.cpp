@@ -96,6 +96,7 @@ bool ConfGateList::loadJson(const char* jsonpath)
 		data->set_port(server_port);
 		data->set_platform(platform);
 		data->set_channel_code(channel_code);
+		id2gate_map_.insert(std::make_pair(server_id, data));
 	}
 
 	return true;

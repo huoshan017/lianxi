@@ -180,10 +180,16 @@ int ConnHandler::processGateConnect(JmyMsgInfo* info)
 		return -1;
 	}
 		
+	MsgGateConfData* d = CONF_GATE_LIST->getById(gate_id);
+	if (!d) {
+		LogError("not found gate server id: %d", gate_id);
+		return -1;
+	}
+
 	GateAgentData& gate_data = agent->getData();
 	gate_data.id = gate_id;
-	gate_data.ip = request.gate_ip();
-	gate_data.port = request.gate_port();
+	gate_data.ip =  d->ip();//request.gate_ip();
+	gate_data.port = d->port(); //request.gate_port();
 	
 	update_conn(info->conn_id, gate_id);
 	gate_conn_id_set_.insert(info->conn_id);
