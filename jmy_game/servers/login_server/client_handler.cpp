@@ -37,13 +37,13 @@ int ClientHandler::onConnect(JmyEventInfo* info)
 
 int ClientHandler::onDisconnect(JmyEventInfo* info)
 {
+	LogInfo("connection %d onDisconnect", info->conn_id);
 	ClientAgent* agent = CLIENT_MANAGER->getAgentByConnId(info->conn_id);
 	if (!agent) {
-		LogError("cant get client agent with conn_id(%d)", info->conn_id);
-		return -1;
+		LogInfo("cant get client agent with conn_id(%d)", info->conn_id);
+		return 0;
 	}
 	CLIENT_MANAGER->deleteAgentByConnId(info->conn_id);
-	LogInfo("connection %d onDisconnect", info->conn_id);
 	return 0;
 }
 
