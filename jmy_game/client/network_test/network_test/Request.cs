@@ -45,6 +45,29 @@ namespace network_test
             return 0;
         }
 
+        public int send_create_role_request(AsynchronousClient client, string nick_name, int sex, int race)
+        {
+            MsgC2S_CreateRoleRequest req = new MsgC2S_CreateRoleRequest();
+            req.NickName = ByteString.CopyFrom(System.Text.Encoding.Default.GetBytes(nick_name));
+            req.Sex = sex;
+            req.Race = race;
+            MemoryStream stream = new MemoryStream();
+            req.WriteTo(stream);
+            byte[] out_bytes = stream.ToArray();
+            client.SendMsg((int)MsgIdType.MsgidC2SCreateRoleRequest, out_bytes, 0, (ushort)out_bytes.Length);
+            return 0;
+        }
+
+        public int send_enter_game_request(AsynchronousClient client, string account, string enter_session)
+        {
+            MsgC2S_EnterGameRequest req = new MsgC2S_EnterGameRequest();
+            MemoryStream stream = new MemoryStream();
+            req.WriteTo(stream);
+            byte[] out_bytes = stream.ToArray();
+            client.SendMsg((int)MsgIdType.MsgidC2SEnterGameRequest, out_bytes, 0, (ushort)out_bytes.Length);
+            return 0;
+        }
+
         public int send_gm_cmd_request(AsynchronousClient client, string cmd)
         {
             MsgC2S_ChatRequest req = new MsgC2S_ChatRequest();

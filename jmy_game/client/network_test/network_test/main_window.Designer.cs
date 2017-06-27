@@ -115,28 +115,36 @@
             // 
             // server_list
             // 
+            this.server_list.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left)));
             this.server_list.FormattingEnabled = true;
             this.server_list.ItemHeight = 12;
             this.server_list.Location = new System.Drawing.Point(15, 47);
             this.server_list.Name = "server_list";
-            this.server_list.Size = new System.Drawing.Size(162, 328);
+            this.server_list.Size = new System.Drawing.Size(165, 328);
             this.server_list.TabIndex = 9;
             this.server_list.MouseClick += new System.Windows.Forms.MouseEventHandler(this.server_list_MouseClick);
             // 
             // output_text
             // 
-            this.output_text.Location = new System.Drawing.Point(193, 68);
+            this.output_text.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.output_text.Location = new System.Drawing.Point(190, 68);
             this.output_text.Multiline = true;
             this.output_text.Name = "output_text";
-            this.output_text.Size = new System.Drawing.Size(509, 230);
+            this.output_text.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            this.output_text.Size = new System.Drawing.Size(512, 257);
             this.output_text.TabIndex = 10;
             // 
             // chat_text
             // 
-            this.chat_text.Location = new System.Drawing.Point(193, 324);
+            this.chat_text.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.chat_text.Location = new System.Drawing.Point(189, 349);
             this.chat_text.Multiline = true;
             this.chat_text.Name = "chat_text";
-            this.chat_text.Size = new System.Drawing.Size(449, 51);
+            this.chat_text.Size = new System.Drawing.Size(453, 28);
             this.chat_text.TabIndex = 11;
             // 
             // label1
@@ -151,7 +159,7 @@
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(195, 306);
+            this.label2.Location = new System.Drawing.Point(195, 335);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(29, 12);
             this.label2.TabIndex = 14;
@@ -159,9 +167,9 @@
             // 
             // send_chat
             // 
-            this.send_chat.Location = new System.Drawing.Point(649, 324);
+            this.send_chat.Location = new System.Drawing.Point(649, 349);
             this.send_chat.Name = "send_chat";
-            this.send_chat.Size = new System.Drawing.Size(54, 51);
+            this.send_chat.Size = new System.Drawing.Size(54, 26);
             this.send_chat.TabIndex = 16;
             this.send_chat.Text = "发送";
             this.send_chat.UseVisualStyleBackColor = true;
@@ -171,7 +179,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(715, 387);
+            this.ClientSize = new System.Drawing.Size(715, 389);
             this.Controls.Add(this.send_chat);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);

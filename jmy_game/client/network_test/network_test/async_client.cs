@@ -22,7 +22,12 @@ namespace network_test
         public StringBuilder sb = new StringBuilder();
     }
 
+    public enum ClientEvent { OutputEvent = 0, ConnectEvent = 1, DisconnectEvent = 2, ErrorEvent = 3 };
+
     public delegate int msg_handler(net_proto.MsgInfo msg_info);
+    public delegate int conn_evt_handler(string endpoint_str);
+    public delegate int disconn_evt_handler(string endpoint_str);
+    public delegate int err_evt_handler(int err);
 
     public class AsynchronousClient
     {
@@ -33,17 +38,15 @@ namespace network_test
         private Dictionary<int, msg_handler> handlers_;
         private Thread worker_;
 
-        // ManualResetEvent instances signal completion.
-        //private static ManualResetEvent connectDone = new ManualResetEvent(false);
-        //private static ManualResetEvent sendDone = new ManualResetEvent(false);
-        //private static ManualResetEvent receiveDone = new ManualResetEvent(false);
-        // The response from the remote device.
-
-        enum NetState { NotConnected = 0, Connecting = 1, Connected = 2 };
+        public enum NetState { NotConnected = 0, Connecting = 1, Connected = 2 };
         private NetState state_ = NetState.NotConnected;
         private bool is_receiving_ = false;
         private bool is_sending_ = false;
-        net_proto.PacketUnpackData d;
+        private net_proto.PacketUnpackData d;
+        private conn_evt_handler connect_event_handler_ = null;
+        private disconn_evt_handler disconnect_event_handler_ = null;
+        private err_evt_handler error_event_handler_ = null;
+        private int to_close_ = 0;
 
         public AsynchronousClient()
         {
@@ -52,12 +55,32 @@ namespace network_test
             send_list_ = new LinkedList<byte[]>();
         }
 
+        public NetState getState()
+        {
+            return state_;
+        }
+
         public bool RegisterHandler(int msg_id, msg_handler handler) {
             handlers_.Add(msg_id, handler);
             return true;
         }
 
-        public void StartClient(string ip, ushort port)
+        public void SetConnEventHandler(conn_evt_handler handler)
+        {
+            connect_event_handler_ = handler;
+        }
+
+        public void SetDisconnEventHandler(disconn_evt_handler handler)
+        {
+            disconnect_event_handler_ = handler;
+        }
+
+        public void SetErrorEventHandler(err_evt_handler handler)
+        {
+            error_event_handler_ = handler;
+        }
+
+        public void Start(string ip, ushort port)
         {
             // Connect to a remote device.     
             try
@@ -81,6 +104,33 @@ namespace network_test
             }
         }
 
+        public void Close()
+        {
+            Interlocked.CompareExchange(ref to_close_, 1, 0);
+        }
+
+        private void RealClose()
+        {
+            if (state_ != NetState.Connected)
+                return;
+            // Release the socket.     
+            client_.Shutdown(SocketShutdown.Both);
+            client_.Close();
+            if (receive_list_ != null)
+                receive_list_.Clear();
+            if (send_list_ != null)
+                send_list_.Clear();
+            is_receiving_ = false;
+            is_sending_ = false;
+            state_ = NetState.NotConnected;
+            if (disconnect_event_handler_ != null)
+            {
+                disconnect_event_handler_("");
+            }
+            Interlocked.CompareExchange(ref to_close_, 0, 1);
+            worker_.Join();
+        }
+
         public void ThreadFunc() {
             while (true)
             {
@@ -89,7 +139,7 @@ namespace network_test
 
                 Thread.Sleep(100);
             }
-            client_.Close();
+            RealClose();
             Console.WriteLine("线程退出");
         }
 
@@ -97,6 +147,11 @@ namespace network_test
         {
             if (state_ == NetState.Connected)
             {
+                if (to_close_ != 0)
+                {
+                    return 0;
+                }
+                
                 // Receive the response from the remote device.
                 if (!is_receiving_)
                 {
@@ -164,6 +219,9 @@ namespace network_test
 
         private int ProcessData()
         {
+            if (receive_list_.Count() <= 0)
+                return 0;
+
             int res = 0;
             lock (receive_list_)
             {
@@ -205,16 +263,6 @@ namespace network_test
             return 0;
         }
 
-        public void Close()
-        {
-            // Release the socket.     
-            client_.Shutdown(SocketShutdown.Both);
-            client_.Close();
-            is_receiving_ = false;
-            state_ = NetState.NotConnected;
-            worker_.Join();
-        }
-
         private void ConnectCallback(IAsyncResult ar)
         {
             try
@@ -223,10 +271,12 @@ namespace network_test
                 Socket client = (Socket)ar.AsyncState;
                 // Complete the connection.     
                 client.EndConnect(ar);
-                Console.WriteLine("Socket connected to {0}", client.RemoteEndPoint.ToString());
+                
                 state_ = NetState.Connected;
                 send_list_ = new LinkedList<byte[]>();
                 receive_list_ = new LinkedList<byte[]>();
+
+                connect_event_handler_(client.RemoteEndPoint.ToString());
             }
             catch (Exception e)
             {
@@ -235,6 +285,9 @@ namespace network_test
         }
         private void StartReceive()
         {
+            if (to_close_ != 0)
+                return;
+
             try
             {
                 // Create the state object.     
@@ -270,6 +323,9 @@ namespace network_test
         }
         private void ReceiveCallback(IAsyncResult ar)
         {
+            if (to_close_ != 0)
+                return;
+
             try
             {
                 // Retrieve the state object and the client socket     
@@ -309,6 +365,9 @@ namespace network_test
 
         private void RecvPacket(net_proto.PacketType type, ushort byte_size)
         {
+            if (to_close_ != 0)
+                return;
+
             try
             {
                 StateObject state = new StateObject();
@@ -326,6 +385,9 @@ namespace network_test
 
         private void ReceivePacketCallback(IAsyncResult ar)
         {
+            if (to_close_ != 0)
+                return;
+
             try
             {
                 // Retrieve the state object and the client socket     
@@ -355,6 +417,9 @@ namespace network_test
 
         private void Send(byte[] byteData)
         {
+            if (to_close_ != 0)
+                return;
+
             try
             {
                 // Begin sending the data to the remote device.     
@@ -375,6 +440,9 @@ namespace network_test
 
         private void SendCallback(IAsyncResult ar)
         {
+            if (to_close_ != 0)
+                return;
+
             try
             {
                 // Retrieve the socket from the state object.     
