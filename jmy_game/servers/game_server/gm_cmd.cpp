@@ -63,6 +63,11 @@ int gm_rm_item(uint64_t role_id, const std::vector<std::string>& params)
 
 int gm_levelup(uint64_t role_id, const std::vector<std::string>& params)
 {
+	int level = std::strtoul(params[2].c_str(), nullptr, 10);
+	Player* p = PLAYER_MGR->getByRoleId(role_id);
+	if (!p) return -1;
+	if (level != p->level)
+		p->level = level;
 	return 0;
 }
 

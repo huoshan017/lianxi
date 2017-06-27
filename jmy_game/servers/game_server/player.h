@@ -14,6 +14,7 @@ struct Player
 	int user_id;
 	uint64_t role_id;
 	std::string acount;
+	int level;
 	ItemMgr items;
 	Player() : user_id(0), role_id(0) {}
 

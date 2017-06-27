@@ -93,6 +93,9 @@ int GameHandler::processGetRole(JmyMsgInfo* info)
 		LogInfo("send get user(addr:0x%x, account:%s) response", user, request.account().c_str());
 	}
 
+	static int get_count = 0;
+	LogInfo("process get role count: %d", ++get_count);
+
 	return info->len;
 }
 
@@ -160,6 +163,9 @@ int GameHandler::processCreateRole(JmyMsgInfo* info)
 		LogError("send MsgDS2GS_CreateRoleResponse failed");
 		return -1;
 	}
+
+	static int create_count = 0;
+	LogInfo("process create role count: %d", ++create_count);
 
 	return info->len;
 }

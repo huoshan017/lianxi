@@ -57,15 +57,6 @@ int DBResCBFuncs::getPlayerInfo(MysqlConnector::Result& res, void* param, long p
 		return -1;
 	}
 
-	const DBItemDataList& items = user->get_items();
-	if (items.item_list().size() > 0) {
-		LogInfo("get player(%s) role_id(%llu) item list:", account.c_str(), user->get_role_id());
-		auto it = items.item_list().begin();
-		for (; it!=items.item_list().end(); ++it) {
-			LogInfo("item_type:%u,  item_num:%d", it->second.type_id(), it->second.num());
-		}
-	}
-
 	if (user->get_role_id() > 0) {
 		if (!player_mgr.insert_key_record(user->get_role_id(), user)) {
 			LogError("insert key(role_id:%llu) record failed", user->get_role_id());
@@ -88,6 +79,15 @@ int DBResCBFuncs::sendGetRoleResponse(t_player* user, int conn_id)
 	if (!agent) {
 		LogError("not found game agent with conn_id(%d)", conn_id);
 		return -1;
+	}
+
+	const DBItemDataList& items = user->get_items();
+	if (items.item_list().size() > 0) {
+		LogInfo("get player(%s) role_id(%llu) item list:", user->get_account().c_str(), user->get_role_id());
+		auto it = items.item_list().begin();
+		for (; it!=items.item_list().end(); ++it) {
+			LogInfo("item_type:%u,  item_num:%d", it->second.type_id(), it->second.num());
+		}
 	}
 
 	MsgDS2GS_GetRoleResponse response;

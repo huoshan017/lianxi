@@ -693,6 +693,18 @@ static void gen_struct_insert_func(std::fstream& out_file, std::fstream& out_fil
 	out_file2 << "    std::cout << \"insert record failed\" << std::endl;" << std::endl;
 	out_file2 << "    return false;" << std::endl;
 	out_file2 << "  }" << std::endl;
+
+	for (int i=0; i<(int)fields.size(); ++i) {
+		if (i == table_info.primary_key_index)
+			continue;
+
+		const char* field_type_str = get_field_type_str(fields[i]);
+		if (!field_type_str)
+			continue;
+
+		out_file2 << "  this->set_" << fields[i].name << "_state(MYSQL_TABLE_FIELD_STATE_COMMITTING);" << std::endl; 
+	}
+
 	out_file2 << "  return true;" << std::endl;
 	out_file2 << "}" << std::endl << std::endl;
 }

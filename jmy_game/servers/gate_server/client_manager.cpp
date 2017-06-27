@@ -34,6 +34,7 @@ bool ClientManager::newClientSession(const std::string& account, const std::stri
 			LogError("cant found ClientInfo by account:%s id:%d", account.c_str(), id);
 			return false;
 		}
+		info->force_close();
 	} else {
 		info = client_array_.getFree();
 		if (!info) {
