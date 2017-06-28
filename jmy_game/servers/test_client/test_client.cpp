@@ -76,10 +76,7 @@ int TestClient::do_events()
 			{
 				const char* connect_ip = event.str_param.c_str();
 				unsigned short connect_port = event.l_param;	
-				if (!connect_game(connect_ip, connect_port)) {
-					LogError("connect game(%s:%d) failed", connect_ip, connect_port);
-					return -1;
-				}
+				CLIENT_MGR->pushGsIpPort(this, std::string(connect_ip), connect_port);
 				c += 1;
 			}
 			break;
@@ -201,6 +198,20 @@ int TestClientManager::run()
 				continue;
 			}
 			it->second->run();
+		}
+
+		int count = 0;
+		std::list<ClientIpPort>::iterator it = gs_ip_port_list_.begin();
+		for (; it!=gs_ip_port_list_.end(); ++it) {
+			ClientIpPort& c = *it;
+			c.client->connect_game(c.ip.c_str(), c.port);
+			count += 1;
+			if (count >= 100) {
+				break;
+			}
+		}
+		for (int i=0; i<count; ++i) {
+			gs_ip_port_list_.pop_front();
 		}
 		service_.poll();
 		std::this_thread::sleep_for(std::chrono::milliseconds(5));

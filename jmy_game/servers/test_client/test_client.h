@@ -27,19 +27,22 @@ public:
 	void setReconnSession(const std::string& session) { reconn_session_ = session; }
 	const std::string& getEnterSession() const { return enter_session_; }
 	const std::string& getReconnSession() const { return reconn_session_; }
+	
+	bool connect_game(const char* ip, unsigned short port);
 
 private:
 	int do_events();
-	bool connect_game(const char* ip, unsigned short port);
 
 private:
 	JmyTcpClient* login_client_;
 	JmyTcpClient* game_client_;
+
 	enum State {
 		InNone = 0,
 		InLogin = 1,
 		InGame = 2,
 	} state_;
+
 	bool exit_;
 	UserEventList event_list_;
 	std::string account_;
@@ -81,11 +84,26 @@ public:
 		return tit->second;
 	}
 
+	struct ClientIpPort {
+		TestClient* client;
+		std::string ip;
+		unsigned short port;
+	};
+
+	void pushGsIpPort(TestClient* client, const std::string& ip, unsigned short port) {
+		ClientIpPort c;
+		c.client = client;
+		c.ip = ip;
+		c.port = port;
+		gs_ip_port_list_.push_back(c);
+	}
+
 private:
 	boost::asio::io_service service_;
 	std::unordered_map<std::string, TestClient*> clients_;
 	JmyTcpClientMaster client_master_;
 	std::unordered_map<int, std::string> conn_id2accounts_;
+	std::list<ClientIpPort> gs_ip_port_list_;
 };
 
 #define CLIENT_MGR (TestClientManager::getInstance())

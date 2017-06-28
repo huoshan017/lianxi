@@ -90,7 +90,8 @@ int ClientHandler::processGetRoleRequest(JmyMsgInfo* info)
 		return -1;
 	}
 
-	LogInfo("process get role request: account(%s)", ci->account.c_str());
+	static int get_count = 0;
+	LogInfo("process get role request: account(%s), get_count(%d)", ci->account.c_str(), ++get_count);
 
 	return info->len;
 }
@@ -124,7 +125,8 @@ int ClientHandler::processCreateRoleRequest(JmyMsgInfo* info)
 
 	SEND_GAME_MSG(MSGID_GT2GS_CREATE_ROLE_REQUEST, tmp_, create_req.ByteSize());
 
-	LogInfo("process create role request: account(%s)", ci->account.c_str());
+	static int create_count = 0;
+	LogInfo("process create role request: account(%s), count(%d)", ci->account.c_str(), ++create_count);
 
 	return info->len;
 }
@@ -158,7 +160,9 @@ int ClientHandler::processEnterGameRequest(JmyMsgInfo* info)
 	}
 
 	SEND_GAME_USER_MSG(ci->id, MSGID_GT2GS_ENTER_GAME_REQUEST, tmp_, request.ByteSize());
-	LogInfo("process enter game request, role_id(%llu)", ci->curr_role_id);
+
+	static int enter_count = 0;
+	LogInfo("process enter game request, role_id(%llu), enter_count(%d)", ci->curr_role_id, ++enter_count);
 
 	return info->len;
 }

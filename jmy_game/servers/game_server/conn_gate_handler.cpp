@@ -89,7 +89,9 @@ int ConnGateHandler::processGetRole(JmyMsgInfo* info)
 		LogError("send MsgGS2DS_GetRoleRequest failed");
 		return -1;
 	}
-	LogInfo("process get role(account:%s) request", request.account().c_str());
+
+	static int get_count = 0;
+	LogInfo("process get role(account:%s) request, get_count(%d)", request.account().c_str(), ++get_count);
 	return info->len;
 }
 
@@ -114,7 +116,9 @@ int ConnGateHandler::processCreateRole(JmyMsgInfo* info)
 		LogError("send MsgGS2DS_CreateRoleRequest failed");
 		return -1;
 	}
-	LogInfo("processCreateRole: create role for account(%s)", request.account().c_str());
+
+	static int create_count = 0;
+	LogInfo("processCreateRole: create role for account(%s), create_count(%d)", request.account().c_str(), ++create_count);
 	return info->len;
 }
 
@@ -159,7 +163,8 @@ int ConnGateHandler::processEnterGame(JmyMsgInfo* info)
 		return -1;
 	}
 	
-	LogInfo("processEnterGame: role_id(%llu), user_id(%d)", request.role_id(), user_id);
+	static int enter_count = 0;
+	LogInfo("processEnterGame: role_id(%llu), user_id(%d), enter_count(%d)", request.role_id(), user_id, ++enter_count);
 	return info->len;
 }
 

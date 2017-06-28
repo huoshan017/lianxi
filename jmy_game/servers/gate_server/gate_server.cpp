@@ -96,7 +96,7 @@ int GateServer::run()
 		login_client_set_.run();
 		config_client_->run();
 		service_.poll();
-		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		std::this_thread::sleep_for(std::chrono::microseconds(100));
 	}
 	return 0;
 }

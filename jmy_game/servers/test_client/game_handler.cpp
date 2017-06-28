@@ -37,14 +37,17 @@ int GameHandler::onConnect(JmyEventInfo* info)
 		LogError("send msg MsgC2S_EnterGameRequest failed");
 		return -1;
 	}
-	LogInfo("game onConnect");
+
+	static int connect_count = 0;
+	LogInfo("game onConnect, connect_count(%d)", ++connect_count);
 	return 0;
 }
 
 int GameHandler::onDisconnect(JmyEventInfo* info)
 {
 	(void)info;
-	LogInfo("game onDisconnect");
+	static int disconnect_count = 0;
+	LogInfo("game onDisconnect, disconnect_count(%d)", ++disconnect_count);
 	return 0;
 }
 
@@ -78,6 +81,9 @@ int GameHandler::processGetRole(JmyMsgInfo* info)
 	if (send_enter_game_request(conn) < 0)
 		return -1;
 
+	static int get_count = 0;
+	LogInfo("get_count(%d)", ++get_count);
+
 	return info->len;
 }
 
@@ -97,6 +103,8 @@ int GameHandler::processCreateRole(JmyMsgInfo* info)
 	if (send_enter_game_request(conn) < 0)
 		return -1;
 
+	static int create_count = 0;
+	LogInfo("create_count(%d)", ++create_count);
 	return info->len;
 }
 
@@ -113,7 +121,9 @@ int GameHandler::processEnterGame(JmyMsgInfo* info)
 		LogError("cant get account by conn_id(%d)", info->conn_id);
 		return -1;
 	}
-	LogInfo("%s enter game", account.c_str());
+
+	static int enter_count = 0;
+	LogInfo("%s enter game, enter_count(%d)", account.c_str(), ++enter_count);
 	return info->len;
 }
 
@@ -122,7 +132,7 @@ int GameHandler::processEnterGameComplete(JmyMsgInfo* info)
 	JmyTcpConnection* conn = get_connection(info);
 	if (!conn) return -1;
 
-#if 1
+#if 0
 	MsgC2S_SetRoleDataRequest request;
 	for (int i=0; i<1; ++i) {
 		MsgBaseRoleData* role_data = request.mutable_role_data();
