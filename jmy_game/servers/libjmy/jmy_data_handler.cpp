@@ -160,11 +160,8 @@ int JmyDataHandler::processData(JmyDoubleSessionBuffer& recv_buffer, int session
 					LibJmyLogError("next message data size(%d) is too large than max buffer size(%d)", unpack_data_.data, recv_buffer.getTotalLen()-2);
 					return -1;
 				}
-				LibJmyLogInfo("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! unpack_data_.data(%d) > recv_buffer.getTotalLen()",
-						unpack_data_.data, recv_buffer.getTotalLen());
 			}
 			buff.readLen(nhandled);
-			LibJmyLogInfo("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ addr=0x%x  nhandled=%d", buff.getReadBuff(), nhandled);
 			break;
 		}
 		
@@ -185,11 +182,6 @@ int JmyDataHandler::processData(JmyDoubleSessionBuffer& recv_buffer, int session
 		}
 	}
 	return count;
-}
-
-int JmyDataHandler::processData(JmySessionBufferList* buffer_list, int conn_id, JmyTcpConnectorMgr* mgr)
-{
-	return 0;
 }
 
 int JmyDataHandler::writeUserData(JmySessionBuffer& send_buffer, int msg_id, const char* data, unsigned int len)

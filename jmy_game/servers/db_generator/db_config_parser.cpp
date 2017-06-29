@@ -328,38 +328,6 @@ static const char* get_field_type_str(const std::vector<DBConfigParser::FieldInf
 	return get_field_type_str(*it);
 }
 
-#if 0
-static bool is_value_type_simple(const std::string& value_type) {
-	if (value_type=="char" || value_type=="unsigned char" ||
-		value_type=="int8_t" || value_type=="uint8_t" ||
-		value_type=="short" || value_type=="unsigned short" ||
-		value_type=="int16_t" || value_type=="uint16_t" ||
-		value_type=="int32_t" || value_type=="uint32_t" ||
-		value_type=="int" || value_type=="unsigned int" ||
-		value_type=="int64_t" || value_type=="uint64_t" ||
-		value_type=="long" || value_type=="unsigned long" ||
-		value_type=="long long" || value_type=="unsigned long long" ||
-		value_type=="float" || value_type=="double")
-		return true;
-	return false;
-}
-
-static const char* get_field_type_str_by_name(const std::vector<DBConfigParser::FieldInfo>& fields_info, const std::string& field_name) {
-	if (field_name == "")
-		return nullptr;
-	std::vector<DBConfigParser::FieldInfo>::const_iterator it = fields_info.begin();
-	for (; it!=fields_info.end(); ++it) {
-		if (it->name == field_name)
-			break;
-	}
-	if (it == fields_info.end()) {
-		std::cout << "cant get field_info by name " << field_name << std::endl;
-		return nullptr;
-	}
-	return get_field_type_str(*it);
-}
-#endif
-
 static bool is_basic_field_type(const std::string& field_type) {
 	if (field_type == "tinyint" || field_type == "smallint" || field_type == "mediumint" || field_type == "int" || field_type == "bigint" ||
 		field_type == "float" || field_type == "double")
@@ -743,14 +711,6 @@ static void gen_struct_update_func(std::fstream& out_file, std::fstream& out_fil
 		const char* field_type_str = get_field_type_str(fields[i]);
 		if (!field_type_str)
 			continue;
-
-		/*
-		std::string field_name = "field_" + fields[i].name;
-		out_file2 << "  char* " << field_name << " = nullptr;" << std::endl;
-		out_file2 << "  if (this->get_" << fields[i].name << "_state() == MYSQL_TABLE_FIELD_STATE_CHANGED) {" << std::endl;
-		out_file2 << "    " << field_name << " = (char*)\"" << fields[i].name << "\";" << std::endl;
-		out_file2 << "  }" << std::endl;
-		*/
 
 		std::string nv = "nv_" + fields[i].name;
 		out_file2 << "  MysqlFieldNameValue<" << field_type_str << "> " << nv
@@ -1380,15 +1340,6 @@ bool DBConfigParser::gen_update_record_func(std::fstream& out_file, std::fstream
 		const char* field_type_str = get_field_type_str(fields[i]);
 		if (!field_type_str)
 			continue;
-
-		/*
-		std::string field_name = "field_" + fields[i].name;
-		std::string field_name_value = "nullptr";
-		out_file2 << "  char* " << field_name << " = " << field_name_value << ";" << std::endl;
-		out_file2 << "  if (data.get_" << fields[i].name << "_state() == MYSQL_TABLE_FIELD_STATE_CHANGED) {" << std::endl;
-		out_file2 << "    " << field_name << " = (char*)\"" << fields[i].name << "\";" << std::endl;
-		out_file2 << "  }" << std::endl;
-		*/
 
 		std::string nv = "nv_" + fields[i].name;
 		out_file2 << "  MysqlFieldNameValue<" << field_type_str << "> " << nv
