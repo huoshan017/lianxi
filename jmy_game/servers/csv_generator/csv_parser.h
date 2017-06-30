@@ -22,6 +22,6 @@ public :
 	lines_type& getLines() { return lines_; }
 
 private:
-	bool parseLine(const std::string& line);
+	void parseLine(const std::string& line, std::vector<std::string>& item_vec);
 	lines_type lines_;
 };

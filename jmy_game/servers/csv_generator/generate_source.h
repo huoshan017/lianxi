@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include "csv_parser.h"
 
 #define KEY_INDEX 0
 
@@ -13,15 +14,18 @@ public:
 	~GenerateSource();
 
 	bool init(const char* table_name);
-	void clear();
-	bool writeStruct(std::vector<std::string>& fields_name, std::vector<std::string>& fields_type);
-	bool writeClassBody();
+	void close();
+	bool writeStruct(const std::vector<std::string>& name_line, const std::vector<std::string>& type_line);
+	bool writeClassBody(const CsvParser::lines_type& lines);
 
 private:
 	bool writeLoadFunc();
-	bool writeCloseFunc();
+	bool writeParseDataFunc(const CsvParser::lines_type& lines);
+	bool writeCloseFunc(const CsvParser::lines_type& lines);
+	bool writeGetFunc(const std::vector<std::string>& type_line);
 
 	std::fstream out_file_;
 	std::string file_name_;
 	int key_index_;
+	CsvParser parser_;
 };

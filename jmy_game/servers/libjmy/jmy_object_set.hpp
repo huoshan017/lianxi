@@ -10,7 +10,13 @@ public:
 	JmyObjectSet();
 	~JmyObjectSet();
 
-	void clear() {
+	void clear(bool free_memory = false) {
+		if (free_memory) {
+			typename std::vector<T*>::iterator it = objs_vec_.begin();
+			for (; it!=objs_vec_.end(); ++it) {
+				delete *it;
+			}
+		}
 		objs_map_.clear();
 		objs_vec_.clear();
 	}
