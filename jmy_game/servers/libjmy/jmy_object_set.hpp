@@ -51,7 +51,7 @@ public:
 		return false;
 	}
 
-	bool removeValueByIndex() {
+	bool removeValueByIndex(uint32_t index) {
 		return true;
 	}
 
