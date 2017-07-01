@@ -1,4 +1,7 @@
 #!/bin/sh
+
+./generate_csv.sh
+
 cd ./servers/db_generator
 make
 cd ../..

@@ -1,0 +1,5 @@
+id,name,type,max_level,cooldown,casting_time
+int,string,int,int,int,int
+10001,skill1,0,100,120,0
+10002,skill2,0,200,220,0
+10003,skill3,0,300,320,0

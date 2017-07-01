@@ -3,7 +3,7 @@
 #include <vector>
 #include <string>
 #include <fstream>
-#include "csv_parser.h"
+#include "../libjmy/jmy_csv_parser.h"
 
 #define KEY_INDEX 0
 
@@ -16,16 +16,19 @@ public:
 	bool init(const char* table_name);
 	void close();
 	bool writeStruct(const std::vector<std::string>& name_line, const std::vector<std::string>& type_line);
-	bool writeClassBody(const CsvParser::lines_type& lines);
+	bool writeClassBody(const JmyCsvParser::lines_type& lines);
+
+	const std::string& getFileName() const { return file_name_; }
 
 private:
 	bool writeLoadFunc();
-	bool writeParseDataFunc(const CsvParser::lines_type& lines);
-	bool writeCloseFunc(const CsvParser::lines_type& lines);
+	bool writeParseDataFunc(const JmyCsvParser::lines_type& lines);
+	bool writeCloseFunc(const JmyCsvParser::lines_type& lines);
 	bool writeGetFunc(const std::vector<std::string>& type_line);
+	bool writeCountFunc();
 
 	std::fstream out_file_;
 	std::string file_name_;
 	int key_index_;
-	CsvParser parser_;
+	JmyCsvParser parser_;
 };

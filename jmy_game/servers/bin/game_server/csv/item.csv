@@ -1,0 +1,7 @@
+id,name,max_count,price
+int,string,int,int
+10001,dw1,10,1
+10002,dw2,20,2
+10003,dw3,30,3
+10004,dw4,40,4
+10005,dw5,50,5

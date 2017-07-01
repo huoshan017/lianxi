@@ -7,8 +7,12 @@ template <typename T, typename KeyType>
 class JmyObjectSet
 {
 public:
-	JmyObjectSet();
-	~JmyObjectSet();
+	JmyObjectSet() {}
+	~JmyObjectSet() {}
+
+	size_t count() const {
+		return objs_vec_.size();
+	}
 
 	void clear(bool free_memory = false) {
 		if (free_memory) {

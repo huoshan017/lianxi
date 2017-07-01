@@ -5,6 +5,7 @@
 #include <thread>
 #include "gm.h"
 #include "gm_cmd.h"
+#include "csv_list_manager.h"
 
 static const char* ServerConfPath = "./game_server.json";
 
@@ -61,6 +62,10 @@ bool GameServer::init()
 	}
 
 	GM_MGR->load_cmds(gm_cmds, sizeof(gm_cmds)/sizeof(gm_cmds[0]));
+	if (!CSV_MGR->loadCsv()) {
+		LogError("load csv failed");
+		return false;
+	}
 
 	return true;
 }
@@ -76,6 +81,7 @@ void GameServer::clear()
 		db_client_ = nullptr;
 	}
 	client_master_.close();
+	CSV_MGR->close();
 }
 
 int GameServer::run()

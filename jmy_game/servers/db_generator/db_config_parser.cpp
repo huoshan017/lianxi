@@ -852,12 +852,12 @@ bool DBConfigParser::generate_struct_file(std::fstream& out_file, std::fstream& 
 	}
 
 	out_file.flush();
-	std::this_thread::sleep_for(std::chrono::seconds(1));
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	out_file.close();
 	std::cout << "generated " << db_struct_file_name << std::endl;
 
 	out_file2.flush();
-	std::this_thread::sleep_for(std::chrono::seconds(1));
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	out_file2.close();
 	std::cout << "generated " << db_struct_cpp_file_name << std::endl;
 	return true;
@@ -942,7 +942,7 @@ bool DBConfigParser::generate_define_file(std::fstream& out_file, const std::str
 	out_file << "};" << std::endl;
 
 	out_file.flush();
-	std::this_thread::sleep_for(std::chrono::seconds(1));
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	out_file.close();
 	std::cout << "generated " << db_defines_file_name << std::endl;
 	return true;
@@ -1254,12 +1254,12 @@ bool DBConfigParser::generate_func_file(std::fstream& out_file, std::fstream& ou
 	}
 
 	out_file.flush();
-	std::this_thread::sleep_for(std::chrono::seconds(1));
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	out_file.close();
 	std::cout << "generated " << db_funcs_file_name << std::endl;
 
 	out_file2.flush();
-	std::this_thread::sleep_for(std::chrono::seconds(1));
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	out_file2.close();
 	std::cout << "generated " << db_funcs_file_cpp_name << std::endl;
 
