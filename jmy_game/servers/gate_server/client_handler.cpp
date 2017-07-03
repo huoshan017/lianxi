@@ -14,7 +14,10 @@ char ClientHandler::session_buf_[RECONN_SESSION_CODE_BUF_LENGTH+1];
 int ClientHandler::onConnect(JmyEventInfo* info)
 {
 	JmyTcpConnection* conn = get_connection(info);
-	if (!conn) return -1;
+	if (!conn) {
+		LogError("cant get connection by info");
+		return -1;
+	}
 	LogInfo("new client connection(%d)", info->conn_id);
 	return 0;
 }
@@ -22,7 +25,10 @@ int ClientHandler::onConnect(JmyEventInfo* info)
 int ClientHandler::onDisconnect(JmyEventInfo* info)
 {
 	JmyTcpConnection* conn = get_connection(info);
-	if (!conn) return -1;
+	if (!conn) {
+		LogError("cant get connection by info");
+		return -1;
+	}
 	if (!CLIENT_MANAGER->removeByConnId(info->conn_id))
 		return -1;
 	LogInfo("client connection(%d) disconnect", info->conn_id);
@@ -99,7 +105,10 @@ int ClientHandler::processGetRoleRequest(JmyMsgInfo* info)
 int ClientHandler::processCreateRoleRequest(JmyMsgInfo* info)
 {
 	JmyTcpConnection* conn = get_connection(info);
-	if (!conn) return -1;
+	if (!conn) {
+		LogError("get connection failed by info");
+		return -1;
+	}
 
 	ClientInfo* ci = CLIENT_MANAGER->getClientInfoByConnId(info->conn_id);
 	if (!ci) {
@@ -237,7 +246,10 @@ int ClientHandler::processReconnectRequest(JmyMsgInfo* info)
 int ClientHandler::processDefault(JmyMsgInfo* info)
 {
 	JmyTcpConnection* conn = get_connection(info);
-	if (!conn) return -1;
+	if (!conn) {
+		LogError("get connection failed by info");
+		return -1;
+	}
 	int id = CLIENT_MANAGER->getIdByConnId(info->conn_id);
 	if (!id) {
 		send_error(conn, PROTO_ERROR_SERVER_INTERNAL_ERROR);

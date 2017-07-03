@@ -12,7 +12,10 @@ char ConnConfigHandler::tmp_[JMY_MAX_MSG_SIZE];
 int ConnConfigHandler::onConnect(JmyEventInfo* info)
 {
 	JmyTcpConnection* conn = get_connection(info);
-	if (!conn) return -1;
+	if (!conn) {
+		LogError("get connection by info failed");
+		return -1;
+	}
 	MsgGT2CS_ConnectConfigRequest request;
 	request.set_gate_id(CONFIG_FILE.id);
 	//request.set_gate_ip(CONFIG_FILE.ip.c_str());
