@@ -10,6 +10,10 @@ public:
 	JmyObjectSet() {}
 	~JmyObjectSet() {}
 
+	static T* newObject() {
+		return new T;
+	}
+
 	size_t count() const {
 		return objs_vec_.size();
 	}

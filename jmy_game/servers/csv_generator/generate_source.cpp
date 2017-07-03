@@ -166,7 +166,9 @@ bool GenerateSource::writeParseDataFunc(const JmyCsvParser::lines_type& lines)
 			return false;
 		}
 	}
-	out_file_ << "      " << file_name_ << "* d = new " << file_name_ << ";" << std::endl;
+	std::string obj_type = "JmyObjectSet<" + file_name_ + ", " + type_line[key_index_] + ">";
+	out_file_ << "" << std::endl;
+	out_file_ << "      " << file_name_ << "* d = " << obj_type << "::newObject();" << std::endl;
 	out_file_ << "      *d = data;" << std::endl;
 	out_file_ << "      objs_.insertKeyValue(data." << name_line[key_index_] << ", d);" << std::endl;
 	out_file_ << "      objs_.pushValue(d);" << std::endl;
