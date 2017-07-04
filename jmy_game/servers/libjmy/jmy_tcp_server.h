@@ -1,6 +1,6 @@
 #pragma once
 
-#define USE_THREAD 1
+#define USE_THREAD 0
 
 #include <list>
 #include <thread>

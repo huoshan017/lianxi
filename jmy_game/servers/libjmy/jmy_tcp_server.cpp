@@ -125,7 +125,9 @@ int JmyTcpServer::listenStart(const std::string& ip, unsigned short port)
 	acceptor_->open(ep.protocol());
 	acceptor_->set_option(socket_base::reuse_address(true));
 	acceptor_->bind(ep);
+#if !USE_THREAD
 	acceptor_->listen();
+#endif
 	return start();
 }
 
@@ -138,9 +140,11 @@ int JmyTcpServer::listenStart(const char* ip, unsigned short port)
 int JmyTcpServer::do_accept_loop()
 {
 	if (!inited_) return -1;
+	acceptor_->listen();
 	boost::system::error_code ec;
+	ip::tcp::socket tmp_sock(service_);
 	while (true) {
-		acceptor_->accept(curr_conn_.getSock(), ec);
+		acceptor_->accept(tmp_sock, ec);
 		if (ec) {
 			if (ec.value()==boost::system::errc::operation_canceled || ec.value()==boost::system::errc::operation_in_progress) {
 				LibJmyLogError("error code(%d)", ec.value());
@@ -152,9 +156,10 @@ int JmyTcpServer::do_accept_loop()
 			ip::tcp::socket* sock = nullptr;
 			if (!free_sock_list_.pop(sock)) {
 				LibJmyLogWarn("no free sock to accept new connection");
-				return 0;
+				std::this_thread::sleep_for(std::chrono::seconds(1));
+				continue;
 			}
-			*sock = std::move(curr_conn_.getSock());
+			*sock = std::move(tmp_sock);
 			accept_sock_list_.push(sock);
 		}
 	}
@@ -164,7 +169,6 @@ int JmyTcpServer::do_accept_loop()
 int JmyTcpServer::do_accept()
 {
 	if (!inited_) return -1;
-
 	acceptor_->async_accept(curr_conn_.getSock(),
 		[this](boost::system::error_code ec) {
 			if (ec) {
@@ -204,7 +208,7 @@ int JmyTcpServer::accept_new(ip::tcp::socket* sock)
 		return -1;
 	}
 	JmyTcpConnection* conn = conn_mgr_.getFree(id);
-	conn->getSock() = std::move(*sock); //std::move(curr_conn_.getSock());
+	conn->getSock() = std::move(*sock); 
 	//conn->getSock().set_option(ip::tcp::no_delay(true));
 	boost::asio::socket_base::linger option(true, 0);
 	conn->getSock().set_option(option);
@@ -217,9 +221,7 @@ int JmyTcpServer::accept_new(ip::tcp::socket* sock)
 	}
 	buffer->init(conf_.conn_conf.buff_conf, buff_pool_);
 	conn->setBuffer(buffer);
-#if !USE_COROUTINE
 	conn->start();
-#endif
 	conns_.push_back(conn);
 	// handle accept event
 	JmyEventInfo evt;
@@ -245,7 +247,7 @@ int JmyTcpServer::run()
 {
 #if USE_THREAD
 	ip::tcp::socket* sock = nullptr;
-	while (accept_sock_list_.pop(sock)) {
+	if (accept_sock_list_.pop(sock)) {
 		accept_new(sock);
 		free_sock_list_.push(sock);
 	}

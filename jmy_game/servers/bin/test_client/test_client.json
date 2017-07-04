@@ -5,5 +5,5 @@
 	"log_conf_path" : "./log.conf",
 	"account_prefix" : "test_",
 	"account_start_index" : 0,
-	"account_num" : 2
+	"account_num" : 5000
 }

@@ -91,8 +91,11 @@ void GateServer::close()
 
 int GateServer::run()
 {
-	while (main_server_.run() >= 0) {
-		listen_game_server_.run();
+	while (true) {
+		if (main_server_.run() < 0)
+			break;
+		if (listen_game_server_.run() < 0)
+			break;
 		login_client_set_.run();
 		config_client_->run();
 		service_.poll();
