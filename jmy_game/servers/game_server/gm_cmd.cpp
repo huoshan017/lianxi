@@ -80,3 +80,8 @@ int gm_addexp(uint64_t role_id, const std::vector<std::string>& params)
 {
 	return 0;
 }
+
+int gm_newmail(uint64_t role_id, const std::vector<std::string>& params)
+{
+	return 0;
+}

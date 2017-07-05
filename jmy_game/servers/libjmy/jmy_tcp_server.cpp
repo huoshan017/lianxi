@@ -247,7 +247,7 @@ int JmyTcpServer::run()
 {
 #if USE_THREAD
 	ip::tcp::socket* sock = nullptr;
-	if (accept_sock_list_.pop(sock)) {
+	while (accept_sock_list_.pop(sock)) {
 		accept_new(sock);
 		free_sock_list_.push(sock);
 	}
