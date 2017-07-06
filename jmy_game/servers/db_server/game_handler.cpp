@@ -109,6 +109,17 @@ static inline uint64_t gen_unique_role_id(int server_id) {
 	return id;
 }
 
+/*
+ * "table_name": "t_player",
+ * "operation_type": "insert",
+ * "field": [
+ *   "account":,
+ *   "role_id":,
+ *   "sex":,
+ *   "nick_name":,
+ * ]
+ */
+
 int GameHandler::processCreateRole(JmyMsgInfo* info)
 {
 	JmyTcpConnection* conn = get_connection(info);
@@ -170,6 +181,16 @@ int GameHandler::processCreateRole(JmyMsgInfo* info)
 	return info->len;
 }
 
+/*
+ * "table_name": "t_player",
+ * "operation_type": "update",
+ * "field": [
+ *   "account":,
+ *   "role_id":,
+ *   "sex":,
+ *   "nick_name":,
+ * ]
+ */
 int GameHandler::processSetRoleData(JmyMsgInfo* info)
 {
 	JmyTcpConnection* conn = get_connection(info);
@@ -206,6 +227,13 @@ int GameHandler::processSetRoleData(JmyMsgInfo* info)
 	return info->len;
 }
 
+/*
+ * "table_name": "t_player",
+ * "operation_type": "update",
+ * "field": [
+ *   "items":,
+ * ]
+ */
 int GameHandler::processAddItem(JmyMsgInfo* info)
 {
 	JmyTcpConnection* conn = get_connection(info);
