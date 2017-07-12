@@ -1,0 +1,37 @@
+syntax="proto3";
+
+enum MsgIdType {
+	MSGID_NONE								= 0;
+	MSGID_ERROR								= 1;
+	/* Client <-> LoginServer */
+	MSGID_C2S_LOGIN_REQUEST					= 10000; // login request
+	MSGID_S2C_LOGIN_RESPONSE				= 10001; // login response
+	MSGID_C2S_SELECT_SERVER_REQUEST			= 10002; // select server
+	MSGID_S2C_SELECT_SERVER_RESPONSE		= 10003; // select server response
+	/* Client <-> GateServer */
+	MSGID_C2S_GET_ROLE_REQUEST				= 10010; // get role request
+	MSGID_S2C_GET_ROLE_RESPONSE				= 10011; // get role response
+	//MSGID_C2S_ROLELIST_REQUEST				= 10012; // role list request
+	//MSGID_C2S_ROLELIST_RESPONSE				= 10013; // role list response
+	MSGID_C2S_CREATE_ROLE_REQUEST			= 10014; // create role request
+	MSGID_S2C_CREATE_ROLE_RESPONSE			= 10015; // create role response
+	MSGID_C2S_DELETE_ROLE_REQUEST			= 10016; // delete role request
+	MSGID_S2C_DELETE_ROLE_RESPONSE			= 10017; // delete role response
+	MSGID_C2S_ENTER_GAME_REQUEST			= 10020; // enter game request
+	MSGID_S2C_ENTER_GAME_RESPONSE			= 10021; // enter game response
+	MSGID_S2C_ENTER_GAME_COMPLETE_NOTIFY	= 10022; // enter game complete notify
+	MSGID_C2S_LEAVE_GAME_REQUEST			= 10023; // leave game request
+	MSGID_S2C_LEAVE_GAME_RESPONSE			= 10024; // leave game response
+	MSGID_C2S_RECONNECT_REQUEST				= 10025; // reconnect gate server
+	MSGID_S2C_RECONNECT_RESPONSE			= 10026; // reconnect response
+
+	MSGID_C2S_CHAT_REQUEST					= 10100; // chat request
+	MSGID_S2C_CHAT_RESPONSE					= 10101; // chat response
+	MSGID_S2C_CHAT_NOTIFY					= 10102; // chat notify
+
+	// test msg
+	MSGID_C2S_SET_ROLE_DATA_REQUEST			= 19001; // set role data request
+	MSGID_S2C_SET_ROLE_DATA_RESPONSE		= 19002; // set role data response
+	MSGID_C2S_ECHO_REQUEST					= 19003; // echo request
+	MSGID_S2C_ECHO_RESPONSE					= 19004; // echo response
+}

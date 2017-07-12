@@ -1,0 +1,42 @@
+syntax="proto3";
+
+/******************** client <-> login *******************/
+// client -> login  [MSGID_C2S_LOGIN_REQUEST]  login request, send to login server
+message MsgC2S_LoginRequest {
+	bytes account = 1;
+	bytes password = 2;
+}
+
+message MsgServerInfo {
+	int32 id = 1;
+	bytes name = 2;
+	bool is_maintenance = 3;
+	bool is_busy = 4;
+}
+
+// login -> client  [MSGID_S2C_LOGIN_RESPONSE]  login response
+message MsgS2C_LoginResponse {
+	repeated MsgServerInfo servers = 1;
+}
+
+// client -> login  [MSGID_C2S_SELECT_SERVER_REQUEST]  request to select server, and then notify gate server
+message MsgC2S_SelectServerRequest {
+	int32 sel_id = 1;
+}
+
+// login -> client  [MSGID_S2C_SELECT_SERVER_RESPONSE]  after get response from gate server, to response client select result
+message MsgS2C_SelectServerResponse {
+	bytes session_code = 1;
+	bytes server_ip = 2;
+	int32 port = 3;
+}
+
+// client -> login  [MSGID_C2S_ECHO_REQUEST]
+message MsgC2S_EchoRequest {
+	bytes echo_str = 1;
+}
+
+// login -> client  [MSGID_S2C_ECHO_RESPONSE]
+message MsgS2C_EchoResponse {
+	bytes echo_str = 1;
+}

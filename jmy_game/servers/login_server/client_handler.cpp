@@ -1,8 +1,9 @@
 #include "client_handler.h"
 #include "../libjmy/jmy.h"
 #include "../common/util.h"
+#include "../../proto/src/msgid.pb.h"
 #include "../../proto/src/server.pb.h"
-#include "../../proto/src/common.pb.h"
+#include "../../proto/src/login.pb.h"
 #include <random>
 #include "config_loader.h"
 #include "user.h"

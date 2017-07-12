@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../../proto/src/common.pb.h"
 #include "../../proto/src/server.pb.h"
 #include "../libjmy/jmy_datatype.h"
 #include "../common/defines.h"

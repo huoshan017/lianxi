@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../libjmy/jmy_const.h"
-#include "../../proto/src/common.pb.h"
+#include "../../proto/src/error.pb.h"
 
 struct JmyMsgInfo;
 struct JmyEventInfo;

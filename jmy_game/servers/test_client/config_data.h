@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../proto/src/common.pb.h"
+#include "../../proto/src/msgid.pb.h"
 #include "../libjmy/jmy_datatype.h"
 #include "../common/defines.h"
 #include "login_handler.h"

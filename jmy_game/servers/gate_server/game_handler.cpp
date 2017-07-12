@@ -1,7 +1,7 @@
 #include "game_handler.h"
 #include "../common/util.h"
+#include "../../proto/src/msgid.pb.h"
 #include "../../proto/src/server.pb.h"
-#include "../../proto/src/common.pb.h"
 #include "client_handler.h"
 #include "config_loader.h"
 #include "global_data.h"

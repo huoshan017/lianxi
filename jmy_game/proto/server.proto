@@ -1,6 +1,5 @@
 syntax="proto3";
-import "common.proto";
-//import "db_field_struct.proto";
+import "account.proto";
 
 enum MsgIdTypeServer {
 	MSGID_SERVER_NONE					= 0;

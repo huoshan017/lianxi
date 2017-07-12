@@ -1,7 +1,6 @@
 #include "util.h"
 #include "../libjmy/jmy_tcp_connection.h"
 #include "../libjmy/jmy_log.h"
-#include "../../proto/src/common.pb.h"
 #include <random>
 #include <chrono>
 

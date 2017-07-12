@@ -1,6 +1,6 @@
 #include "global_data.h"
 #include "gate_server.h"
-#include "../../proto/src/common.pb.h"
+#include "../../proto/src/msgid.pb.h"
 
 GlobalData::GlobalData() : the_game_id_(0)
 {

@@ -6,7 +6,6 @@
 #include <vector>
 #include "../libjmy/jmy_tcp_connection.h"
 #include "../common/util.h"
-#include "../../proto/src/common.pb.h"
 
 enum { DEFAULT_CLIENT_START_ID = 100000 };
 
