@@ -91,5 +91,14 @@ int ClientManager::getIdByConnId(int conn_id)
 
 bool ClientManager::removeByConnId(int conn_id)
 {
+	int id = 0;
+	if (!connid_id_bimap_.find_1(conn_id, id)) {
+		LogError("cant found ClientInfo id by conn_id(%d)", conn_id);
+		return false;
+	}
+	if (!client_array_.free(id)) {
+		LogError("free ClientInfo object with id(%d) failed");
+		return false;
+	}
 	return connid_id_bimap_.remove_1(conn_id);
 }
