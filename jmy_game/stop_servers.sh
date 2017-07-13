@@ -1,7 +1,11 @@
 #!/bin/sh
 
-killall config_server
-killall login_server
-killall gate_server
-killall db_server
-killall game_server
+for s in config_server login_server gate_server db_server game_server
+do
+	killall $s
+	if [ $? -eq 0 ];then
+		echo "$s stoped"
+	else
+		echo "$s stop failed"
+	fi
+done
