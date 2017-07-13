@@ -23,7 +23,10 @@ int ConnLoginHandler::onConnect(JmyEventInfo* info)
 	}
 
 	JmyTcpConnection* conn = get_connection(info);
-	if (!conn) return -1;
+	if (!conn) {
+		LogError("get connection by info failed");
+		return -1;
+	}
 	if (conn->send(MSGID_GT2LS_CONNECT_LOGIN_REQUEST, tmp_, request.ByteSize()) < 0) {
 		LogError("send MsgGT2LS_ConnectLoginRequest failed");
 		return -1;

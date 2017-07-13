@@ -88,7 +88,9 @@ void LoginServer::clear()
 int LoginServer::run()
 {
 	int res = 0;
-	while (main_server_.run() >= 0) {
+	while (true) {
+		res = main_server_.run();
+		if (res < 0) break;
 		res = listen_gate_server_.run();
 		if (res < 0) break;
 		res = config_client_->run();

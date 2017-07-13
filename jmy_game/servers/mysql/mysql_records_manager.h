@@ -330,6 +330,13 @@ public:
 		return record;
 	}
 
+	TableRecord* get_new_by_key_and_key2(const Key& key, const Key2& key2) {
+		TableRecord* record = jmy_mem_malloc<TableRecord>();
+		key_record_map_.insert(key, record);
+		key2_record_map_.insert(key2, record);
+		return record;
+	}
+
 	bool insert_key_record(const Key& key, TableRecord* record) {
 		// must exists
 		if (!key2_record_map_.find_2(record, tmp_key2_))

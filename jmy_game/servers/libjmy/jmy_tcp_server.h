@@ -1,13 +1,14 @@
 #pragma once
 
+#define USE_THREAD 0
+
 #include <list>
 #include <thread>
 #include <boost/asio.hpp>
-#if USE_CONNECTOR_AND_SESSION
-#include "jmy_tcp_session.h"
-#else
-#include "jmy_tcp_connection.h"
+#if USE_THREAD
+#include <boost/lockfree/queue.hpp>
 #endif
+#include "jmy_tcp_connection.h"
 #include "jmy_session_buffer_pool.h"
 #if USE_NET_PROTO2
 #include "jmy_data_handler2.h"
@@ -18,8 +19,9 @@
 #include "jmy_util.h"
 
 using namespace boost::asio;
-
-#define USE_THREAD 0
+#if USE_THREAD
+using namespace boost::lockfree;
+#endif
 
 class JmyTcpServer
 {
@@ -39,11 +41,13 @@ public:
 	const JmyServerConfig& getConfig() const { return conf_; }
 
 private:
-	int do_accept();
-	int accept_new();
 #if USE_THREAD
+	int do_accept_loop();
 	int do_loop();
+#else
+	int do_accept();
 #endif
+	int accept_new(ip::tcp::socket* sock);
 	int run_conns();
 
 private:
@@ -59,17 +63,16 @@ private:
 	std::shared_ptr<JmyDataHandler> handler_;
 #endif
 	std::shared_ptr<JmyEventHandlerManager> event_handler_;
-#if USE_CONNECTOR_AND_SESSION
-	std::shared_ptr<JmyTcpSessionMgr> session_mgr_;
-	JmyTcpSession curr_session_;
-#else
 	JmyTcpConnectionMgr conn_mgr_;
 	JmyConnectionBufferMgr buffer_mgr_;
 	JmyIdGenerator<int> id_gene_;
 	JmyTcpConnection curr_conn_;
 	std::list<JmyTcpConnection*> conns_;
-#endif
 	std::shared_ptr<JmySessionBufferPool> buff_pool_;
 	JmyServerConfig conf_;
 	bool inited_;
+#if USE_THREAD
+	queue<ip::tcp::socket*> free_sock_list_;
+	queue<ip::tcp::socket*> accept_sock_list_;
+#endif
 };

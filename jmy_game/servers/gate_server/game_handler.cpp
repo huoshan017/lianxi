@@ -1,7 +1,7 @@
 #include "game_handler.h"
 #include "../common/util.h"
+#include "../../proto/src/msgid.pb.h"
 #include "../../proto/src/server.pb.h"
-#include "../../proto/src/common.pb.h"
 #include "client_handler.h"
 #include "config_loader.h"
 #include "global_data.h"
@@ -13,7 +13,10 @@ char GameHandler::session_buf_[RECONN_SESSION_CODE_BUF_LENGTH+1];
 int GameHandler::onConnect(JmyEventInfo* info)
 {
 	JmyTcpConnection* conn = get_connection(info);
-	if (!conn) return -1;
+	if (!conn) {
+		LogError("get connection failed by info");
+		return -1;
+	}
 	LogInfo("game server onConnect, conn_id(%d)", info->conn_id);
 	return 0;
 }
@@ -161,7 +164,10 @@ int GameHandler::processDefault(JmyMsgInfo* info)
 	default:
 		{
 			JmyTcpConnection* conn = get_connection(info);
-			if (!conn) return -1;
+			if (!conn) {
+				LogError("get connection failed by info");
+				return -1;
+			}
 			if (!info->user_id) return -1;
 			ClientInfo* ci = CLIENT_MANAGER->getClientInfo(info->user_id);
 			if (!ci) {
@@ -172,7 +178,7 @@ int GameHandler::processDefault(JmyMsgInfo* info)
 				LogError("send message: %d with default failed", info->msg_id);
 				return -1;
 			}
-			LogInfo("process default msg(%d)", info->msg_id);
+			//LogInfo("process default msg(%d)", info->msg_id);
 		}
 		break;
 	}

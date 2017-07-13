@@ -95,6 +95,7 @@ bool MysqlDBManager::selectRecord(int table_index, std::list<const char*>& field
 		if (first) {
 			std::snprintf(buf, buf_len, "%s", *it);
 			prev_buf = buf;
+			first = false;
 		} else {
 			if (to_next_index(0) < 0)
 				return false;
@@ -136,6 +137,7 @@ bool MysqlDBManager::selectRecord(int table_index, const char** field_name_array
 		if (first) {
 			std::snprintf(buf, buf_len, "%s", field_name_array[i]);
 			prev_buf = buf;
+			first = false;
 		} else {
 			if (to_next_index(0) < 0)
 				return false;
@@ -152,8 +154,6 @@ bool MysqlDBManager::selectRecord(int table_index, const char** field_name_array
 bool MysqlDBManager::push_read_cmd(const char* sql, unsigned int sql_len, mysql_cmd_callback_func get_result_func, void* user_param, long user_param_l)
 {
 	MysqlConnectorPool::CmdInfo cmd(sql, sql_len);
-	//cmd.sql = const_cast<char*>(sql);
-	//cmd.sql_len = sql_len;
 	cmd.callback_func = get_result_func;
 	cmd.user_param = user_param;
 	cmd.user_param_l = user_param_l;
@@ -164,8 +164,6 @@ bool MysqlDBManager::push_read_cmd(const char* sql, unsigned int sql_len, mysql_
 bool MysqlDBManager::push_write_cmd(const char* sql, unsigned int sql_len)
 {
 	MysqlConnectorPool::CmdInfo cmd(sql, sql_len);
-	//cmd.sql = const_cast<char*>(sql);
-	//cmd.sql_len = sql_len;
 	cmd.callback_func = nullptr;
 	cmd.user_param = nullptr;
 	cmd.user_param_l = 0;

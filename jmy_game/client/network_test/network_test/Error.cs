@@ -20,27 +20,30 @@ public static partial class ErrorReflection {
   static ErrorReflection() {
     byte[] descriptorData = global::System.Convert.FromBase64String(
         string.Concat(
-          "CgtlcnJvci5wcm90byr7BQoOUHJvdG9FcnJvclR5cGUSFAoQUFJPVE9fRVJS",
-          "T1JfTk9ORRAAEiEKHVBST1RPX0VSUk9SX01TR19EQVRBX0lOVkFMSUFEEAES",
-          "IQodUFJPVE9fRVJST1JfTVNHX0hBTkRMRV9GQUlMRUQQAhIlCiFQUk9UT19F",
-          "UlJPUl9TRVJWRVJfSU5URVJOQUxfRVJST1IQAxIxCi1QUk9UT19FUlJPUl9M",
-          "T0dJTl9BQ0NPVU5UX09SX1BBU1NXT1JEX0lOVkFMSUQQZBIsCihQUk9UT19F",
-          "UlJPUl9MT0dJTl9WRVJJRllfQUNDT1VOVF9USU1FT1VUEGUSHgoaUFJPVE9f",
-          "RVJST1JfTE9HSU5fUkVQRUFURUQQZhIiCh5QUk9UT19FUlJPUl9MT0dJTl9E",
-          "QVRBX0lOVkFMSUQQZxItCilQUk9UT19FUlJPUl9MT0dJTl9HQU1FX1NFUlZF",
-          "Ul9NQUlOVEVOQU5DRRBoEh4KGVBST1RPX0VSUk9SX0dFVF9ST0xFX05PTkUQ",
-          "lgESIgodUFJPVE9fRVJST1JfRU5URVJfR0FNRV9GQUlMRUQQyAESJAofUFJP",
-          "VE9fRVJST1JfRU5URVJfR0FNRV9SRVBFQVRFRBDJARIrCiZQUk9UT19FUlJP",
-          "Ul9FTlRFUl9HQU1FX0lOVkFMSURfQUNDT1VOVBDKARIrCiZQUk9UT19FUlJP",
-          "Ul9FTlRFUl9HQU1FX0lOVkFMSURfU0VTU0lPThDLARIwCitQUk9UT19FUlJP",
-          "Ul9FTlRFUl9HQU1FX1BMQVlFUl9DT1VOVF9NQVhJTVVNEMwBEigKI1BST1RP",
-          "X0VSUk9SX0VOVEVSX0dBTUVfUk9MRV9JTlZBTElEEM0BEikKJFBST1RPX0VS",
-          "Uk9SX1JFQ09OTl9BQ0NPVU5UX05PVF9GT1VORBDSARInCiJQUk9UT19FUlJP",
-          "Ul9SRUNPTk5fU0VTU0lPTl9JTlZBTElEENMBEh4KGVBST1RPX0VSUk9SX1JF",
-          "Q09OTl9GQUlMRUQQ1AFiBnByb3RvMw=="));
+          "CgtlcnJvci5wcm90byIvCghNc2dFcnJvchIjCgplcnJvcl9jb2RlGAEgASgO",
+          "Mg8uUHJvdG9FcnJvclR5cGUq+wUKDlByb3RvRXJyb3JUeXBlEhQKEFBST1RP",
+          "X0VSUk9SX05PTkUQABIhCh1QUk9UT19FUlJPUl9NU0dfREFUQV9JTlZBTElB",
+          "RBABEiEKHVBST1RPX0VSUk9SX01TR19IQU5ETEVfRkFJTEVEEAISJQohUFJP",
+          "VE9fRVJST1JfU0VSVkVSX0lOVEVSTkFMX0VSUk9SEAMSMQotUFJPVE9fRVJS",
+          "T1JfTE9HSU5fQUNDT1VOVF9PUl9QQVNTV09SRF9JTlZBTElEEGQSLAooUFJP",
+          "VE9fRVJST1JfTE9HSU5fVkVSSUZZX0FDQ09VTlRfVElNRU9VVBBlEh4KGlBS",
+          "T1RPX0VSUk9SX0xPR0lOX1JFUEVBVEVEEGYSIgoeUFJPVE9fRVJST1JfTE9H",
+          "SU5fREFUQV9JTlZBTElEEGcSLQopUFJPVE9fRVJST1JfTE9HSU5fR0FNRV9T",
+          "RVJWRVJfTUFJTlRFTkFOQ0UQaBIeChlQUk9UT19FUlJPUl9HRVRfUk9MRV9O",
+          "T05FEJYBEiIKHVBST1RPX0VSUk9SX0VOVEVSX0dBTUVfRkFJTEVEEMgBEiQK",
+          "H1BST1RPX0VSUk9SX0VOVEVSX0dBTUVfUkVQRUFURUQQyQESKwomUFJPVE9f",
+          "RVJST1JfRU5URVJfR0FNRV9JTlZBTElEX0FDQ09VTlQQygESKwomUFJPVE9f",
+          "RVJST1JfRU5URVJfR0FNRV9JTlZBTElEX1NFU1NJT04QywESMAorUFJPVE9f",
+          "RVJST1JfRU5URVJfR0FNRV9QTEFZRVJfQ09VTlRfTUFYSU1VTRDMARIoCiNQ",
+          "Uk9UT19FUlJPUl9FTlRFUl9HQU1FX1JPTEVfSU5WQUxJRBDNARIpCiRQUk9U",
+          "T19FUlJPUl9SRUNPTk5fQUNDT1VOVF9OT1RfRk9VTkQQ0gESJwoiUFJPVE9f",
+          "RVJST1JfUkVDT05OX1NFU1NJT05fSU5WQUxJRBDTARIeChlQUk9UT19FUlJP",
+          "Ul9SRUNPTk5fRkFJTEVEENQBYgZwcm90bzM="));
     descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
         new pbr::FileDescriptor[] { },
-        new pbr::GeneratedClrTypeInfo(new[] {typeof(global::ProtoErrorType), }, null));
+        new pbr::GeneratedClrTypeInfo(new[] {typeof(global::ProtoErrorType), }, new pbr::GeneratedClrTypeInfo[] {
+          new pbr::GeneratedClrTypeInfo(typeof(global::MsgError), global::MsgError.Parser, new[]{ "ErrorCode" }, null, null, null)
+        }));
   }
   #endregion
 
@@ -66,6 +69,126 @@ public enum ProtoErrorType {
   [pbr::OriginalName("PROTO_ERROR_RECONN_ACCOUNT_NOT_FOUND")] ProtoErrorReconnAccountNotFound = 210,
   [pbr::OriginalName("PROTO_ERROR_RECONN_SESSION_INVALID")] ProtoErrorReconnSessionInvalid = 211,
   [pbr::OriginalName("PROTO_ERROR_RECONN_FAILED")] ProtoErrorReconnFailed = 212,
+}
+
+#endregion
+
+#region Messages
+public sealed partial class MsgError : pb::IMessage<MsgError> {
+  private static readonly pb::MessageParser<MsgError> _parser = new pb::MessageParser<MsgError>(() => new MsgError());
+  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+  public static pb::MessageParser<MsgError> Parser { get { return _parser; } }
+
+  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+  public static pbr::MessageDescriptor Descriptor {
+    get { return global::ErrorReflection.Descriptor.MessageTypes[0]; }
+  }
+
+  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+  pbr::MessageDescriptor pb::IMessage.Descriptor {
+    get { return Descriptor; }
+  }
+
+  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+  public MsgError() {
+    OnConstruction();
+  }
+
+  partial void OnConstruction();
+
+  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+  public MsgError(MsgError other) : this() {
+    errorCode_ = other.errorCode_;
+  }
+
+  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+  public MsgError Clone() {
+    return new MsgError(this);
+  }
+
+  /// <summary>Field number for the "error_code" field.</summary>
+  public const int ErrorCodeFieldNumber = 1;
+  private global::ProtoErrorType errorCode_ = 0;
+  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+  public global::ProtoErrorType ErrorCode {
+    get { return errorCode_; }
+    set {
+      errorCode_ = value;
+    }
+  }
+
+  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+  public override bool Equals(object other) {
+    return Equals(other as MsgError);
+  }
+
+  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+  public bool Equals(MsgError other) {
+    if (ReferenceEquals(other, null)) {
+      return false;
+    }
+    if (ReferenceEquals(other, this)) {
+      return true;
+    }
+    if (ErrorCode != other.ErrorCode) return false;
+    return true;
+  }
+
+  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+  public override int GetHashCode() {
+    int hash = 1;
+    if (ErrorCode != 0) hash ^= ErrorCode.GetHashCode();
+    return hash;
+  }
+
+  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+  public override string ToString() {
+    return pb::JsonFormatter.ToDiagnosticString(this);
+  }
+
+  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+  public void WriteTo(pb::CodedOutputStream output) {
+    if (ErrorCode != 0) {
+      output.WriteRawTag(8);
+      output.WriteEnum((int) ErrorCode);
+    }
+  }
+
+  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+  public int CalculateSize() {
+    int size = 0;
+    if (ErrorCode != 0) {
+      size += 1 + pb::CodedOutputStream.ComputeEnumSize((int) ErrorCode);
+    }
+    return size;
+  }
+
+  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+  public void MergeFrom(MsgError other) {
+    if (other == null) {
+      return;
+    }
+    if (other.ErrorCode != 0) {
+      ErrorCode = other.ErrorCode;
+    }
+  }
+
+  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+  public void MergeFrom(pb::CodedInputStream input) {
+    uint tag;
+    while ((tag = input.ReadTag()) != 0) {
+      switch(tag) {
+        default:
+          input.SkipLastField();
+          break;
+        case 8: {
+          errorCode_ = (global::ProtoErrorType) input.ReadEnum();
+          break;
+        }
+      }
+    }
+  }
+
 }
 
 #endregion

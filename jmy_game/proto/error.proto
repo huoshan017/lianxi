@@ -25,3 +25,7 @@ enum ProtoErrorType {
 	PROTO_ERROR_RECONN_SESSION_INVALID				= 211;
 	PROTO_ERROR_RECONN_FAILED						= 212;
 }
+
+message MsgError {
+	ProtoErrorType error_code = 1;
+}
