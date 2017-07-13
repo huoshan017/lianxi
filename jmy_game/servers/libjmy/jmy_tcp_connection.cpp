@@ -22,9 +22,10 @@ void JmyTcpConnection::close()
 	if (sendDisconnect() < 0) return;
 	active_close_start_ = std::chrono::system_clock::now();
 	state_ = JMY_CONN_STATE_DISCONNECTING;
+	LibJmyLogInfo("to closing connection %d", id_);
 }
 
-void JmyTcpConnection::force_close()
+void JmyTcpConnection::force_close(int reason)
 {
 	if (state_ == JMY_CONN_STATE_DISCONNECTED)
 		return;
@@ -34,6 +35,7 @@ void JmyTcpConnection::force_close()
 		buffer_->clear();
 	state_ = JMY_CONN_STATE_DISCONNECTED;
 	sending_data_ = false;
+	LibJmyLogInfo("to force close connection %d, reson %d", id_, reason);
 	handle_event(JMY_EVENT_DISCONNECT, 0);
 }
 
@@ -109,14 +111,16 @@ int JmyTcpConnection::handle_recv_error(const boost::system::error_code& err)
 	int ev = err.value();
 	if (ev == boost::system::errc::no_such_file_or_directory) {
 		if (sock_.available()) {
-			LibJmyLogInfo("peer(%s:%d) is closed", sock_.remote_endpoint().address().to_string().c_str(), sock_.remote_endpoint().port());
+			LibJmyLogInfo("connection(%d) peer(%s:%d) is closed", id_, sock_.remote_endpoint().address().to_string().c_str(), sock_.remote_endpoint().port());
+		} else {
+			LibJmyLogInfo("connection(%d) peer is closed", id_);
 		}
 	} else if (ev == boost::system::errc::operation_canceled) {
-		LibJmyLogInfo("operation was canceled");
+		LibJmyLogInfo("connection(%d) operation was canceled", id_);
 	} else {
-		LibJmyLogError("read some data failed, err_code(%d), err_str(%s)", ev, err.message().c_str());
+		LibJmyLogError("connection(%d) read some data failed, err_code(%d), err_str(%s)", id_, ev, err.message().c_str());
 	}
-	force_close();
+	force_close(CONN_CLOSE_REASON_READ_DATA_FAILED);
 	return 0;
 }
 
@@ -138,14 +142,14 @@ void JmyTcpConnection::start_recv()
 			[this](const boost::system::error_code& err, size_t bytes_transferred) {
 		if (!err) {
 			if (bytes_transferred != sizeof(tmp_)) {
-				force_close();
+				force_close(CONN_CLOSE_REASON_READ_MSG_HEAD_NOT_ENOUGH);
 				LibJmyLogError("bytes transferred %d failed", bytes_transferred);
 				return;
 			}
 			JmyPacketType2 type = JMY_PACKET2_NONE;
 			int len = 0;
 			if (!jmy_net_proto2_get_packet_len_type(tmp_, sizeof(tmp_), type, len)) {
-				force_close();
+				force_close(CONN_CLOSE_REASON_READ_DATA_FAILED);
 				LibJmyLogError("get packet type and len failed");
 				return;
 			}
@@ -161,7 +165,7 @@ void JmyTcpConnection::start_recv()
 		if (!err) {
 			buffer_->recv_buff.writeLen(bytes_transferred);
 			if (handle_recv() < 0) {
-				force_close();
+				force_close(CONN_CLOSE_REASON_READ_DATA_FAILED);
 				return;
 			}
 			start_recv();
@@ -185,7 +189,7 @@ void JmyTcpConnection::recv_packet(JmyPacketType2 type, unsigned short pack_len)
 		[this, type, buf, pack_len](const boost::system::error_code& err, size_t bytes_transferred) {
 		if (!err) {
 			if (bytes_transferred != pack_len) {
-				force_close();
+				force_close(CONN_CLOSE_REASON_READ_MSG_HEAD_NOT_ENOUGH);
 				LibJmyLogError("receive packet len(%d) not equal to (%d) failed", bytes_transferred, pack_len);
 				return;
 			}
@@ -317,7 +321,7 @@ int JmyTcpConnection::handleHeartbeat()
 int JmyTcpConnection::handleDisconnect()
 {
 	if (state_ == JMY_CONN_STATE_DISCONNECTING) {
-		force_close();
+		//force_close();
 		return 0;
 	}
 	return sendDisconnectAck();
@@ -330,7 +334,7 @@ int JmyTcpConnection::handleDisconnectAck()
 		return 0;
 	}
 
-	force_close();
+	force_close(CONN_CLOSE_REASON_RECV_CLOSE_EVENT);
 	return 1;
 }
 
@@ -362,7 +366,7 @@ void JmyTcpConnection::buffer_send()
 				}
 			}
 		} else {
-			force_close();
+			force_close(CONN_CLOSE_REASON_WRITE_DATA_FAILED);
 			LibJmyLogError("connection(%d) async_write_some error: %d", id_, err.value());
 			return;
 		}
@@ -376,7 +380,7 @@ void JmyTcpConnection::buffer_list_send()
 			boost::asio::buffer(buffer_->send_buff_list.getReadBuff(), buffer_->send_buff_list.getReadLen()),
 			[this](const boost::system::error_code& err, size_t bytes_transferred) {
 		if (err) {
-			force_close();
+			force_close(CONN_CLOSE_REASON_RECV_CLOSE_EVENT);
 			LibJmyLogError("connection(%d) async_write_some error: %d(%s)", id_, err.value(), err.message().c_str());
 			return;
 		}
@@ -446,7 +450,7 @@ int JmyTcpConnection::run()
 
 	if (state_ == JMY_CONN_STATE_DISCONNECTING) {
 		if (std::chrono::duration_cast<std::chrono::seconds>(now-active_close_start_).count() >= JMY_ACTIVE_CLOSE_CONNECTION_TIMEOUT) {
-			force_close();
+			force_close(CONN_CLOSE_REASON_TIMEOUT);
 			return 0;
 		}
 	}
@@ -455,7 +459,8 @@ int JmyTcpConnection::run()
 		return 0;
 
 	if (handle_recv() < 0) {
-		force_close();
+		force_close(CONN_CLOSE_REASON_READ_DATA_FAILED);
+		LibJmyLogError("connection(%d) handle recv failed", id_);
 		return -1;
 	}
 	return start_send();

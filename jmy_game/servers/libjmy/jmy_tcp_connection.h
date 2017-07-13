@@ -18,13 +18,23 @@ using namespace boost::asio;
 
 class JmyTcpConnectionMgr;
 
+enum {
+	CONN_CLOSE_REASON_NORMAL = 0,
+	CONN_CLOSE_REASON_READ_DATA_FAILED = 1,
+	CONN_CLOSE_REASON_WRITE_DATA_FAILED = 2,
+	CONN_CLOSE_REASON_READ_MSG_HEAD_NOT_ENOUGH = 3,
+	CONN_CLOSE_REASON_READ_MSG_DATA_NOT_ENOUGH = 4,
+	CONN_CLOSE_REASON_RECV_CLOSE_EVENT = 5,
+	CONN_CLOSE_REASON_TIMEOUT = 6,
+};
+
 class JmyTcpConnection
 {
 public:
 	JmyTcpConnection(io_service& service, JmyTcpConnectionMgr& mgr, JmyConnType conn_type = JMY_CONN_TYPE_NONE);
 	~JmyTcpConnection();
 	void close();
-	void force_close();
+	void force_close(int reason = CONN_CLOSE_REASON_NORMAL);
 	void destroy();
 	void reset();
 
