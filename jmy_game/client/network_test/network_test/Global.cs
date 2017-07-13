@@ -9,6 +9,7 @@ namespace network_test
 {
     class Global
     {
+        public static mainwindow_mdi main_win;
         public static main_window win;
         private static AsynchronousClient login_client;
         private static AsynchronousClient game_client;
@@ -18,6 +19,7 @@ namespace network_test
 
         public static void Init()
         {
+            main_win = new mainwindow_mdi();
             win = new main_window();
             request = new Request();
         }

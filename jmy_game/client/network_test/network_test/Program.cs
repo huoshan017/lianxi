@@ -17,7 +17,7 @@ namespace network_test
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Global.Init();
-            Application.Run(Global.win);
+            Application.Run(Global.main_win);
         }
     }
 }
