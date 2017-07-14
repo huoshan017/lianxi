@@ -102,7 +102,8 @@ int ConnLoginHandler::processSelectedServerNotify(JmyMsgInfo* info)
 	}
 	// generate session code to verify new client
 	char* session_code = get_session_code(session_code_buff_, ENTER_GAME_SESSION_CODE_LENGTH);
-	if (!CLIENT_MANAGER->newClientSession(notify.account().c_str(), session_code)) {
+	//if (!CLIENT_MANAGER->newClientSession(notify.account().c_str(), session_code)) {
+	if (!CLIENT_MANAGER->newAccountSession(notify.account(), session_code)) {
 		LogError("create new account(%s) and session(%s) failed", notify.account().c_str(), session_code);
 		return -1;
 	}

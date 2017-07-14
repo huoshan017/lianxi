@@ -4,6 +4,6 @@
 	"enable_reconnect" : true,
 	"log_conf_path" : "./log.conf",
 	"account_prefix" : "test_",
-	"account_start_index" : 300000,
-	"account_num" : 1
+	"account_start_index" : 24000,
+	"account_num" : 1000
 }
