@@ -57,17 +57,22 @@ int ClientHandler::processGetRoleRequest(JmyMsgInfo* info)
 	}
 
 	ClientInfo* ci = CLIENT_MANAGER->getClientInfoByAccount(request.account());
-	if (!ci) {
-		send_error(conn, PROTO_ERROR_ENTER_GAME_INVALID_ACCOUNT);
-		LogError("cant get ClientInfo by account(%s)", request.account().c_str());
-		return -1;
+	if (ci) {
+		ci->force_close();
+		LogWarn("already exist account(%s), to kick it", request.account().c_str());
 	}
 
 	// check enter session
-	if (ci->enter_session != request.enter_session()) {
+	if (!CLIENT_MANAGER->checkSessionByAccount(request.account(), request.enter_session())) {
 		send_error(conn, PROTO_ERROR_LOGIN_ACCOUNT_OR_PASSWORD_INVALID);
-		LogError("account %s enter session %s invalid, valid session: %s",
-				request.account().c_str(), request.enter_session().c_str(), ci->enter_session.c_str());
+		LogError("account(%s) enter session(%s) invalid", request.account().c_str(), request.enter_session().c_str());
+		return -1;
+	}
+
+	ci = CLIENT_MANAGER->newClient(request.account());
+	if (!ci) {
+		send_error(conn, PROTO_ERROR_ENTER_GAME_INVALID_ACCOUNT);
+		LogError("cant get ClientInfo by account(%s)", request.account().c_str());
 		return -1;
 	}
 
