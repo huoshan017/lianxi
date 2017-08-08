@@ -22,15 +22,15 @@ public:
 	void clear();
 	int run();
 
-	bool insertRecord(const char* table_name, mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l);
+	bool insertRecord(const char* table_name/*, mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l*/);
 	template <typename... FieldNameValueArgs>
-	bool insertRecord(const char* table_name, mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l, const FieldNameValueArgs&... args);
+	bool insertRecord(const char* table_name/*, mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l*/, const FieldNameValueArgs&... args);
 
-	bool insertRecord(int table_index, mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l);
+	bool insertRecord(int table_index/*, mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l*/);
 	template <typename... FieldNameValueArgs>
 	bool insertRecord(int table_index, const FieldNameValueArgs&... args);
-	template <typename... FieldNameValueArgs>
-	bool insertRecord(int table_index, mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l, const FieldNameValueArgs&... args);
+	//template <typename... FieldNameValueArgs>
+	//bool insertRecord(int table_index/*, mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l*/, const FieldNameValueArgs&... args);
 
 	template <typename KeyType, typename... FieldNameValueArgs>
 	bool updateRecord(const char* table_name, const char* key_name, const KeyType& key_value, const FieldNameValueArgs&... args);
@@ -51,76 +51,76 @@ public:
 	bool deleteRecord(int table_index, const char* key_name, const KeyType& key_value);
 
 
-	bool selectRecord(const char* table_name, std::list<const char*>& field_list, mysql_cmd_callback_func get_result_func, void* param, long param_l);
-	bool selectRecord(int table_index, std::list<const char*>& field_list, mysql_cmd_callback_func get_result_func, void* param, long param_l);
-	bool selectRecord(const char* table_name, const char** field_name_array, int field_name_array_length, mysql_cmd_callback_func get_result_func, void*param, long param_l);
-	bool selectRecord(int table_index, const char** field_name_array, int field_name_array_length, mysql_cmd_callback_func get_result_func, void*param, long param_l);
+	bool selectRecord(const char* table_name, std::list<const char*>& field_list, mysql_cmd_callback_func get_result_func/*, void* param, long param_l*/);
+	bool selectRecord(int table_index, std::list<const char*>& field_list, mysql_cmd_callback_func get_result_func/*, void* param, long param_l*/);
+	bool selectRecord(const char* table_name, const char** field_name_array, int field_name_array_length, mysql_cmd_callback_func get_result_func/*, void*param, long param_l*/);
+	bool selectRecord(int table_index, const char** field_name_array, int field_name_array_length, mysql_cmd_callback_func get_result_func/*, void*param, long param_l*/);
 
 	template <typename KeyType>
 	bool selectRecord(const char* table_name,
 			const char* key_name, const KeyType& key_value,
-			mysql_cmd_callback_func get_result_func,
-			void* param, long param_l);
+			mysql_cmd_callback_func get_result_func/*,
+			void* param, long param_l*/);
 
 	template <typename KeyType, typename KeyType2>
 	bool selectRecord(const char* table_name, int key_relation,
 			const char* key_name, const KeyType& key_value,
 			const char* key2_name, const KeyType2& key2_value,
-			mysql_cmd_callback_func get_result_func,
-			void* param, long param_l);
+			mysql_cmd_callback_func get_result_func/*,
+			void* param, long param_l*/);
 
 	template <typename KeyType>
 	bool selectRecord(const char* table_name,
 			const char* key_name, const KeyType& key_value,
 			const char** field_name_array, int field_name_array_length,
-			mysql_cmd_callback_func get_result_func,
-			void* param, long param_l);
+			mysql_cmd_callback_func get_result_func/*,
+			void* param, long param_l*/);
 
 	template <typename KeyType>
 	bool selectRecord(const char* table_name,
 			const char* key_name, const KeyType& key_value,
 			const std::list<const char*>& fields_list,
-			mysql_cmd_callback_func get_result_func,
-			void* param, long param_l);
+			mysql_cmd_callback_func get_result_func/*,
+			void* param, long param_l*/);
 
 	template <typename KeyType, typename KeyType2>
 	bool selectRecord(const char* table_name, int key_relation,
 			const char* key_name, const KeyType& key_value,
 			const char* key2_name, const KeyType2& key2_value,
 			const std::list<const char*>& fields_list,
-			mysql_cmd_callback_func get_result_func,
-			void* param, long param_l);
+			mysql_cmd_callback_func get_result_func/*,
+			void* param, long param_l*/);
 
 	template <typename KeyType>
 	bool selectRecord(int table_index,
 			const char* key_name, const KeyType& key_value,
-			mysql_cmd_callback_func get_result_func,
-			void* param, long param_l);
+			mysql_cmd_callback_func get_result_func/*,
+			void* param, long param_l*/);
 
 	template <typename KeyType, typename KeyType2>
 	bool selectRecord(int table_index, int key_relation,
 			const char* key_name, const KeyType& key_value,
 			const char* key2_name, const KeyType2& key2_value,
-			mysql_cmd_callback_func get_result_func,
-			void* param, long param_l);
+			mysql_cmd_callback_func get_result_func/*,
+			void* param, long param_l*/);
 
 	template <typename KeyType>
 	bool selectRecord(int table_index,
 			const char* key_name, const KeyType& key_value,
 			const std::list<const char*>& fields_list,
-			mysql_cmd_callback_func get_result_func,
-			void* param, long param_l);
+			mysql_cmd_callback_func get_result_func/*,
+			void* param, long param_l*/);
 
 	template <typename KeyType, typename KeyType2>
 	bool selectRecord(int table_index, int key_relation,
 			const char* key_name, const KeyType& key_value,
 			const char* key2_name, const KeyType2& key2_value,
 			const std::list<const char*>& fields_list,
-			mysql_cmd_callback_func get_result_func,
-			void* param, long param_l);
+			mysql_cmd_callback_func get_result_func/*,
+			void* param, long param_l*/);
 
-	bool pushSelectCmd(const char* sql, unsigned int sql_len, mysql_cmd_callback_func get_result_func, void* param, long param_l) {
-		return push_read_cmd(sql, sql_len, get_result_func, param, param_l);
+	bool pushSelectCmd(const char* sql, unsigned int sql_len, mysql_cmd_callback_func get_result_func/*, void* param, long param_l*/) {
+		return push_read_cmd(sql, sql_len, get_result_func/*, param, param_l*/);
 	}
 
 	bool pushWriteCmd(const char* sql, unsigned int sql_len) {
@@ -143,9 +143,9 @@ private:
 	template <typename FirstFieldNameValueArg, typename... RestFieldNameValueArg>
 	char* format_update_field_value_str(int table_index, const char* head_buf, int buf_num, const FirstFieldNameValueArg& first, const RestFieldNameValueArg&... rest);
 
-	bool push_read_cmd(const char* sql, unsigned int sql_len, mysql_cmd_callback_func get_result_func, void* param, long param_l);
+	bool push_read_cmd(const char* sql, unsigned int sql_len, mysql_cmd_callback_func get_result_func/*, void* param, long param_l*/);
 	bool push_write_cmd(const char* sql, unsigned int sql_len);
-	bool push_insert_cmd(const char* sql, unsigned int sql_len, mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l);
+	bool push_insert_cmd(const char* sql, unsigned int sql_len/*, mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l*/);
 	bool push_get_last_insert_id_cmd(mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l);
 
 	int next_index() {
@@ -306,18 +306,18 @@ char* MysqlDBManager::format_update_field_value_str(int table_index, const char*
 }
 
 template <typename... FieldNameValueArgs>
-bool MysqlDBManager::insertRecord(const char* table_name, mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l, const FieldNameValueArgs&... args)
+bool MysqlDBManager::insertRecord(const char* table_name/*, mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l*/, const FieldNameValueArgs&... args)
 {
 	int idx = config_mgr_.get_table_index(table_name);
 	if (idx < 0) {
 		LogError("get table(%s) index failed", table_name);
 		return false;
 	}
-	return insertRecord(idx, get_last_insert_id_func, param, param_l, args...);
+	return insertRecord(idx/*, get_last_insert_id_func, param, param_l*/, args...);
 }
 
 template <typename... FieldNameValueArgs>
-bool MysqlDBManager::insertRecord(int table_index, mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l, const FieldNameValueArgs&... args)
+bool MysqlDBManager::insertRecord(int table_index/*, mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l*/, const FieldNameValueArgs&... args)
 {
 	const MysqlTableInfo* ti = config_mgr_.get_table_info(table_index);
 	if (!ti) {
@@ -329,7 +329,7 @@ bool MysqlDBManager::insertRecord(int table_index, mysql_cmd_callback_func get_l
 	char* field_values_str = format_insert_field_value_str(table_index, nullptr, 1, args...);
 
 	std::snprintf(big_buf_[big_index_], sizeof(big_buf_[big_index_]), "INSERT INTO %s (%s) VALUES (%s)", ti->name, field_names_str, field_values_str);
-	return push_insert_cmd(big_buf_[big_index_], strlen(big_buf_[big_index_]), get_last_insert_id_func, param, param_l);
+	return push_insert_cmd(big_buf_[big_index_], strlen(big_buf_[big_index_])/*, get_last_insert_id_func, param, param_l*/);
 }
 
 template <typename KeyType, typename... FieldNameValueArgs>
@@ -461,15 +461,15 @@ template <typename KeyType>
 bool MysqlDBManager::selectRecord(
 		const char* table_name,
 		const char* key_name, const KeyType& key_value,
-		mysql_cmd_callback_func get_result_func,
-		void* param, long param_l)
+		mysql_cmd_callback_func get_result_func/*,
+		void* param, long param_l*/)
 {
 	int idx = config_mgr_.get_table_index(table_name);
 	if (idx < 0) {
 		LogError("get table(%s) index failed", table_name);
 		return false;
 	}
-	return selectRecord(idx, key_name, key_value, get_result_func, param, param_l);
+	return selectRecord(idx, key_name, key_value, get_result_func/*, param, param_l*/);
 }
 
 template <typename KeyType, typename KeyType2>
@@ -477,23 +477,23 @@ bool MysqlDBManager::selectRecord(
 		const char* table_name, int key_relation,
 		const char* key_name, const KeyType& key_value,
 		const char* key2_name, const KeyType2& key2_value,
-		mysql_cmd_callback_func get_result_func,
-		void* param, long param_l)
+		mysql_cmd_callback_func get_result_func/*,
+		void* param, long param_l*/)
 {
 	int idx = config_mgr_.get_table_index(table_name);
 	if (idx < 0) {
 		LogError("get table(%s) index failed", table_name);
 		return false;
 	}
-	return selectRecord(idx, key_relation, key_name, key_value, key2_name, key2_value, get_result_func, param, param_l);
+	return selectRecord(idx, key_relation, key_name, key_value, key2_name, key2_value, get_result_func/*, param, param_l*/);
 }
 
 template <typename KeyType>
 bool MysqlDBManager::selectRecord(const char* table_name,
 			const char* key_name, const KeyType& key_value,
 			const char** field_name_array, int field_name_array_length,
-			mysql_cmd_callback_func get_result_func,
-			void* param, long param_l)
+			mysql_cmd_callback_func get_result_func/*,
+			void* param, long param_l*/)
 {
 	int table_index = config_mgr_.get_table_index(table_name);
 	if (table_index < 0) {
@@ -502,7 +502,7 @@ bool MysqlDBManager::selectRecord(const char* table_name,
 	}
 
 	if (field_name_array_length == 0) {
-		return selectRecord(table_index, key_name, key_value, get_result_func, param, param_l);
+		return selectRecord(table_index, key_name, key_value, get_result_func/*, param, param_l*/);
 	}
 
 	const MysqlTableInfo* ti = config_mgr_.get_table_info(table_index);
@@ -540,7 +540,7 @@ bool MysqlDBManager::selectRecord(const char* table_name,
 
 	std::snprintf(big_buf_[big_index_], sizeof(big_buf_[big_index_]),
 			"SELECT %s FROM %s WHERE %s=%s", fields_name_format, ti->name, key_name, key_value_format);
-	return push_read_cmd(big_buf_[big_index_], std::strlen(big_buf_[big_index_]), get_result_func, param, param_l);
+	return push_read_cmd(big_buf_[big_index_], std::strlen(big_buf_[big_index_]), get_result_func/*, param, param_l*/);
 }
 
 template <typename KeyType>
@@ -548,15 +548,15 @@ bool MysqlDBManager::selectRecord(
 		const char* table_name,
 		const char* key_name, const KeyType& key_value,
 		const std::list<const char*>& fields_list,
-		mysql_cmd_callback_func get_result_func,
-		void* param, long param_l)
+		mysql_cmd_callback_func get_result_func/*,
+		void* param, long param_l*/)
 {
 	int idx = config_mgr_.get_table_index(table_name);
 	if (idx < 0) {
 		LogError("get table(%s) index failed", table_name);
 		return false;
 	}
-	return selectRecord(idx, key_name, key_value, fields_list, get_result_func, param, param_l);
+	return selectRecord(idx, key_name, key_value, fields_list, get_result_func/*, param, param_l*/);
 }
 
 template <typename KeyType, typename KeyType2>
@@ -565,23 +565,23 @@ bool MysqlDBManager::selectRecord(
 		const char* key_name, const KeyType& key_value,
 		const char* key2_name, const KeyType2& key2_value,
 		const std::list<const char*>& fields_list,
-		mysql_cmd_callback_func get_result_func,
-		void* param, long param_l)
+		mysql_cmd_callback_func get_result_func/*,
+		void* param, long param_l*/)
 {
 	int idx = config_mgr_.get_table_index(table_name);
 	if (idx < 0) {
 		LogError("get table(%s) index failed", table_name);
 		return false;
 	}
-	return selectRecord(idx, key_relation, key_name, key_value, key2_name, key2_value, fields_list, get_result_func, param, param_l);
+	return selectRecord(idx, key_relation, key_name, key_value, key2_name, key2_value, fields_list, get_result_func/*, param, param_l*/);
 }
 
 template <typename KeyType>
 bool MysqlDBManager::selectRecord(
 		int table_index,
 		const char* key_name, const KeyType& key_value,
-		mysql_cmd_callback_func get_result_func,
-		void* param, long param_l)
+		mysql_cmd_callback_func get_result_func/*,
+		void* param, long param_l*/)
 {
 	const MysqlTableInfo* ti = config_mgr_.get_table_info(table_index);
 	if (!ti) {
@@ -595,7 +595,7 @@ bool MysqlDBManager::selectRecord(
 	}
 
 	std::snprintf(big_buf_[big_index_], sizeof(big_buf_[big_index_]), "SELECT * FROM %s WHERE %s=%s", ti->name, key_name, format);
-	return push_read_cmd(big_buf_[big_index_], std::strlen(big_buf_[big_index_]), get_result_func, param, param_l);
+	return push_read_cmd(big_buf_[big_index_], std::strlen(big_buf_[big_index_]), get_result_func/*, param, param_l*/);
 }
 
 template <typename KeyType, typename KeyType2>
@@ -603,8 +603,8 @@ bool MysqlDBManager::selectRecord(
 		int table_index, int key_relation,
 		const char* key_name, const KeyType& key_value,
 		const char* key2_name, const KeyType2& key2_value,
-		mysql_cmd_callback_func get_result_func,
-		void* param, long param_l)
+		mysql_cmd_callback_func get_result_func/*,
+		void* param, long param_l*/)
 {
 	const MysqlTableInfo* ti = config_mgr_.get_table_info(table_index);
 	if (!ti) {
@@ -626,7 +626,7 @@ bool MysqlDBManager::selectRecord(
 	const char* key_rela_str = key_relation==0 ? "AND" : "OR";
 	std::snprintf(big_buf_[big_index_], sizeof(big_buf_[big_index_]),
 			"SELECT * FROM %s WHERE %s=%s %s %s=%s", ti->name, key_name, format, key_rela_str, key2_name, format2);
-	return push_read_cmd(big_buf_[big_index_], std::strlen(big_buf_[big_index_]), get_result_func, param, param_l);
+	return push_read_cmd(big_buf_[big_index_], std::strlen(big_buf_[big_index_]), get_result_func/*, param, param_l*/);
 }
 
 template <typename KeyType>
@@ -634,11 +634,11 @@ bool MysqlDBManager::selectRecord(
 		int table_index,
 		const char* key_name, const KeyType& key_value,
 		const std::list<const char*>& fields_list,
-		mysql_cmd_callback_func get_result_func,
-		void* param, long param_l)
+		mysql_cmd_callback_func get_result_func/*,
+		void* param, long param_l*/)
 {
 	if (fields_list.size() == 0) {
-		return selectRecord(table_index, key_name, key_value, get_result_func, param, param_l);
+		return selectRecord(table_index, key_name, key_value, get_result_func/*, param, param_l*/);
 	}
 
 	const MysqlTableInfo* ti = config_mgr_.get_table_info(table_index);
@@ -660,7 +660,7 @@ bool MysqlDBManager::selectRecord(
 	}
 
 	std::snprintf(big_buf_[big_index_], sizeof(big_buf_[big_index_]), "SELECT %s FROM %s WHERE %s=%s", boost::join(fields_list, ","), ti->name, key_name, format);
-	return push_read_cmd(big_buf_[big_index_], std::strlen(big_buf_[big_index_]), get_result_func, param, param_l);
+	return push_read_cmd(big_buf_[big_index_], std::strlen(big_buf_[big_index_]), get_result_func/*, param, param_l*/);
 }
 
 template <typename KeyType, typename KeyType2>
@@ -669,11 +669,11 @@ bool MysqlDBManager::selectRecord(
 		const char* key_name, const KeyType& key_value,
 		const char* key2_name, const KeyType2& key2_value,
 		const std::list<const char*>& fields_list,
-		mysql_cmd_callback_func get_result_func,
-		void* param, long param_l)
+		mysql_cmd_callback_func get_result_func/*,
+		void* param, long param_l*/)
 {
 	if (fields_list.size() == 0) {
-		return selectRecord(table_index, key_relation, key_name, key_value, key2_name, key2_value, get_result_func, param, param_l);
+		return selectRecord(table_index, key_relation, key_name, key_value, key2_name, key2_value, get_result_func/*, param, param_l*/);
 	}
 
 	const MysqlTableInfo* ti = config_mgr_.get_table_info(table_index);
@@ -696,5 +696,5 @@ bool MysqlDBManager::selectRecord(
 	const char* key_rela_str = key_relation==0 ? "AND" : "OR";
 	std::snprintf(big_buf_[big_index_], sizeof(big_buf_[big_index_]), "SELECT %s FROM %s WHERE %s=%s %s %s=%s",
 			boost::join(fields_list, ","), ti->name, key_name, format, key_rela_str, key2_name, format2);
-	return push_read_cmd(big_buf_[big_index_], std::strlen(big_buf_[big_index_]), get_result_func, param, param_l);
+	return push_read_cmd(big_buf_[big_index_], std::strlen(big_buf_[big_index_]), get_result_func/*, param, param_l*/);
 }

@@ -75,22 +75,63 @@ int GameHandler::processGetRole(JmyMsgInfo* info)
 		return -1;
 	}
 
+	const std::string& account = request.account();
 	mysql_records_manager2<t_player, uint64_t, std::string>& player_mgr = TABLES_MGR.get_t_player_table();
-	t_player* user = player_mgr.get_by_key2(request.account());
+	t_player* user = player_mgr.get_by_key2(account);
 	if (!user) {
-		user = player_mgr.get_new_by_key2(request.account());
-		user->set_account(request.account());
-		if (!db_select_t_player_fields_by_account(user->get_account(), DBResCBFuncs::getPlayerInfo, (void*)&user->get_account(), (long)info->conn_id)) {
-			LogError("select account(%s) record failed", user->get_account().c_str());
+		//user = player_mgr.get_new_by_key2(request.account());
+		//user->set_account(request.account());
+		//if (!db_select_t_player_fields_by_account(request.account(), DBResCBFuncs::getPlayerInfo, (void*)&user->get_account(), (long)info->conn_id)) {
+		int conn_id = info->conn_id;
+		bool res = db_select_t_player_fields_by_account(account,
+				[account, conn_id](MysqlConnector::Result& res)
+				{
+					if (res.num_rows() > 0) {
+						mysql_records_manager2<t_player, uint64_t, std::string>& player_mgr = TABLES_MGR.get_t_player_table();
+						t_player* user = player_mgr.get_new_by_key2(account);
+						if (!user) {
+							LogError("cant get free t_player by account(%s)", account.c_str());
+							return -1;
+						}
+
+						user->set_account(account);
+						int r = db_get_result_of_select_t_player_by_account(res, user);
+						if (r < 0) {
+							player_mgr.remove_record(user);
+							LogError("get result of select player info failed");
+							return -1;
+						}
+						if (user->get_role_id() > 0) {
+							if (!player_mgr.insert_key_record(user->get_role_id(), user)) {
+								LogError("insert key(role_id:%llu) record failed", user->get_role_id());
+								return -1;
+							}
+						}
+						if (DBResCBFuncs::sendGetRoleResponse(user, conn_id) < 0) {
+							LogError("send get role response failed");
+							return -1;
+						}
+					} else {
+						if (DBResCBFuncs::sendGetRoleEmptyResponse(account, conn_id) < 0) {
+							LogError("send get role response failed");
+							return -1;
+						}
+					}
+
+					LogInfo("getPlayerInfo");
+					return 0;
+				});
+		if (!res) {
+			LogError("select account(%s) record failed", account.c_str());
 			return -1;
 		}
-		LogInfo("to selecting record by account(%s)", user->get_account().c_str());
+		LogInfo("to selecting record by account(%s)", account.c_str());
 	} else {
 		if (DBResCBFuncs::sendGetRoleResponse(user, info->conn_id) < 0) {
-			LogError("send get account(%s) role response failed", request.account().c_str());
+			LogError("send get account(%s) role response failed", account.c_str());
 			return -1;
 		}
-		LogInfo("send get user(addr:0x%x, account:%s) response", user, request.account().c_str());
+		LogInfo("send get user(addr:0x%x, account:%s) response", user, account.c_str());
 	}
 
 	static int get_count = 0;
@@ -133,28 +174,26 @@ int GameHandler::processCreateRole(JmyMsgInfo* info)
 
 	mysql_records_manager2<t_player, uint64_t, std::string>& player_mgr = TABLES_MGR.get_t_player_table();
 	t_player* user = player_mgr.get_by_key2(request.account());
-	if (!user) {
-		user = player_mgr.get_new_by_key2(request.account());
+	if (user) {
+		LogError("already exist role(%s)", request.account().c_str());
+		return 0;
 	}
 
-	user->set_account(request.account());
 	int game_id = GAME_MGR->getIdByConnId(info->conn_id);
 	uint64_t role_id = gen_unique_role_id(game_id);
-	user->set_role_id(role_id);
-	user->set_sex(request.sex());
-	user->set_nick_name(request.nick_name());
-	if (!player_mgr.insert_key_record(role_id, user)) {
-		LogError("insert key(role_id:%llu) record failed", role_id);
-		return -1;
-	}
+	user = player_mgr.get_new_by_key_and_key2(role_id, request.account());
 	t_player* user2 = player_mgr.get_by_key(role_id);
 	if (!user2) {
 		LogError("not found t_player by role_id(%llu)", role_id);
 		return -1;
 	}
+	user->set_role_id(role_id);
+	user->set_account(request.account());
+	user->set_sex(request.sex());
+	user->set_nick_name(request.nick_name());
 
 	GLOBAL_DATA->setAccount2UserId(user->get_account(), role_id);
-	if (!player_mgr.commit_insert_request(user, nullptr, nullptr, 0)) {
+	if (!player_mgr.commit_insert_request(user)) {
 		LogError("commit insert request t_player(account:%s, role_id:%llu) failed", user->get_account().c_str(), role_id);
 		return -1;
 	}

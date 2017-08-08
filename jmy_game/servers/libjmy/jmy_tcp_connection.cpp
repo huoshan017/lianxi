@@ -380,7 +380,7 @@ void JmyTcpConnection::buffer_list_send()
 			boost::asio::buffer(buffer_->send_buff_list.getReadBuff(), buffer_->send_buff_list.getReadLen()),
 			[this](const boost::system::error_code& err, size_t bytes_transferred) {
 		if (err) {
-			force_close(CONN_CLOSE_REASON_RECV_CLOSE_EVENT);
+			force_close(CONN_CLOSE_REASON_WRITE_DATA_FAILED);
 			LibJmyLogError("connection(%d) async_write_some error: %d(%s)", id_, err.value(), err.message().c_str());
 			return;
 		}

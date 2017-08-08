@@ -45,6 +45,7 @@ static void connector_read_func(MysqlConnectorPool::ConnectorInfo* conn) {
 				ri.user_param_l = ci.user_param_l;
 				conn->push_res(ri);
 			}
+			ci.clear();
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
@@ -53,7 +54,6 @@ static void connector_read_func(MysqlConnectorPool::ConnectorInfo* conn) {
 static void connector_write_func(MysqlConnectorPool::ConnectorInfo* conn) {
 	MysqlConnectorPool::CmdInfo ci;
 	while (true) {
-		ci.sql = nullptr;
 		if (conn->pop(ci)) {
 			LogInfo("write query: %s", ci.sql);
 			if (!ci.write_cmd) {
@@ -74,7 +74,7 @@ static void connector_write_func(MysqlConnectorPool::ConnectorInfo* conn) {
 					LogWarn("real query failed");
 				}
 			}
-			
+			ci.clear();
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
@@ -170,7 +170,7 @@ int MysqlConnectorPool::run()
 		ci = read_connectors_[i];
 		if (ci->pop_res(ri)) {
 			if (ri.cb_func) {
-				ri.cb_func(ri.res, ri.user_param, ri.user_param_l);
+				ri.cb_func(ri.res/*, ri.user_param, ri.user_param_l*/);
 			}
 			ri.clear();
 		}
@@ -180,7 +180,7 @@ int MysqlConnectorPool::run()
 		ci = write_connectors_[i];
 		if (ci->pop_res(ri)) {
 			if (ri.cb_func) {
-				ri.cb_func(ri.res, ri.user_param, ri.user_param_l);
+				ri.cb_func(ri.res/*, ri.user_param, ri.user_param_l*/);
 			}
 			ri.clear();
 		}

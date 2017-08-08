@@ -111,3 +111,33 @@ int DBResCBFuncs::sendGetRoleResponse(t_player* user, int conn_id)
 	LogInfo("send get role response: role_id(%llu), account(%s)", user->get_role_id(), user->get_account().c_str());
 	return 0;
 }
+
+int DBResCBFuncs::sendGetRoleEmptyResponse(const std::string& account, int conn_id)
+{
+	GameAgent* agent = GAME_MGR->getByConnId(conn_id);
+	if (!agent) {
+		LogError("not found game agent with conn_id(%d)", conn_id);
+		return -1;
+	}
+
+	MsgDS2GS_GetRoleResponse response;
+	MsgBaseRoleData* d = response.mutable_role_data();
+	d->set_nick_name("");
+	d->set_sex(0);
+	d->set_level(0);
+	d->set_role_id(0);
+	response.set_account(account);
+
+	if (!response.SerializeToArray(tmp_, sizeof(tmp_))) {
+		LogError("serialize MsgDS2GS_RequireUserDataResponse failed");
+		return -1;
+	}
+
+	if (agent->sendMsg(MSGID_DS2GS_GET_ROLE_RESPONSE, tmp_, response.ByteSize()) < 0) {
+		LogError("send MsgDS2GS_RequireUserDataResponse failed");
+		return -1;
+	}
+
+	LogInfo("send get role response: role_id(0), account(%s)", account.c_str());
+	return 0;
+}

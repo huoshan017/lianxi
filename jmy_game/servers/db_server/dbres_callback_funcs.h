@@ -11,6 +11,7 @@ public:
 	static int getPlayerInfo(MysqlConnector::Result& res, void* param, long param_l);
 
 	static int sendGetRoleResponse(t_player* user, int conn_id);
+	static int sendGetRoleEmptyResponse(const std::string& account, int conn_id);
 private:
 	static char tmp_[4096*128];
 };

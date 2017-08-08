@@ -1,5 +1,4 @@
 #include "mysql_connector.h"
-#include "../common/util.h"
 
 MysqlConnector::MysqlConnector() : handle_(nullptr)
 {

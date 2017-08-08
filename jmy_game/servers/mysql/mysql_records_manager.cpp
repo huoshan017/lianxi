@@ -6,7 +6,7 @@ struct player {
 	std::string name;
 	int sex;
 	int race;
-	bool insert_request(mysql_cmd_callback_func, void*, long) {
+	bool insert_request(/*mysql_cmd_callback_func, void*, long*/) {
 		return true;
 	}
 	bool delete_request() {

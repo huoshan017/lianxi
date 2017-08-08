@@ -509,6 +509,7 @@ int JmySessionBufferList::readLen(unsigned int len)
 		return 0;
 
 	if (b.is_read_out()) {
+		b.destroy();
 		using_list_.pop_front();
 		//LibJmyLogInfo("after pop front, buff list size: %d", using_list_.size());
 		return len;

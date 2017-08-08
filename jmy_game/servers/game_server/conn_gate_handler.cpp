@@ -221,9 +221,9 @@ int ConnGateHandler::processChat(JmyMsgInfo* info)
 	std::vector<std::string> results;
 	if (GM_MGR->parse_command(content, results)) {
 		Player* p = PLAYER_MGR->get(info->user_id);
-		if (!p) return -1;
+		if (!p) return 0;
 		if (!GM_MGR->execute_command(p->role_id, results))
-			return -1;
+			return 0;
 		LogInfo("executed gm command");
 		return info->len;
 	}

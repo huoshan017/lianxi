@@ -1,9 +1,11 @@
 #pragma once
 
 #include "mysql/mysql.h"
+#include "../common/util.h"
 #include <string>
 #include <unordered_map>
 #include <list>
+#include <functional>
 
 class MysqlConnector
 {
@@ -129,4 +131,5 @@ private:
 	char buf_[MAX_BUFFER_SIZE];
 };
 
-typedef int (*mysql_cmd_callback_func)(MysqlConnector::Result& result, void* param, long param_l);
+//typedef int (*mysql_cmd_callback_func)(MysqlConnector::Result& result, void* param, long param_l);
+typedef std::function<int(MysqlConnector::Result&)> mysql_cmd_callback_func;

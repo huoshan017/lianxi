@@ -13,9 +13,9 @@ struct record_state_info {
 	MysqlTableRecordState state;
 	union union_data {
 		struct insert_info {
-			mysql_cmd_callback_func cb;
-		  	void* param;
-			long l_param;
+			//mysql_cmd_callback_func cb;
+		  	//void* param;
+			//long l_param;
 		} insert_data;
 		
 		struct delete_info {
@@ -52,7 +52,7 @@ public:
 		return &it->second;
 	}
 
-	bool commit_insert(TableRecord* record, mysql_cmd_callback_func cb, void* param, long param_l) {
+	bool commit_insert(TableRecord* record/*, mysql_cmd_callback_func cb, void* param, long param_l*/) {
 		record_state_info* s = get_state(record);
 		if (s) {
 			if (s->state == MYSQL_TABLE_RECORD_STATE_NONE) {
@@ -71,9 +71,9 @@ public:
 		} else {
 			record_state_info state;
 			state.state = MYSQL_TABLE_RECORD_STATE_INSERT;
-			state.data.insert_data.cb = cb;
-			state.data.insert_data.param = param;
-			state.data.insert_data.l_param = param_l;
+			//state.data.insert_data.cb = cb;
+			//state.data.insert_data.param = param;
+			//state.data.insert_data.l_param = param_l;
 			states_.insert(std::make_pair(record, state));
 		}
 		return true;
@@ -146,9 +146,9 @@ public:
 	int update_one_record(TableRecord* record) {
 		if (curr_iter_->second.state == MYSQL_TABLE_RECORD_STATE_INSERT) {
 			if (!record->insert_request(
-						curr_iter_->second.data.insert_data.cb,
+						/*curr_iter_->second.data.insert_data.cb,
 						curr_iter_->second.data.insert_data.param,
-						curr_iter_->second.data.insert_data.l_param)) {
+						curr_iter_->second.data.insert_data.l_param*/)) {
 				LogError("insert request failed");
 				return 0;
 			}
@@ -238,14 +238,14 @@ public:
 		return true;
 	}
 
-	bool commit_insert_request(const Key& key, mysql_cmd_callback_func cb, void* param, long param_l) {
+	bool commit_insert_request(const Key& key/*, mysql_cmd_callback_func cb, void* param, long param_l*/) {
 		TableRecord* record = get(key);
 		if (!record) record = get_new(key);
-		return state_mgr_.commit_insert(record, cb, param, param_l);
+		return state_mgr_.commit_insert(record/*, cb, param, param_l*/);
 	}
 
-	bool commit_insert_request(TableRecord* record, mysql_cmd_callback_func cb, void* param, long param_l) {
-		return state_mgr_.commit_insert(record, cb, param, param_l);
+	bool commit_insert_request(TableRecord* record/*, mysql_cmd_callback_func cb, void* param, long param_l*/) {
+		return state_mgr_.commit_insert(record/*, cb, param, param_l*/);
 	}
 
 	bool commit_delete_request(const Key& key_value) {
@@ -395,20 +395,20 @@ public:
 		return true;
 	}
 
-	bool commit_insert_request_by_key(const Key& key, mysql_cmd_callback_func cb, void* param, long param_l) {
+	bool commit_insert_request_by_key(const Key& key/*, mysql_cmd_callback_func cb, void* param, long param_l*/) {
 		TableRecord* record = get_by_key(key);
 		if (!record) record = get_new_by_key2(key);
-		return state_mgr_.commit_insert(record, cb, param, param_l);
+		return state_mgr_.commit_insert(record/*, cb, param, param_l*/);
 	}
 
-	bool commit_insert_request_by_key2(const Key2& key2, mysql_cmd_callback_func cb, void* param, long param_l) {
+	bool commit_insert_request_by_key2(const Key2& key2/*, mysql_cmd_callback_func cb, void* param, long param_l*/) {
 		TableRecord* record = get_by_key2(key2);
 		if (!record) record = get_new_by_key2(key2);
-		return state_mgr_.commit_insert(record, cb, param, param_l);
+		return state_mgr_.commit_insert(record/*, cb, param, param_l*/);
 	}
 
-	bool commit_insert_request(TableRecord* record, mysql_cmd_callback_func cb, void* param, long param_l) {
-		return state_mgr_.commit_insert(record, cb, param, param_l);
+	bool commit_insert_request(TableRecord* record/*, mysql_cmd_callback_func cb, void* param, long param_l*/) {
+		return state_mgr_.commit_insert(record/*, cb, param, param_l*/);
 	}
 
 	bool commit_delete_request_by_key(const Key& key) {

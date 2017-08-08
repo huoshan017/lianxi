@@ -5,6 +5,7 @@
 #include "../../proto/src/msgid.pb.h"
 #include "../../proto/src/account.pb.h"
 #include "../../proto/src/error.pb.h"
+#include "../../proto/src/test.pb.h"
 #include "config_loader.h"
 #include "test_client.h"
 
@@ -134,7 +135,7 @@ int GameHandler::processEnterGameComplete(JmyMsgInfo* info)
 	JmyTcpConnection* conn = get_connection(info);
 	if (!conn) return -1;
 
-#if 0
+#if 1
 	MsgC2S_SetRoleDataRequest request;
 	for (int i=0; i<1; ++i) {
 		MsgBaseRoleData* role_data = request.mutable_role_data();

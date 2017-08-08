@@ -44,17 +44,17 @@ int MysqlDBManager::run()
 	return conn_pool_.run();
 }
 
-bool MysqlDBManager::insertRecord(const char* table_name, mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l)
+bool MysqlDBManager::insertRecord(const char* table_name/*, mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l*/)
 {
 	int idx = config_mgr_.get_table_index(table_name);
 	if (idx < 0) {
 		LogError("get table(%s) index failed", table_name);
 		return false;
 	}
-	return insertRecord(idx, get_last_insert_id_func, param, param_l);
+	return insertRecord(idx/*, get_last_insert_id_func, param, param_l*/);
 }
 
-bool MysqlDBManager::insertRecord(int table_index, mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l)
+bool MysqlDBManager::insertRecord(int table_index/*, mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l*/)
 {
 	const MysqlTableInfo* ti = config_mgr_.get_table_info(table_index);
 	if (!ti) {
@@ -63,20 +63,20 @@ bool MysqlDBManager::insertRecord(int table_index, mysql_cmd_callback_func get_l
 	}
 
 	std::snprintf(buf_[0], sizeof(buf_[0]), "INSERT INTO %s", ti->name);
-	return push_insert_cmd(buf_[0], strlen(buf_[0]), get_last_insert_id_func, param, param_l);
+	return push_insert_cmd(buf_[0], strlen(buf_[0])/*, get_last_insert_id_func, param, param_l*/);
 }
 
-bool MysqlDBManager::selectRecord(const char* table_name, std::list<const char*>& field_list, mysql_cmd_callback_func get_result_func, void* param, long param_l)
+bool MysqlDBManager::selectRecord(const char* table_name, std::list<const char*>& field_list, mysql_cmd_callback_func get_result_func/*, void* param, long param_l*/)
 {
 	int idx = config_mgr_.get_table_index(table_name);
 	if (idx < 0) {
 		LogError("get table(%s) index failed", table_name);
 		return false;
 	}
-	return selectRecord(idx, field_list, get_result_func, param, param_l);
+	return selectRecord(idx, field_list, get_result_func/*, param, param_l*/);
 }
 
-bool MysqlDBManager::selectRecord(int table_index, std::list<const char*>& field_list, mysql_cmd_callback_func get_result_func, void* param, long param_l)
+bool MysqlDBManager::selectRecord(int table_index, std::list<const char*>& field_list, mysql_cmd_callback_func get_result_func/*, void* param, long param_l*/)
 {
 	const MysqlTableInfo* ti = config_mgr_.get_table_info(table_index);
 	if (!ti) {
@@ -106,20 +106,20 @@ bool MysqlDBManager::selectRecord(int table_index, std::list<const char*>& field
 	}
 
 	std::snprintf(big_buf_[big_index_], sizeof(big_buf_[big_index_]), "SELECT %s FROM %s", buf, ti->name);
-	return push_read_cmd(big_buf_[big_index_], std::strlen(big_buf_[big_index_]), get_result_func, param, param_l);
+	return push_read_cmd(big_buf_[big_index_], std::strlen(big_buf_[big_index_]), get_result_func/*, param, param_l*/);
 }
 
-bool MysqlDBManager::selectRecord(const char* table_name, const char** field_name_array, int field_name_array_length, mysql_cmd_callback_func get_result_func, void* param, long param_l)
+bool MysqlDBManager::selectRecord(const char* table_name, const char** field_name_array, int field_name_array_length, mysql_cmd_callback_func get_result_func/*, void* param, long param_l*/)
 {
 	int idx = config_mgr_.get_table_index(table_name);
 	if (idx < 0) {
 		LogError("get table(%s) index failed", table_name);
 		return false;
 	}
-	return selectRecord(idx, field_name_array, field_name_array_length, get_result_func, param, param_l);
+	return selectRecord(idx, field_name_array, field_name_array_length, get_result_func/*, param, param_l*/);
 }
 
-bool MysqlDBManager::selectRecord(int table_index, const char** field_name_array, int field_name_array_length, mysql_cmd_callback_func get_result_func, void*param, long param_l)
+bool MysqlDBManager::selectRecord(int table_index, const char** field_name_array, int field_name_array_length, mysql_cmd_callback_func get_result_func/*, void*param, long param_l*/)
 {
 	const MysqlTableInfo* ti = config_mgr_.get_table_info(table_index);
 	if (!ti) {
@@ -148,15 +148,15 @@ bool MysqlDBManager::selectRecord(int table_index, const char** field_name_array
 	}
 
 	std::snprintf(big_buf_[big_index_], sizeof(big_buf_[big_index_]), "SELECT %s FROM %s", buf, ti->name);
-	return push_read_cmd(big_buf_[big_index_], std::strlen(big_buf_[big_index_]), get_result_func, param, param_l);
+	return push_read_cmd(big_buf_[big_index_], std::strlen(big_buf_[big_index_]), get_result_func/*, param, param_l*/);
 }
 
-bool MysqlDBManager::push_read_cmd(const char* sql, unsigned int sql_len, mysql_cmd_callback_func get_result_func, void* user_param, long user_param_l)
+bool MysqlDBManager::push_read_cmd(const char* sql, unsigned int sql_len, mysql_cmd_callback_func get_result_func/*, void* user_param, long user_param_l*/)
 {
 	MysqlConnectorPool::CmdInfo cmd(sql, sql_len);
 	cmd.callback_func = get_result_func;
-	cmd.user_param = user_param;
-	cmd.user_param_l = user_param_l;
+	//cmd.user_param = user_param;
+	//cmd.user_param_l = user_param_l;
 	cmd.write_cmd = false;
 	return conn_pool_.push_read_cmd(cmd);
 }
@@ -171,15 +171,17 @@ bool MysqlDBManager::push_write_cmd(const char* sql, unsigned int sql_len)
 	return conn_pool_.push_write_cmd(cmd);
 }
 
-bool MysqlDBManager::push_insert_cmd(const char* sql, unsigned int sql_len, mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l)
+bool MysqlDBManager::push_insert_cmd(const char* sql, unsigned int sql_len/*, mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l*/)
 {
 	bool res = push_write_cmd(sql, sql_len);
 	if (!res)
 		return false;
 
+#if 0
 	if (get_last_insert_id_func) {
 		res = push_get_last_insert_id_cmd(get_last_insert_id_func, param, param_l);
 	}
+#endif
 	return res;
 }
 

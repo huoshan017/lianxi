@@ -635,7 +635,7 @@ static void gen_commit_field_changed_func(std::fstream& out_file, const DBConfig
 static void gen_struct_insert_func(std::fstream& out_file, std::fstream& out_file2, 
 		const DBConfigParser::TableInfo& table_info,
 		std::vector<DBConfigParser::FieldInfo>& fields) {
-	std::string func_name = "insert_request(mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l)";
+	std::string func_name = "insert_request(/*mysql_cmd_callback_func get_last_insert_id_func, void* param, long param_l*/)";
 	out_file << "  bool " << func_name << ";" << std::endl;
 	out_file2 << "bool " << table_info.name << "::" << func_name << " {" << std::endl;
 
@@ -657,7 +657,7 @@ static void gen_struct_insert_func(std::fstream& out_file, std::fstream& out_fil
 			format_params_string += (", " + nv);
 		}
 	}
-	out_file2 << "  if (!DB_MGR.insertRecord(\"" << table_info.name << "\", get_last_insert_id_func, param, param_l, " << format_params_string << ")) {" << std::endl;
+	out_file2 << "  if (!DB_MGR.insertRecord(\"" << table_info.name << "\"/*, get_last_insert_id_func, param, param_l*/, " << format_params_string << ")) {" << std::endl;
 	out_file2 << "    std::cout << \"insert record failed\" << std::endl;" << std::endl;
 	out_file2 << "    return false;" << std::endl;
 	out_file2 << "  }" << std::endl;
@@ -1022,16 +1022,16 @@ bool DBConfigParser::gen_select_record_func(std::fstream& out_file, std::fstream
 	std::string func_title;
 	if (ks == 0) {
 		func_title = "bool db_select_" + config_.tables[table_index].name + "_fields" +
-			"(mysql_cmd_callback_func get_result_func, void* param, long param_l)";
+			"(mysql_cmd_callback_func get_result_func/*, void* param, long param_l*/)";
 	} else if (ks == 1) {
 		func_title = "bool db_select_" + config_.tables[table_index].name + "_fields_by_" + keys[0] +
-			"(" + ff[0] + ", mysql_cmd_callback_func get_result_func, void* param, long param_l)";
+			"(" + ff[0] + ", mysql_cmd_callback_func get_result_func/*, void* param, long param_l*/)";
 	} else if (ks == 2) {
 		func_title = "bool db_select_" + config_.tables[table_index].name + "_fields_by_" + keys[0] + "_and_" + keys[1] + 
-			"(" + ff[1] + ", mysql_cmd_callback_func get_result_func, void* param, long param_l)";
+			"(" + ff[1] + ", mysql_cmd_callback_func get_result_func/*, void* param, long param_l*/)";
 	} else if (ks == 3) {
 		func_title = "bool db_select_" + config_.tables[table_index].name + "_fields_by_" + keys[0] + "_and_" + keys[1] + "_and_" + 
-			"(" + ff[2] + ", mysql_cmd_callback_func get_result_func, void* param, long param_l)";
+			"(" + ff[2] + ", mysql_cmd_callback_func get_result_func/*, void* param, long param_l*/)";
 	}
 	out_file << func_title << ";" << std::endl;
 
@@ -1052,7 +1052,7 @@ bool DBConfigParser::gen_select_record_func(std::fstream& out_file, std::fstream
 	} else if (ks == 3) {
 		out_file2 << ", \"" << keys[0] << "\", " << keys[0] << ", \"" << keys[1] << "\", " << keys[1] << ", \"" << keys[2] << "\", " << keys[2];
 	}
-	out_file2 << ", s_sel_fields, sizeof(s_sel_fields)/sizeof(s_sel_fields[0]), get_result_func, param, param_l)) {" << std::endl;
+	out_file2 << ", s_sel_fields, sizeof(s_sel_fields)/sizeof(s_sel_fields[0]), get_result_func/*, param, param_l*/)) {" << std::endl;
 	out_file2 << "    return false;" << std::endl;
 	out_file2 << "  }" << std::endl;
 	out_file2 << "  return true;" << std::endl;

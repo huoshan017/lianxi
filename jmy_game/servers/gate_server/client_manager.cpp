@@ -55,7 +55,7 @@ bool ClientManager::checkSessionByAccount(const std::string& account, const std:
 		return false;
 	if (it->second.session != session)
 		return false;
-	if (std::time(0) - it->second.get_session_time > 10) {
+	if (std::time(0) - it->second.get_session_time > 100) {
 		account_session_map_.erase(it);
 		return false;
 	}
