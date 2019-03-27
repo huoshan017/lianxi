@@ -7,8 +7,8 @@
 #include <boost/format.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/algorithm/string.hpp>
-#include "../mysql/mysql_defines.h"
-#include "../mysql/mysql_util.h"
+//#include "../mysql/mysql_defines.h"
+//#include "../mysql/mysql_util.h"
 #include "db_field_config_parser.h"
 
 DBConfigParser::DBConfigParser()
