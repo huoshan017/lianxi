@@ -15,16 +15,7 @@ using namespace std;
 
 #define USE_THREAD 1
 #define USE_OLD 0
-#define USE_POST 1
-
-#if !USE_POST
-//static const char* s_url = "http://116.228.6.174/0/login?appid=24&token=adsf";
-#else
-static const char* s_url = "http://116.228.6.174:81/10/ZuanshiGain";
-//static const char* s_url = "192.168.3.250:8088/gm";
-//static const char* s_post_content = "{\"cmd\":\"additem\",\"itemid\":10000,\"itemcount\":10}";
-static const char* s_post_content = "{\"app_channel\":\"\",\"channel_id\":0,\"day\":1,\"group_id\":0,\"hour\":17,\"ip_online_num\":\"\",\"log_ym\":201606,\"log_ymd\":20160601,\"md5data\":\"3b6ead92ea7b400f493d8a74cb6c969c\",\"minute\":8,\"month\":6,\"online\":2,\"online_time\":1464772100,\"os_name\":\"debian\",\"platform_tag\":\"aofei\",\"server\":3,\"week\":23,\"year\":2016}";
-#endif
+#define USE_POST 0
 
 static std::atomic<int> g_total;
 static std::atomic<int> g_failed;
@@ -62,12 +53,14 @@ int main(int argc, char* argv[])
 {
 	(void)argc;
 	(void)argv;
-	if (argc < 2) {
-		cout << "param num(" << argc << ") invalid" << endl;
+	if (argc < 3) {
+		cout << "param num " << argc << " not enough" << endl;
 		return -1;
 	}
 
-	int num = atoi(argv[1]);
+	const char* url = argv[1];
+
+	int num = atoi(argv[2]);
 	if (num <= 0) {
 		cout << "param(" << num << ") invlaid" << endl;
 		return -1;
@@ -120,9 +113,9 @@ int main(int argc, char* argv[])
 
 #if USE_RESPONSE_UNITY
 #if USE_POST
-			int res = mgr->post(s_url, s_post_content, callback_func, (void*)0);
+			int res = mgr->post(url, s_post_content, callback_func, (void*)0);
 #else
-			int res = mgr->get(s_url, callback_func, (void*)0);
+			int res = mgr->get(url, callback_func, (void*)0);
 #endif
 #else
 			int res = mgr->post(s_url, s_post_content, callback_func, (void*)0, error_proc, (void*)0);
