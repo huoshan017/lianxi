@@ -61,9 +61,9 @@ void HttpRequestMgr::setStatistics(bool enable)
 	processor_.setStatistics(enable);
 }
 
-bool HttpRequestMgr::hasFreeReq()
+bool HttpRequestMgr::hasReq()
 {
-	return pool_.hasFree();
+	return pool_.notEmpty();
 }
 
 HttpRequest* HttpRequestMgr::newReq()

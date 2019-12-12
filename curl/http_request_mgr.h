@@ -19,7 +19,7 @@ public:
 	void setOutputDebug(bool enable = false);
 	void setStatistics(bool enable = false);
 
-	bool hasFreeReq();
+	bool hasReq();
 	HttpRequest* newReq();
 	bool addReq(HttpRequest*);
 	void freeReq(HttpRequest*);

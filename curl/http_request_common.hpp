@@ -59,7 +59,7 @@ public:
 		return free_queue_.push(p);
 	}
 
-	bool hasFree() {
+	bool notEmpty() {
 		return !free_queue_.empty();
 	}
 
