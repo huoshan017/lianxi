@@ -5,10 +5,10 @@ using namespace std;
 std::unordered_map<HttpRequest*, HttpRequest::resp_cb_data> HttpRequest::eh2func_map_;
 
 HttpRequest::HttpRequest() :
-	eh_(NULL),
+	eh_(nullptr),
 #if !USE_RESPONSE_UNITY
-	efunc_(NULL),
-	efunc_param_(NULL),
+	efunc_(nullptr),
+	efunc_param_(nullptr),
 #endif
 	output_debug_(false)
 {
@@ -21,7 +21,7 @@ HttpRequest::~HttpRequest()
 bool HttpRequest::init()
 {
 	eh_ = curl_easy_init();
-	if (eh_ == NULL) {
+	if (eh_ == nullptr) {
 		return false;
 	}
 	curl_easy_setopt(eh_, CURLOPT_HEADER, 0L);
@@ -35,20 +35,20 @@ bool HttpRequest::init()
 
 void HttpRequest::close()
 {
-	if (eh_ == NULL)
+	if (eh_ == nullptr)
 		return;
 
 	std::unordered_map<HttpRequest*, resp_cb_data>::iterator it = eh2func_map_.find(this);
 	if (it != eh2func_map_.end()) {
-		it->second.func = NULL;
-		it->second.param = NULL;
+		it->second.func = nullptr;
+		it->second.param = nullptr;
 	}
 	curl_easy_cleanup(eh_);
 }
 
 void HttpRequest::setGet(bool enable)
 {
-	if (eh_ == NULL)
+	if (eh_ == nullptr)
 		return;
 
 	long e = enable ? 1L : 0L;
@@ -57,7 +57,7 @@ void HttpRequest::setGet(bool enable)
 
 void HttpRequest::setPost(bool enable)
 {
-	if (eh_ == NULL)
+	if (eh_ == nullptr)
 		return;
 
 	long e = enable ? 1L : 0L;
@@ -66,7 +66,7 @@ void HttpRequest::setPost(bool enable)
 
 void HttpRequest::setPostContent(const char* content)
 {
-	if (eh_ == NULL)
+	if (eh_ == nullptr)
 		return;
 
 	curl_easy_setopt(eh_, CURLOPT_POSTFIELDS, content);
@@ -74,7 +74,7 @@ void HttpRequest::setPostContent(const char* content)
 
 void HttpRequest::setUrl(const char* url)
 {
-	if (eh_ == NULL)
+	if (eh_ == nullptr)
 		return;
 
 	curl_easy_setopt(eh_, CURLOPT_URL, url);
@@ -82,7 +82,7 @@ void HttpRequest::setUrl(const char* url)
 
 void HttpRequest::setPrivate(void* pointer)
 {
-	if (eh_ == NULL)
+	if (eh_ == nullptr)
 		return;
 
 	curl_easy_setopt(eh_, CURLOPT_PRIVATE, pointer);
@@ -131,8 +131,8 @@ void HttpRequest::getResponseCode(long* code)
 void HttpRequest::storeInMap()
 {
 	resp_cb_data d;
-	d.func = NULL;
-	d.param = NULL;
+	d.func = nullptr;
+	d.param = nullptr;
 	eh2func_map_.insert(std::make_pair(this, d));
 }
 
@@ -212,9 +212,9 @@ int HttpRequest::call_error_func(int error)
 	} else {
 		HttpResponse response;
 		response.error_code = error;
-		response.data = NULL;
+		response.data = nullptr;
 		response.len = 0;
-		response.user_data = NULL;
+		response.user_data = nullptr;
 		it->second.func(&response);
 	}
 #else

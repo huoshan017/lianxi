@@ -70,10 +70,10 @@ HttpRequest* HttpRequestMgr::newReq()
 {
 	HttpRequest* req = pool_.malloc();
 	if (!req)
-		return NULL;
+		return nullptr;
 
 	if (!req->init())
-		return NULL;
+		return nullptr;
 	
 	return req;
 }
@@ -157,7 +157,7 @@ int HttpRequestMgr::post(const char* url, const char* post_content, http_resp_fu
 
 int HttpRequestMgr::one_loop()
 {
-	HttpRequest* req = NULL;
+	HttpRequest* req = nullptr;
 	
 	static auto ts = std::chrono::system_clock::now();
 	static auto tss = ts;
@@ -242,7 +242,7 @@ void HttpRequestMgr::thread_func(void* param)
 
 int HttpRequestMgr::thread_run()
 {
-	if (work_thread_ == NULL) {
+	if (work_thread_ == nullptr) {
 		work_thread_ = new std::thread(thread_func, this);
 	}
 	return 0;
@@ -252,7 +252,7 @@ void HttpRequestMgr::thread_join()
 {
 	work_thread_->join();
 	delete work_thread_;
-	work_thread_ = NULL;
+	work_thread_ = nullptr;
 }
 
 size_t HttpRequestMgr::write_callback(char* ptr, size_t size, size_t nmemb, void* userdata)
@@ -260,7 +260,7 @@ size_t HttpRequestMgr::write_callback(char* ptr, size_t size, size_t nmemb, void
 	(void)ptr;
 	HttpRequest* req = (HttpRequest*)userdata;
 	long http_status_code = 0;
-	char* url = NULL;	
+	char* url = nullptr;
 
 	req->getResponseCode(&http_status_code);
 	req->getPrivate(&url);

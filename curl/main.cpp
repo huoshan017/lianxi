@@ -92,7 +92,7 @@ int main(int argc, char* argv[])
 
 	mgr->close();
 	delete mgr;
-	mgr = NULL;
+	mgr = nullptr;
 
 	return 0;
 }

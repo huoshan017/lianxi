@@ -29,7 +29,7 @@ void HttpRequestResults::deallocResults()
 
 void HttpRequestResults::deallocToFreeResults()
 {
-	HttpResult* res = NULL;
+	HttpResult* res = nullptr;
 	while (true) {
 		if (!to_free_results_.pop(res))
 			break;
@@ -45,9 +45,9 @@ void HttpRequestResults::clear()
 
 bool HttpRequestResults::insertResult(char* str, int len, HttpRequest* req)
 {
-	if (str == NULL) return false;
-	HttpResult* r = NULL; //results_pool_.malloc();
-	if (r == NULL) {
+	if (str == nullptr) return false;
+	HttpResult* r = nullptr; //results_pool_.malloc();
+	if (r == nullptr) {
 		std::cout << "results_pool_ malloc failed" << std::endl;
 		return false;
 	}
@@ -73,7 +73,7 @@ bool HttpRequestResults::freeResult(HttpResult* res)
 
 void HttpRequestResults::doLoop()
 {
-	HttpResult* res = NULL;
+	HttpResult* res = nullptr;
 	while (true) {
 		if (!to_free_results_.pop(res))
 			break;

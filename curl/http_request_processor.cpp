@@ -3,9 +3,9 @@
 #include "http_request_mgr.h"
 #include <iostream>
 
-HttpRequestProcessor::HttpRequestProcessor() : mgr_(NULL)
+HttpRequestProcessor::HttpRequestProcessor() : mgr_(nullptr)
 {
-	handle_ = NULL;
+	handle_ = nullptr;
 	max_nprocess_ = 0;
 	curr_nprocess_ = 0;
 	do_statistics_ = false;
@@ -23,7 +23,7 @@ bool HttpRequestProcessor::init(int max_nprocess)
 {
 	curl_global_init(CURL_GLOBAL_ALL);
 	handle_ = curl_multi_init();
-	if (handle_ == NULL)
+	if (handle_ == nullptr)
 		return false;
 
 	if (max_nprocess <= 0)
@@ -53,7 +53,7 @@ bool HttpRequestProcessor::isEmpty() const
 
 bool HttpRequestProcessor::addReq(HttpRequest* req)
 {
-	if (handle_ == NULL)
+	if (handle_ == nullptr)
 		return false;
 
 	if (reqs_map_.find(req) != reqs_map_.end())
@@ -75,7 +75,7 @@ bool HttpRequestProcessor::addReq(HttpRequest* req)
 
 bool HttpRequestProcessor::removeReq(CURL* req)
 {
-	if (req == NULL)
+	if (req == nullptr)
 		return false;
 
 	std::map<CURL*, HttpRequest*>::iterator it = reqs_map_.find(req);
@@ -99,21 +99,21 @@ int HttpRequestProcessor::waitResponse(int max_wait_msecs)
 	if (!handle_)
 		return -1;
 
-	CURL* eh = NULL;
-	CURLMsg* msg = NULL;
+	CURL* eh = nullptr;
+	CURLMsg* msg = nullptr;
 	CURLcode code;
 	int old_still_running = 1;
 	int new_still_running = 2;
 	int msgs_left = 0;
 	CURLMcode mcode;
-	HttpRequest* req = NULL;
+	HttpRequest* req = nullptr;
 
 	curl_multi_perform(handle_, &old_still_running);
 	new_still_running = old_still_running;
 	int numfds = 0;
 	while (new_still_running >= old_still_running) {
 		/* wait for activity, timeout or "nothing" */
-		mcode = curl_multi_wait(handle_, NULL, 0, max_wait_msecs, &numfds);
+		mcode = curl_multi_wait(handle_, nullptr, 0, max_wait_msecs, &numfds);
 		if (mcode != CURLM_OK) {
 #if 0
 			std::cout << "error: curl_multi_wait() return " << mcode << std::endl;

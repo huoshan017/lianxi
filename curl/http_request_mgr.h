@@ -25,13 +25,13 @@ public:
 	void freeReq(HttpRequest*);
 
 #if USE_RESPONSE_UNITY
-	int get(const char* url, http_resp_func cb_func = NULL, void* func_param = NULL);
-	int post(const char* url, const char* post_content, http_resp_func cb_func = NULL, void* func_param = NULL);
+	int get(const char* url, http_resp_func cb_func = nullptr, void* func_param = nullptr);
+	int post(const char* url, const char* post_content, http_resp_func cb_func = nullptr, void* func_param = nullptr);
 #else
 	// GET request
-	int get(const char* url, http_resp_func cb_func = NULL, void* func_param = NULL, http_error_func err_func = NULL, void* err_param = NULL);
+	int get(const char* url, http_resp_func cb_func = nullptr, void* func_param = nullptr, http_error_func err_func = nullptr, void* err_param = nullptr);
 	// POST request
-	int post(const char* url, const char* post_content, http_resp_func cb_func = NULL, void* func_param = NULL, http_error_func err_func = NULL, void* err_param = NULL);
+	int post(const char* url, const char* post_content, http_resp_func cb_func = nullptr, void* func_param = nullptr, http_error_func err_func = nullptr, void* err_param = nullptr);
 #endif
 	void use_thread(bool use = true) { use_thread_ = use; }
 	int run();
